@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/logo.png">
+  <img src="./docs/logo.png">
 </p>
 
 # SIPd
