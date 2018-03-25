@@ -1,122 +1,122 @@
 {
-    "program": "SIPd",
-    "repo": "https://github.com/initbar/us-samsung",
+  "program": "SIPd",
+  "repo": "https://github.com/initbar/SIPd",
 
-    "sip": {
-        "defaults": {
-            "Allow": [
-                "ACK",
-                "BYE",
-                "CANCEL",
-                "INVITE",
-                "OPTIONS",
-                "REFER",
-                "UPDATE"
-            ],
-            "Contact": "<sip:%s:5060;transport=udp>",
-            "Max-Forwards": 70,
-            "Min-SE": 1800,
-            "Require": "timer",
-            "Server": "SIPd",
-            "Session-Expires": "1800;refresher=uac",
-            "Supported": "timer"
-        },
-        "server": {
-            "address": "<overridden>"
-        },
-        "router": {
-            "protocol": "udp",
-            "port": 5060
-        },
-        "worker": {
-            "count": 2,
-            "retry": 1
-        }
+  "sip": {
+    "defaults": {
+      "Allow": [
+        "ACK",
+        "BYE",
+        "CANCEL",
+        "INVITE",
+        "OPTIONS",
+        "REFER",
+        "UPDATE"
+      ],
+      "Contact": "<sip:%s:5060;transport=udp>",
+      "Max-Forwards": 70,
+      "Min-SE": 1800,
+      "Require": "timer",
+      "Server": "SIPd",
+      "Session-Expires": "1800;refresher=uac",
+      "Supported": "timer"
     },
-
-    "sdp": {
-        "v": 0,
-        "s": "phone-call",
-        "c": "IN IP4 %s",
-        "t": "0 0",
-        "m": "audio %s RTP/AVP 0 8 18 96",
-        "a": [
-            "rtpmap:0 PCMU/8000",
-            "rtpmap:8 PCMA/8000",
-            "rtpmap:18 G729/8000",
-            "rtpmap:96 telephone-event/8000",
-            "fmtp:96 0-15",
-            "recvonly",
-            "ptime:20",
-            "maxptime:1000"
-        ]
+    "server": {
+      "address": "<overridden>"
     },
-
-    "rtp": {
-        "handler": {
-            "internal": {
-                "enabled": false,
-                "host": "0.0.0.0",
-                "port": 5901,
-                "protocol": "json",
-                "encoding": {
-                    "g711": false,
-                    "g718": false,
-                    "g719": false,
-                    "g722": false,
-                    "g726": false,
-                    "g729": false
-                }
-            },
-            "external": {
-                "enabled": true,
-                "host": "0.0.0.0",
-                "port": 5900,
-                "protocol": "json",
-                "encoding": {
-                    "g711": true,
-                    "g718": false,
-                    "g719": false,
-                    "g722": false,
-                    "g726": false,
-                    "g729": true
-                }
-            }
-        }
+    "router": {
+      "protocol": "udp",
+      "port": 5060
     },
-
-    "database": {
-        "impala": {
-            "enabled": false,
-            "host": "127.0.0.1",
-            "port": "1234",
-            "username": "",
-            "password": ""
-        },
-        "mssql": {
-            "enabled": false,
-            "host": "127.0.0.1",
-            "port": "1234",
-            "username": "",
-            "password": ""
-        },
-        "mysql": {
-            "enabled": false,
-            "host": "127.0.0.1",
-            "port": "1234",
-            "username": "",
-            "password": ""
-        }
-    },
-
-    "gc": {
-        "call_lifetime": 3600,
-        "check_interval": 60.0
-    },
-
-    "log": {
-        "level": "DEBUG",
-        "stdout_file": "sipd.log",
-        "stderr_file": "sipd.err"
+    "worker": {
+      "count": 2,
+      "retry": 1
     }
+  },
+
+  "sdp": {
+    "v": 0,
+    "s": "phone-call",
+    "c": "IN IP4 %s",
+    "t": "0 0",
+    "m": "audio %s RTP/AVP 0 8 18 96",
+    "a": [
+      "rtpmap:0 PCMU/8000",
+      "rtpmap:8 PCMA/8000",
+      "rtpmap:18 G729/8000",
+      "rtpmap:96 telephone-event/8000",
+      "fmtp:96 0-15",
+      "recvonly",
+      "ptime:20",
+      "maxptime:1000"
+    ]
+  },
+
+  "rtp": {
+    "handler": {
+      "internal": {
+        "enabled": false,
+        "host": "0.0.0.0",
+        "port": 5901,
+        "protocol": "json",
+        "encoding": {
+          "g711": false,
+          "g718": false,
+          "g719": false,
+          "g722": false,
+          "g726": false,
+          "g729": false
+        }
+      },
+      "external": {
+        "enabled": true,
+        "host": "0.0.0.0",
+        "port": 5900,
+        "protocol": "json",
+        "encoding": {
+          "g711": true,
+          "g718": false,
+          "g719": false,
+          "g722": false,
+          "g726": false,
+          "g729": true
+        }
+      }
+    }
+  },
+
+  "database": {
+    "impala": {
+      "enabled": false,
+      "host": "127.0.0.1",
+      "port": "1234",
+      "username": "",
+      "password": ""
+    },
+    "mssql": {
+      "enabled": false,
+      "host": "127.0.0.1",
+      "port": "1234",
+      "username": "",
+      "password": ""
+    },
+    "mysql": {
+      "enabled": false,
+      "host": "127.0.0.1",
+      "port": "1234",
+      "username": "",
+      "password": ""
+    }
+  },
+
+  "gc": {
+    "call_lifetime": 3600,
+    "check_interval": 60.0
+  },
+
+  "log": {
+    "level": "DEBUG",
+    "stdout_file": "sipd.log",
+    "stderr_file": "sipd.err"
+  }
 }
