@@ -68,3 +68,8 @@ class RTPRouterPrototype(object):
         if self.external:   return self._external_handler(*args, **kwargs)
         elif self.internal: return self._internal_handler(*args, **kwargs)
         else: return
+
+class SynchronousRTPRouter(RTPRouterPrototype):
+    ''' RTP router implementation.
+    '''
+    pass

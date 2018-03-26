@@ -41,7 +41,6 @@
 #                                         using SDP headers.
 #-------------------------------------------------------------------------------
 
-from collections import deque
 from multiprocessing import cpu_count
 
 import asyncore
@@ -50,9 +49,6 @@ import random
 import sys
 import threading
 import time
-
-try: import Queue             # Python 2
-except: import queue as Queue # Python 3
 
 try:
     from src.debug import create_random_uuid

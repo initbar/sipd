@@ -16,11 +16,11 @@
 #
 # https://github.com/initbar/sipd
 
-from src.sockets import *
-from src.parser import *
-
 import re
 import unittest
+
+from src.sockets import *
+from src.parser import *
 
 class TestSockets(unittest.TestCase):
 

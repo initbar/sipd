@@ -16,9 +16,9 @@
 #
 # https://github.com/initbar/sipd
 
-from src.debug import *
-
 import unittest
+
+from src.debug import *
 
 class TestDebug(unittest.TestCase):
 

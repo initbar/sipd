@@ -16,9 +16,9 @@
 #
 # https://github.com/initbar/sipd
 
-from src.errors import *
-
 import unittest
+
+from src.errors import *
 
 class TestErrors(unittest.TestCase):
 

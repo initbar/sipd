@@ -16,6 +16,20 @@
 #
 # https://github.com/initbar/sipd
 
+from collections import deque
+
+import threading
+import logging
+
+try: import Queue             # Python 2
+except: import queue as Queue # Python 3
+
+try:
+    from src.rtp.server import SynchronousRTPRouter
+except ImportError: raise
+
+logger = logging.getLogger(__name__)
+
 #-------------------------------------------------------------------------------
 # gc.py -- synchronous SIP garbage collection module.
 #-------------------------------------------------------------------------------
@@ -23,7 +37,7 @@
 class SynchronousSIPGarbageCollector(object):
     ''' Asynchronous SIP garbage collection component implementation.
     '''
-    def __init__(self):
+    def __init__(self, settings={}):
 
         # to maintain historical statistics w/o degrading performance, we want
         # to keep hashes of all incoming Call-ID and lookup time at O(1).
@@ -35,7 +49,7 @@ class SynchronousSIPGarbageCollector(object):
         self.membership = {}
 
         # custom RTP handler for garbage clean up.
-        self._rtp_handler = SynchronousRTPRouter(_SETTINGS)
+        self._rtp_handler = SynchronousRTPRouter(settings)
 
         # garbage is collected under self._garbage. In order to reduce thread
         # conflict with the main thread, garbage collector uses its own

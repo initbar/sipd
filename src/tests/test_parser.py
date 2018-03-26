@@ -16,12 +16,13 @@
 #
 # https://github.com/initbar/sipd
 
-from src.parser import *
-from src.sip.sip_options import *
-
 from string import printable as ASCII
+
 import re
 import unittest
+
+from src.parser import *
+from src.sip.static.options import SIP_OPTIONS_SAMPLE
 
 class TestParser(unittest.TestCase):
 
