@@ -71,7 +71,7 @@ except ImportError: raise
 
 logger = logging.getLogger(__name__)
 
-_SETTINGS = {} # `sipd.json`
+SERVER_SETTINGS = {} # `sipd.json`
 
 # each worker should not instantiate a new garbage collector since a subsequent
 # related requests can not guarantee to hit the same worker. Therefore, the
@@ -115,8 +115,8 @@ class SIPServerPrototype(object):
     '''
     def __init__(self, setting):
         if isinstance(setting, dict):
-            global _SETTINGS
-            _SETTINGS = setting
+            global SERVER_SETTINGS
+            SERVER_SETTINGS = setting
         logger.info('[sip] server initialized.')
 
 class AsynchronousSIPServer(SIPServerPrototype):
@@ -127,7 +127,7 @@ class AsynchronousSIPServer(SIPServerPrototype):
         # `asyncore` module was chosen in order to provide backward
         # compatibility with Python 2 (where there's no `asyncio`). All
         # incoming traffic is routed and initially handled by the router.
-        try: sip_port = _SETTINGS['sip']['router']['port']
+        try: sip_port = SERVER_SETTINGS['sip']['router']['port']
         except: sip_port = 5060 # udp
         with safe_allocate_sip_socket(port=sip_port) as sip_socket:
             sip_router = AsynchronousSIPRouter(sip_socket)
@@ -167,7 +167,7 @@ class SIPRouterPrototype(asyncore.dispatcher):
         #    +-----------------------------------------------------------
         #      1  2  3  4  5  6  7  8  9  10  11  12  13  14  15  16
         try:
-            worker_size = _SETTINGS['sip']['worker']['count']
+            worker_size = SERVER_SETTINGS['sip']['worker']['count']
             assert worker_size > 0 # check for dynamic allocation.
             # if worker size is given, then normalize the count to not
             # exceed the available resources. After all, GIL only
@@ -237,29 +237,29 @@ class SIPWorkerPrototype(object):
     def __init__(self, worker_id, gc=None, verbose=False):
         self.verbose = verbose # display dissected packets.
 
-        # each worker has its own designated identifier to distinguish one
-        # from the another. The order in which a worker was assigned to its
-        # thread is considered as an identifier.
-        self.name = 'worker-' + str(worker_id)
-
         # each worker is managed by thead events. A worker is considered
         # "working" if its event is 'true' and "free" if 'false'.
         self.event = threading.Event()
         self.is_ready = lambda: not self.event.isSet()
 
+        # each worker has its own designated identifier to distinguish one
+        # from the another. The order in which a worker was assigned to its
+        # thread is considered as an identifier.
+        self.name = 'worker-' + str(worker_id)
+
         # each worker has its own socket to send data and a RTP router
         # to yield RTP server information to include inside SDP headers.
         self._socket = unsafe_allocate_random_udp_socket(is_reused=True)
-        self._rtp_handler = SynchronousRTPRouter(_SETTINGS)
+        self._rtp_handler = SynchronousRTPRouter(SERVER_SETTINGS)
 
         # default SIP headers to override parsed requests and respond with.
-        try: self._sip_defaults = _SETTINGS['sip']['defaults']
+        try: self._sip_defaults = SERVER_SETTINGS['sip']['defaults']
         except: self._sip_defaults = {}
 
         # if SIP server did not receive CANCEL/BYE due to unforseen error(s),
         # then we need absolute maximum time-to-live (ttl) value to force-expire
         # a call from RTP decoder. By default, all calls expire after one hour.
-        try: self.lifetime = _SETTINGS['gc']['call_lifetime'] # seconds
+        try: self.lifetime = SERVER_SETTINGS['gc']['call_lifetime'] # seconds
         except: self.lifetime = 60 * 60
 
         # tag the current call to contextualize worker. A tag is in UUID format.
@@ -301,7 +301,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
                 assert validate_sip_signature(self.sip_message)
                 sip_datagram = parse_sip_packet(self.sip_message)
             except:
-                logger.error("----- [sip] [%s] <<%s>> UNABLE TO PARSE: '%s'." % (
+                logger.error("----- [sip] [%s] <<%s>> FAILED TO PARSE: '%s'." % (
                     self.name, self.tag, self.sip_message))
                 return
 
