@@ -1,6 +1,6 @@
 {
-  "program": "SIPd",
-  "github": "https://github.com/initbar/SIPd",
+  "program": "sipd",
+  "github": "https://github.com/initbar/sipd",
 
   "sip": {
     "defaults": {
@@ -17,7 +17,7 @@
       "Max-Forwards": 70,
       "Min-SE": 1800,
       "Require": "timer",
-      "Server": "SIPd",
+      "Server": "sipd",
       "Session-Expires": "1800;refresher=uac",
       "Supported": "timer"
     },

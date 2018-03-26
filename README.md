@@ -2,7 +2,7 @@
   <img src="./docs/logo.png">
 </p>
 
-**SIPd** is an active recording [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon. A daemon is a background process that handles incoming requests and logical responses - and a full customization ranging from custom SIP method handlers (e.g. *INVITE*) to internal/external RTP implementation is made possible.
+**sipd** is an active recording [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon. A daemon is a background process that handles incoming requests and logical responses - and a full customization ranging from custom SIP method handlers (e.g. *INVITE*) to internal/external RTP implementation is made possible.
 
 Some key features are:
 
@@ -19,8 +19,8 @@ Some key features are:
 [sipd.json](./sipd.json) is a configuration file that customizes runtime environment. Although default setting will run fine, it can also be tuned for higher performance.
 
 ```bash
-~$ git clone https://github.com/initbar/SIPd.git
-~$ cd ~/SIPd
+~$ git clone https://github.com/initbar/sipd.git
+~$ cd ~/sipd
 ~$ emacs sipd.json # optional
 ~$ make run
 ```
@@ -44,4 +44,4 @@ Use `make` to build and deploy to a remote server:
 ```
 
 ## License
-**SIPd** is licensed under [GNU GPLv3](./LICENSE.md).
+**sipd** is licensed under [GNU GPLv3](./LICENSE.md).

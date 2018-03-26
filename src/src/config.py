@@ -1,4 +1,4 @@
-# Active recording Session Initiation Protocol daemon (SIPd).
+# Active recording Session Initiation Protocol daemon (sipd).
 # Copyright (C) 2018  Herbert Shin
 #
 # This program is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# https://github.com/initbar/SIPd
+# https://github.com/initbar/sipd
 
 #-------------------------------------------------------------------------------
 # config.py -- config parser, custom overrides, and default states.
@@ -62,7 +62,7 @@ def parse_config(config={}):
                 'Max-Forwards': '70',
                 'Min-SE': '1800',
                 'Require': 'timer',
-                'Server': 'SIPd',
+                'Server': 'sipd',
                 'Session-Expires': '1800;refresher=uac',
                 'Supported': 'timer'
             }

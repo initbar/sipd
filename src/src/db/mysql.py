@@ -1,5 +1,5 @@
 
-# Active recording Session Initiation Protocol daemon (SIPd).
+# Active recording Session Initiation Protocol daemon (sipd).
 # Copyright (C) 2018  Herbert Shin
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,4 +15,4 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# https://github.com/initbar/SIPd
+# https://github.com/initbar/sipd
