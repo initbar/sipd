@@ -1,4 +1,3 @@
-
 # Active recording Session Initiation Protocol daemon (sipd).
 # Copyright (C) 2018  Herbert Shin
 #
@@ -16,3 +15,36 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # https://github.com/initbar/sipd
+
+#-------------------------------------------------------------------------------
+# impala.py -- Impala client.
+#-------------------------------------------------------------------------------
+
+import logging
+
+try:
+    from impala.dbapi import connect
+except ImportError: raise
+
+class ImpalaClient(object):
+
+    def __init__(self, host='127.0.0.1', port=21050, db=None):
+        self.host = host
+        self.port = port
+
+        self.db = db
+        self.cursor = self._try_connect()
+
+    def _try_connect(self):
+        try:
+            connection = connect(host=self.host, port=self.port)
+            self.cursor = connection.cursor() # persistant
+        except: raise
+
+    def execute(self, query):
+        if not query: return
+        else: self.cursor.execute(query)
+
+    def execute_batch(self, queries=[]):
+        for query in queries:
+            self.execute(query)

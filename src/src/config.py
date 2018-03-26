@@ -31,40 +31,29 @@ except ImportError: raise
 def parse_config(config={}):
     ''' parse `sipd.json` and load/initialize with runtime environment.
     '''
-    _config = parse_json(config)
-    if not _config:
-        return {}
+    parsed_config = parse_json(config)
+    if not parsed_config: return {}
 
+    # save server address information to the configuration.
     server_address = str(get_server_address())
+    parsed_config['sip']['server']['address'] = server_address
 
+    # initialize SIP.
     try:
-        # save server address information to the configuration.
-        _config['sip']['server']['address'] = server_address
+        sip_allow   = parsed_config['sip']['defaults']['Allow']
+        sip_contact = parsed_config['sip']['defaults']['Contact']
+        parsed_config['sip']['defaults']['Allow']   = ', '.join(sip_allow)
+        parsed_config['sip']['defaults']['Contact'] = sip_contact % server_address
+    except:
+        parsed_config['sip']['defaults'] = {
+            'Allow': 'ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE',
+            'Contact': '<sip:%s:5060;transport=udp>' % server_address,
+            'Max-Forwards': '70',
+            'Min-SE': '1800',
+            'Require': 'timer',
+            'Server': 'sipd',
+            'Session-Expires': '1800;refresher=uac',
+            'Supported': 'timer'
+        }
 
-        # initialize SIP.
-        try:
-            sip_allow   = _config['sip']['defaults']['Allow']
-            sip_contact = _config['sip']['defaults']['Contact']
-            _config['sip']['defaults']['Allow']   = ', '.join(sip_allow)
-            _config['sip']['defaults']['Contact'] = sip_contact % server_address
-        except:
-            _config['sip']['defaults'] = {
-                'Allow': ', '.join([
-                    'ACK',
-                    'BYE',
-                    'CANCEL',
-                    'INVITE',
-                    'OPTIONS',
-                    'REFER',
-                    'UPDATE'
-                ]),
-                'Contact': '<sip:%s:5060;transport=udp>' % server_address,
-                'Max-Forwards': '70',
-                'Min-SE': '1800',
-                'Require': 'timer',
-                'Server': 'sipd',
-                'Session-Expires': '1800;refresher=uac',
-                'Supported': 'timer'
-            }
-    except: raise
-    return _config
+    return parsed_config
