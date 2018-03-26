@@ -1,5 +1,3 @@
-# __main__.py
-#
 # Active recording Session Initiation Protocol daemon (SIPd).
 # Copyright (C) 2018  Herbert Shin
 #
@@ -15,6 +13,8 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+# https://github.com/initbar/SIPd
 
 __program__ = 'SIPd -- Active recording Session Initiation Protocol Daemon'
 __version__ = '1.2.1'

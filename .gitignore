@@ -1,0 +1,5 @@
+*.py[cod]
+.pypirc
+build/
+dist/
+SIPd.egg-info/
