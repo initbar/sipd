@@ -6,19 +6,13 @@
 
 Some key features are:
 
-- **Maximum portability** implemented in pure Python and [only one non-mandatory dependency](#dependencies). You can either run it by porting the git repository or [building a single binary](./Makefile).
+- **Maximum portability** implemented in pure Python and [only one non-mandatory dependency](#tests). You can either run it by porting the git repository or [building a single binary](./Makefile).
 
 - **Ubiquitous support** for Python 2 and Python 3.
 
 - **High performance** using customized asynchronous patterns and designs.
 
 - **Production ready** and currently running in a production environment against [Genesys](http://www.genesys.com) devices and handling [Samsung Electronics of America](http://www.samsung.com) call traffic.
-
-## Dependencies
-
-```bash
-~$ sudo -H pip install unittest # optional
-```
 
 ## Usage
 
@@ -36,6 +30,7 @@ Some key features are:
 To run tests, type `make test`. If the test exists with exit status 0, then it's ready to be run!
 
 ```bash
+~$ sudo -H pip install unittest # test framework
 ~$ make test
 ```
 
