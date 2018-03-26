@@ -9,7 +9,7 @@ Some key features are:
 
 - **Universal support** from Python 2.7 to Python 3+.
 
-- **Maximum portability** implemented in pure Python and [only one mandatory dependency](#tests). You can either run it by cloning the git repository or [building a single binary](#deploy).
+- **Maximum portability** implemented in pure Python and [non-mandatory dependencies](./requirements.txt). You can either run it by cloning the git repository or [building a single binary](#deploy).
 
 - **High performance** using [customized asynchronous designs and patterns]().
 
