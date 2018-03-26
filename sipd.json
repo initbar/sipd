@@ -1,124 +1,118 @@
 {
-  "program": "sipd",
-  "github": "https://github.com/initbar/sipd",
-
-  "sip": {
-    "defaults": {
-      "Allow": [
-        "ACK",
-        "BYE",
-        "CANCEL",
-        "INVITE",
-        "OPTIONS",
-        "REFER",
-        "UPDATE"
-      ],
-      "Contact": "<sip:%s:5060;transport=udp>",
-      "Max-Forwards": 70,
-      "Min-SE": 1800,
-      "Require": "timer",
-      "Server": "sipd",
-      "Session-Expires": "1800;refresher=uac",
-      "Supported": "timer"
-    },
-    "server": {
-      "address": "<overridden>"
-    },
-    "router": {
-      "protocol": "udp",
-      "port": 5060
-    },
-    "worker": {
-      "count": 2,
-      "retry": 1
-    }
-  },
-
-  "sdp": {
-    "defaults": {
-      "a": [
-        "rtpmap:0 PCMU/8000",
-        "rtpmap:8 PCMA/8000",
-        "rtpmap:18 G729/8000",
-        "rtpmap:96 telephone-event/8000",
-        "fmtp:96 0-15",
-        "recvonly",
-        "ptime:20",
-        "maxptime:1000"
-      ],
-      "c": "IN IP4 %s",
-      "m": "audio %s RTP/AVP 0 8 18 96",
-      "s": "phone-call",
-      "t": "0 0",
-      "v": 0
-    }
-  },
-
-  "rtp": {
-    "handler": {
-      "internal": {
-        "enabled": false,
-        "host": "0.0.0.0",
-        "port": 5901,
-        "protocol": "json",
-        "encoding": {
-          "g711": false,
-          "g718": false,
-          "g719": false,
-          "g722": false,
-          "g726": false,
-          "g729": false
+    "program":"sipd",
+    "github":"https://github.com/initbar/sipd",
+    "sip":{
+        "defaults":{
+            "Allow":[
+                "ACK",
+                "BYE",
+                "CANCEL",
+                "INVITE",
+                "OPTIONS",
+                "REFER",
+                "UPDATE"
+            ],
+            "Contact":"<sip:%s:5060;transport=udp>",
+            "Max-Forwards":70,
+            "Min-SE":1800,
+            "Require":"timer",
+            "Server":"sipd",
+            "Session-Expires":"1800;refresher=uac",
+            "Supported":"timer"
+        },
+        "server":{
+            "address":"<overridden>"
+        },
+        "router":{
+            "protocol":"udp",
+            "port":5060
+        },
+        "worker":{
+            "count":2,
+            "retry":1
         }
-      },
-      "external": {
-        "enabled": true,
-        "host": "0.0.0.0",
-        "port": 5900,
-        "protocol": "json",
-        "encoding": {
-          "g711": true,
-          "g718": false,
-          "g719": false,
-          "g722": false,
-          "g726": false,
-          "g729": true
+    },
+    "sdp":{
+        "defaults":{
+            "a":[
+                "rtpmap:0 PCMU/8000",
+                "rtpmap:8 PCMA/8000",
+                "rtpmap:18 G729/8000",
+                "rtpmap:96 telephone-event/8000",
+                "fmtp:96 0-15",
+                "recvonly",
+                "ptime:20",
+                "maxptime:1000"
+            ],
+            "c":"IN IP4 %s",
+            "m":"audio %s RTP/AVP 0 8 18 96",
+            "s":"phone-call",
+            "t":"0 0",
+            "v":0
         }
-      }
-    }
-  },
-
-  "database": {
-    "impala": {
-      "enabled": false,
-      "host": "127.0.0.1",
-      "port": "1234",
-      "username": "",
-      "password": ""
     },
-    "mssql": {
-      "enabled": false,
-      "host": "127.0.0.1",
-      "port": "1234",
-      "username": "",
-      "password": ""
+    "rtp":{
+        "handler":{
+            "internal":{
+                "enabled":false,
+                "host":"0.0.0.0",
+                "port":5901,
+                "protocol":"json",
+                "encoding":{
+                    "g711":false,
+                    "g718":false,
+                    "g719":false,
+                    "g722":false,
+                    "g726":false,
+                    "g729":false
+                }
+            },
+            "external":{
+                "enabled":true,
+                "host":"0.0.0.0",
+                "port":5900,
+                "protocol":"json",
+                "encoding":{
+                    "g711":true,
+                    "g718":false,
+                    "g719":false,
+                    "g722":false,
+                    "g726":false,
+                    "g729":true
+                }
+            }
+        }
     },
-    "mysql": {
-      "enabled": false,
-      "host": "127.0.0.1",
-      "port": "1234",
-      "username": "",
-      "password": ""
+    "database":{
+        "impala":{
+            "enabled":false,
+            "host":"127.0.0.1",
+            "port":"1234",
+            "username":"",
+            "password":""
+        },
+        "mssql":{
+            "enabled":false,
+            "host":"127.0.0.1",
+            "port":"1234",
+            "username":"",
+            "password":""
+        },
+        "mysql":{
+            "enabled":false,
+            "host":"127.0.0.1",
+            "port":"1234",
+            "username":"",
+            "password":""
+        }
+    },
+    "gc":{
+        "call_lifetime":3600,
+        "check_interval":60.0
+    },
+    "log":{
+        "level":"DEBUG",
+        "stdout_file":"sipd.log",
+        "stderr_file":"sipd.err"
     }
-  },
-
-  "gc": {
-    "call_lifetime": 3600,
-    "check_interval": 60.0
-  },
-
-  "log": {
-    "level": "DEBUG",
-    "stdout_file": "sipd.log",
-    "stderr_file": "sipd.err"
-  }
 }
