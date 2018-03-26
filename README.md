@@ -22,7 +22,7 @@ Some key features are:
 
 ## Usage
 
-[sipd.json](./sipd.json) is a configuration file that customizes runtime environment. Although default setting will run fine in a staging environment, it can also be tuned for higher performance.
+[sipd.json](./sipd.json) is a configuration file that customizes runtime environment. Although default setting will run fine, it can also be tuned for higher performance.
 
 ```bash
 ~$ git clone https://github.com/initbar/SIPd.git
