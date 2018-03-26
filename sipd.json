@@ -1,6 +1,6 @@
 {
   "program": "SIPd",
-  "repo": "https://github.com/initbar/SIPd",
+  "github": "https://github.com/initbar/SIPd",
 
   "sip": {
     "defaults": {
@@ -35,21 +35,23 @@
   },
 
   "sdp": {
-    "v": 0,
-    "s": "phone-call",
-    "c": "IN IP4 %s",
-    "t": "0 0",
-    "m": "audio %s RTP/AVP 0 8 18 96",
-    "a": [
-      "rtpmap:0 PCMU/8000",
-      "rtpmap:8 PCMA/8000",
-      "rtpmap:18 G729/8000",
-      "rtpmap:96 telephone-event/8000",
-      "fmtp:96 0-15",
-      "recvonly",
-      "ptime:20",
-      "maxptime:1000"
-    ]
+    "defaults": {
+      "a": [
+        "rtpmap:0 PCMU/8000",
+        "rtpmap:8 PCMA/8000",
+        "rtpmap:18 G729/8000",
+        "rtpmap:96 telephone-event/8000",
+        "fmtp:96 0-15",
+        "recvonly",
+        "ptime:20",
+        "maxptime:1000"
+      ],
+      "c": "IN IP4 %s",
+      "m": "audio %s RTP/AVP 0 8 18 96",
+      "s": "phone-call",
+      "t": "0 0",
+      "v": 0
+    }
   },
 
   "rtp": {
