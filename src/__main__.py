@@ -16,6 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+__program__ = 'SIPd -- Active recording Session Initiation Protocol Daemon'
+__version__ = '1.2.1'
+__license__ = 'GNU GPLv3'
+
 try: # check supported version.
     import sys
     assert (2,7) <= sys.version_info <= (3,7)
@@ -33,16 +37,13 @@ import logging
 logging.basicConfig(
     level=logging.DEBUG,
     format=' '.join(
-        [ '[%(asctime)-15s]',
-          '<%(filename)s:%(lineno)s>',
-          '[%(levelname)s]',
-          '%(message)s'
+        [
+            '[%(asctime)-15s]',
+            '<%(filename)s:%(lineno)s>',
+            '[%(levelname)s]',
+            '%(message)s'
         ])
 ); logger = logging.getLogger(__name__)
-
-__program__ = 'SIPd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.2.1'
-__license__ = 'GNU GPLv3'
 
 def test():
     logger.info('initializing self-tests ..')
@@ -68,6 +69,10 @@ def test():
         test_suites.append(test_suite)
     result = unittest.TextTestRunner(verbosity=2).run(unittest.TestSuite(test_suites))
     return (not result.wasSuccessful())
+
+#
+# SIPd
+#
 
 if __name__ == '__main__':
 
@@ -112,7 +117,7 @@ if __name__ == '__main__':
         finally:
             if config:
                 logger.info('successfully loaded configurations:')
-                sys.stderr.write(str(config) + '\n')
+                logger.debug(str(config))
             else:
                 logger.error('unable to load configuration file: ' + config_file)
                 logger.warning('falling back to default configurations.')
