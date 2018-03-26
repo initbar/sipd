@@ -7,13 +7,13 @@
 
 Some key features are:
 
-- **Maximum portability** implemented in pure Python and [only one non-mandatory dependency](#tests). You can either run it by porting the git repository or [building a single binary](./Makefile).
+- **Universal support** from Python 2.7 to Python 3+.
 
-- **Ubiquitous support** from Python 2.7 to Python 3+.
+- **Maximum portability** implemented in pure Python and [only one mandatory dependency](#tests). You can either run it by cloning the git repository or [building a single binary](#deploy).
 
-- **High performance** using [customized asynchronous designs]().
+- **High performance** using [customized asynchronous designs and patterns]().
 
-- **RTP routing** using dynamic [Session Description Protocol](https://en.wikipedia.org/wiki/Session_Description_Protocol) population. For performance, using an external [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol) decoder is recommended.
+- **Fast RTP routing** using dynamic [Session Description Protocol](https://en.wikipedia.org/wiki/Session_Description_Protocol) generation. For the optimal performance, using an external [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol) decoder is highly recommended.
 
 - **Production ready** and currently running in a production environment against [Genesys](http://www.genesys.com) devices and handling [Samsung Electronics of America](http://www.samsung.com) call traffic.
 
@@ -22,18 +22,18 @@ Some key features are:
 [sipd.json](./sipd.json) is a configuration file that customizes runtime environment. Although default setting will run fine, it can also be tuned for higher performance.
 
 ```bash
-~$ git clone https://github.com/initbar/sipd.git
+~$ git clone https://github.com/initbar/sipd
 ~$ cd ~/sipd
-~$ emacs sipd.json # optional
+~$ pip install -r requirements.txt
+~$ # vi sipd.json
 ~$ make run
 ```
 
 ## Tests
 
-To run tests, type `make test`. If the test exists with exit status 0, then it's ready to be run!
+To run unit tests, type `make test`. If the test exists with exit status 0, then it's ready to be run!
 
 ```bash
-~$ sudo -H pip install unittest # testing framework
 ~$ make test
 ```
 
