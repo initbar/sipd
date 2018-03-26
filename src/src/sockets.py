@@ -37,12 +37,13 @@ def get_server_address():
         return [
             address
             for address in socket.gethostbyname_ex(socket.gethostname())[2]
-            if not address.startswith("127.") ] or\
-               [ (_socket.connect(('8.8.8.8', 52)),
-                  _socket.getsockname()[0],
-                  _socket.close())
-                 for _socket in [ socket.socket(socket.AF_INET, socket.SOCK_DGRAM) ]
-               ][0][1]
+            if not address.startswith("127.")
+        ][0] or [
+            (_socket.connect(('8.8.8.8', 53)),
+             _socket.getsockname()[0],
+             _socket.close())
+            for _socket in [ socket.socket(socket.AF_INET, socket.SOCK_DGRAM) ]
+        ][0][1]
     except: return '127.0.0.1'
 
 # get random port number from unprivileged port range.
