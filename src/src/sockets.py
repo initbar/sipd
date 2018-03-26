@@ -60,7 +60,7 @@ def unsafe_allocate_udp_socket(host='127.0.0.1', port=None, timeout=1.0,
     if not is_client and any([
             host not in ['127.0.0.1', 'localhost', '0.0.0.0'],
             not (1024 < port <= 65535 )]):
-        logger.error('wrong socket allocation parameters: (%s,%i)' % (host, port))
+        logger.error('wrong socket allocation parameters: (%s,%s)' % (host, port))
         return
 
     # create a UDP socket.

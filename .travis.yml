@@ -19,7 +19,4 @@ branches:
   - master
 
 script:
-- make test
-- make clean
-- make
-- ./sipd -t
+- make test && make clean && make && ./sipd -t

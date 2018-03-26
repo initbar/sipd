@@ -52,7 +52,7 @@ def safe_encode(plaintext, encoding='utf-8', errors='surrogateescape'):
         logger.error('failed to encode: %s' % str(plaintext))
         return
 
-def safe_decode(string, encoding='utf-8', errors='surrogateescape'):
+def safe_decode(plaintext, encoding='utf-8', errors='surrogateescape'):
     ''' safely decode a string to `encoding` type.
     '''
     try: return plaintext.decode(encoding, errors)
