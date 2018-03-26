@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/initbar/sipd.svg?branch=master)](https://travis-ci.org/initbar/sipd)
 <p align="center">
   <img src="./docs/logo.png">
 </p>
