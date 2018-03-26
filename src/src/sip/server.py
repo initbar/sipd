@@ -131,7 +131,7 @@ class AsynchronousSIPServer(SIPServerPrototype):
         except: sip_port = 5060 # udp
         with safe_allocate_sip_socket(port=sip_port) as sip_socket:
             sip_router = AsynchronousSIPRouter(sip_socket)
-            asyncore.loop() # push events to the event loop.
+            asyncore.loop() # push new events to the event loop.
 
 # SIP router
 #-------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ class SIPRouterPrototype(asyncore.dispatcher):
         self._random = random.random # cache random number generator.
 
         # workers should never cause conflict with main server thread.
-        # For that reason, each worker must exist as their own thread.
+        # For that reason, each worker must exist in their own thread.
         self._workers = [ SynchronousSIPWorker(i) for i in range(self._worker_size) ]
         self._handlers = []
         for worker in self._workers:
@@ -236,19 +236,15 @@ class SIPWorkerPrototype(object):
     '''
     def __init__(self, worker_id, gc=None, verbose=False):
         self.verbose = verbose # display dissected packets.
+        self.name = 'worker-' + str(worker_id)
 
         # each worker is managed by thead events. A worker is considered
         # "working" if its event is 'true' and "free" if 'false'.
         self.event = threading.Event()
         self.is_ready = lambda: not self.event.isSet()
 
-        # each worker has its own designated identifier to distinguish one
-        # from the another. The order in which a worker was assigned to its
-        # thread is considered as an identifier.
-        self.name = 'worker-' + str(worker_id)
-
         # each worker has its own socket to send data and a RTP router
-        # to yield RTP server information to include inside SDP headers.
+        # to yield RTP server information to dynamically generate SDP headers.
         self._socket = unsafe_allocate_random_udp_socket(is_reused=True)
         self._rtp_handler = SynchronousRTPRouter(SERVER_SETTINGS)
 
