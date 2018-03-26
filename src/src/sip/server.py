@@ -90,9 +90,7 @@ def unsafe_allocate_sip_socket(port=5060, timeout=1.0):
     ''' allocate listening SIP socket that must be manually cleaned up.
     '''
     logger.debug('attempting to create SIP socket on port: %i.' % port)
-    return unsafe_allocate_udp_socket(host='0.0.0.0', port=port,
-                                      timeout=timeout,
-                                      is_reused=True)
+    return unsafe_allocate_udp_socket(host='0.0.0.0', port=port, timeout=timeout, is_reused=True)
 
 class safe_allocate_sip_socket(object):
     ''' allocate exception-safe listening SIP socket.
@@ -121,7 +119,8 @@ class SIPServerPrototype(object):
     '''
     def __init__(self, setting):
         if isinstance(setting, dict):
-            global _SETTINGS; _SETTINGS = setting
+            global _SETTINGS
+            _SETTINGS = setting
         logger.info('[sip] server initialized.')
 
 class AsynchronousSIPServer(SIPServerPrototype):
@@ -174,22 +173,19 @@ class SIPRouterPrototype(asyncore.dispatcher):
         try:
             worker_size = _SETTINGS['sip']['worker']['count']
             assert worker_size > 0 # check for dynamic allocation.
-            # If worker size is given, then normalize the count to not
-            # exceed the available resources.
+            # if worker size is given, then normalize the count to not
+            # exceed the available resources. After all, GIL only
+            # permits only one active thread at a given time.
             self._worker_size = min(max(worker_size, 1), cpu_count())
         except:
             self._worker_size = 1 + int(cpu_count() * 0.32)
         logger.debug('[sip] router workers: %i.', self._worker_size)
 
-        # there should never be more than one garbage collector running
-        # at once. Initialize only one global collector and share the
-        # reference amongst all workers.
-        self._workers = [ SynchronousSIPWorker(i) for i in range(self._worker_size) ]
-
         self._random = random.random # cache random number generator.
 
         # workers should never cause conflict with main server thread.
         # For that reason, each worker must exist as their own thread.
+        self._workers = [ SynchronousSIPWorker(i) for i in range(self._worker_size) ]
         self._handlers = []
         for worker in self._workers:
             handler_name = worker.name
