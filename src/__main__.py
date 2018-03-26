@@ -55,8 +55,7 @@ def test():
         from tests.test_errors import TestErrors
         from tests.test_parser import TestParser
         from tests.test_sockets import TestSockets
-    except ImportError as message:
-        raise ImportError(message)
+    except ImportError: raise
     test_suites, test_cases = [], [
         TestDebug,
         TestErrors,
