@@ -28,7 +28,7 @@
             "port":5060
         },
         "worker":{
-            "count":2,
+            "count":1,
             "retry":1
         }
     },
