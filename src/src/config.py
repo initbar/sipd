@@ -29,17 +29,24 @@ try:
 except ImportError: raise
 
 def parse_config(config={}):
+    ''' parse `sipd.json` and load/initialize with runtime environment.
+    '''
     _config = parse_json(config)
-    if not config: return {}
+    if not _config:
+        return {}
 
     server_address = str(get_server_address())
+
     try:
-        # set server host ip address.
+        # save server address information to the configuration.
         _config['sip']['server']['address'] = server_address
 
-        # merge Allow headers.
+        # initialize SIP.
         try:
-            _config['sip']['defaults']['Allow'] = ', '.join(_config['sip']['defaults']['Allow'])
+            sip_allow   = _config['sip']['defaults']['Allow']
+            sip_contact = _config['sip']['defaults']['Contact']
+            _config['sip']['defaults']['Allow']   = ', '.join(sip_allow)
+            _config['sip']['defaults']['Contact'] = sip_contact % server_address
         except:
             _config['sip']['defaults'] = {
                 'Allow': ', '.join([
