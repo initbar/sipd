@@ -2,9 +2,7 @@
   <img src="./docs/logo.png">
 </p>
 
-# SIPd
-
-**SIPd** is an active recording [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon. A daemon is a background process that handles incoming requests and logical responses - and a full customization ranging from custom SIP method handlers (e.g. *INVITE*) to internal/external RTP handlers are possible.
+**SIPd** is an active recording [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon. A daemon is a background process that handles incoming requests and logical responses - and a full customization ranging from custom SIP method handlers (e.g. *INVITE*) to internal/external RTP implementation is made possible.
 
 Some key features are:
 
@@ -14,12 +12,12 @@ Some key features are:
 
 - **High performance** using customized asynchronous patterns and designs.
 
-- **Production ready** and currently running in a production environment against [Genesys](http://www.genesys.com) devices and [Samsung Electronics of America](http://www.samsung.com) call traffic.
+- **Production ready** and currently running in a production environment against [Genesys](http://www.genesys.com) devices and handling [Samsung Electronics of America](http://www.samsung.com) call traffic.
 
 ## Dependencies
 
 ```bash
-~$ sudo -H pip install unittest # not required
+~$ sudo -H pip install unittest # optional
 ```
 
 ## Usage
@@ -27,7 +25,9 @@ Some key features are:
 [sipd.json](./sipd.json) is a configuration file that customizes runtime environment. Although default setting will run fine in a staging environment, it can also be tuned for higher performance.
 
 ```bash
-~$ # emacs sipd.json
+~$ git clone https://github.com/initbar/SIPd.git
+~$ cd ~/SIPd
+~$ emacs sipd.json # optional
 ~$ make run
 ```
 
