@@ -19,13 +19,13 @@ Some key features are:
 
 ## Usage
 
-[sipd.json](./sipd.json) is a configuration file that customizes runtime environment. Although default setting will run fine, it can also be tuned for higher performance.
+[sipd.json](./sipd.json) is a non-mandatory configuration file that allows customization to the runtime environment. Although default settings is fine, it can also be tuned for higher performance.
 
 ```bash
 ~$ git clone https://github.com/initbar/sipd
 ~$ cd ~/sipd
-~$ pip install -r requirements.txt
 ~$ # vi sipd.json
+~$ pip install -r requirements.txt
 ~$ make run
 ```
 
