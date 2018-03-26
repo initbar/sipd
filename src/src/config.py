@@ -16,24 +16,24 @@
 #
 # https://github.com/initbar/SIPd
 
-#
+#-------------------------------------------------------------------------------
 # config.py -- config parser, custom overrides, and default states.
-#
+#-------------------------------------------------------------------------------
 
 from copy import deepcopy
 
 try:
     from src.parser import parse_json
+    from src.parser import safe_encode
     from src.sockets import get_server_address
 except ImportError: raise
 
-def parse_config(config):
+def parse_config(config={}):
+    _config = parse_json(config)
     if not config: return {}
 
-    _config = parse_json(config)
+    server_address = str(get_server_address())
     try:
-        server_address = str(get_server_address())
-
         # set server host ip address.
         _config['sip']['server']['address'] = server_address
 

@@ -1,4 +1,3 @@
-
 # Active recording Session Initiation Protocol daemon (SIPd).
 # Copyright (C) 2018  Herbert Shin
 #
@@ -17,9 +16,9 @@
 #
 # https://github.com/initbar/SIPd
 
-#
+#-------------------------------------------------------------------------------
 # optimizer.py -- common optimization modules.
-#
+#-------------------------------------------------------------------------------
 
 from functools import wraps
 

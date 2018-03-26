@@ -1,4 +1,3 @@
-
 # Active recording Session Initiation Protocol daemon (SIPd).
 # Copyright (C) 2018  Herbert Shin
 #
@@ -17,9 +16,9 @@
 #
 # https://github.com/initbar/SIPd
 
-#
+#-------------------------------------------------------------------------------
 # sockets.py -- synchronous and asynchronous socket handler module.
-#
+#-------------------------------------------------------------------------------
 
 from random import randint
 
