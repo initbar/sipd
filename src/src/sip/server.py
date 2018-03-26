@@ -61,6 +61,7 @@ try:
     from src.parser import parse_sip_packet
     from src.parser import validate_sip_signature
     from src.rtp.server import SynchronousRTPRouter
+    from src.sip.gc import SynchronousSIPGarbageCollector
     from src.sip.static.busy import SIP_BUSY
     from src.sip.static.bye import SIP_BYE
     from src.sip.static.ok import SIP_OK
@@ -75,6 +76,12 @@ except ImportError: raise
 logger = logging.getLogger(__name__)
 
 _SETTINGS = {} # `sipd.json`
+
+# each worker should not instantiate a new garbage collector since a subsequent
+# related requests can not guarantee to hit the same worker. Therefore, the
+# workers should all use the same garbage collector and just register a new
+# collection tasks to the collector queue.
+_GC = SynchronousSIPGarbageCollector()
 
 # SIP socket
 #-------------------------------------------------------------------------------
@@ -105,125 +112,6 @@ class safe_allocate_sip_socket(object):
             self._socket.shutdown()
             self._socket.close()
             del self._socket
-
-# SIP garbage collector
-#-------------------------------------------------------------------------------
-
-class SynchronousSIPGarbageCollector(object):
-    ''' Asynchronous SIP garbage collection component implementation.
-    '''
-    def __init__(self):
-
-        # to maintain historical statistics w/o degrading performance, we want
-        # to keep hashes of all incoming Call-ID and lookup time at O(1).
-        # Since it's expensive to re-calculate the length at each iteration,
-        # store call counts separately. A call count should only be incremented
-        # by distinct SIP 'INVITE'.
-        self.calls_history = {}
-        self.calls_stats = 0
-        self.membership = {}
-
-        # custom RTP handler for garbage clean up.
-        self._rtp_handler = SynchronousRTPRouter(_SETTINGS)
-
-        # garbage is collected under self._garbage. In order to reduce thread
-        # conflict with the main thread, garbage collector uses its own
-        # thread. By default, garbage collector runs once every minute.
-        self._gc_interval = 60.0 # seconds
-        self._gc_locked = False # "thread lock".
-        self._gc = self.initialize_garbage_collector()
-        self._garbage = deque()
-
-        # since a locked collector should not receive new blocking tasks,
-        # any new "tasks" are polled under self._futures object.
-        self._futures = Queue.Queue() # thread-safe FIFO.
-        logger.info('[gc] garbage collector initialized.')
-
-    def is_locked(self):
-        ''' check if garbage collector is locked.
-        '''
-        return self._gc_locked
-
-    def is_free(self):
-        ''' check if garbage collector is free.
-        '''
-        return not self.is_locked()
-
-    def initialize_garbage_collector(self):
-        ''' initialize a new thread for garbage collector.
-        '''
-        if self.__dict__.get('_gc'): return self._gc # error check.
-        def task():
-            thread_event = threading.Event()
-            while not thread_event.wait(self._gc_interval):
-                logger.debug('[gc] running garbage collection.')
-                self.gc_consume_garbage()
-                logger.debug('[gc] finished garbage collection.')
-        gc = threading.Timer(self._gc_interval, task)
-        gc.daemon = True
-        gc.start()
-        return gc
-
-    def register_new_task(self, function):
-        ''' register a new collection task.
-        '''
-        # instead of directly manipulating garbage, demultiplex garbage tasks
-        # into a single thread-safe queue and consume in order later.
-        try: self._futures.put(item=function)
-        except: raise
-
-    def gc_consume_garbage(self):
-        ''' consume garbage.
-        '''
-        if self._gc_locked or self._futures.empty(): return
-        else: self._gc_locked = True # lock thread.
-
-        # catch up on delinquent deferred tasks inside polled queue.
-        while not self._futures.empty():
-            run_task = self._futures.get()
-            run_task() # deferred execute.
-
-        # since the garbage is a FIFO, technically, the oldest call is pushed
-        # first (top) and the youngest call is pushed last (bottom).
-        try:
-            now = int(time.time())
-            while now >= self._garbage[0]['ttl']:
-                # `get` method in Queue is destructive. Unlike a general lookup,
-                # `get` pops the first element and returns that element. If the
-                # conditions for garbage consumption is not satisfied, the popped
-                # element must be placed back inside the garbage.
-                peek    = self._garbage.popleft()
-                call_id = self.membership[peek['Call-ID']]
-                self.gc_consume_membership(
-                    call_id=peek['Call-ID'],
-                    sip_tag=peek['tag']
-                )
-        except Exception as message:
-            logger.error('[gc] unable to cleanly collect garbage: %s.' % str(message))
-        finally: self._gc_locked = False # release thread.
-
-    def gc_consume_membership(self, call_id, call_tag, forced=False):
-        ''' consume a call from membership.
-        '''
-        # since it is possible that there are multiple sessions ("tag") with
-        # same Call-ID, consume membership by tags first and then by Call-ID.
-        try:
-            if call_id not in self.membership: return
-            self.membership[call_id]['tags_cnt'] -= 1
-            if any([ self.membership[call_id]['tags_cnt'] <= 0,
-                     self.membership[call_id]['state'] == 'BYE',
-                     forced ]): # consumption conditions.
-                self._rtp_handler.send_stop_signal(call_id, call_tag)
-                del self.membership[call_id]
-            logger.info('[gc] safe consumption: %s' % call_id)
-        except Exception as message:
-            logger.error('[gc] failed consumption: %s' % str(message))
-
-# each worker should not instantiate a new garbage collector since a subsequent
-# related requests can not guarantee to hit the same worker. Therefore, the
-# workers should all use the same garbage collector and just register a new
-# collection tasks to the collector queue.
-_GC = SynchronousSIPGarbageCollector()
 
 # SIP server
 #-------------------------------------------------------------------------------
