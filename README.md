@@ -4,17 +4,17 @@
 
 # SIPd
 
-**SIPd** is an active recording [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon. A daemon is a customizable background process that handles incoming requests and outputs respective responses. **SIPd** provides a daemon that allows full customization ranging from SIP method requests (e.g. *INVITE*) to internal/external RTP handling.
+**SIPd** is an active recording [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon. A daemon is a background process that handles incoming requests and logical responses - and a full customization ranging from custom SIP method handlers (e.g. *INVITE*) to internal/external RTP handlers are possible.
 
-The key features of **SIPd** are:
+Some key features are:
 
-* **Maximum Portability**: **SIPd** is implemented in pure Python with only [one non-mandatory dependency](#dependencies). You can either run it by porting the git repository or [building a single binary](./Makefile). Currently, Windows native is not supported.
+- **Maximum portability** implemented in pure Python and [only one non-mandatory dependency](#dependencies). You can either run it by porting the git repository or [building a single binary](./Makefile).
 
-* **Python Standardization**: **SIPd** fully supports Python 2 and Python 3.
+- **Ubiquitous support** for Python 2 and Python 3.
 
-* **Asynchronous Design**: **SIPd** fully and asynchronously runs on bottom-up customizations and designs.
+- **High performance** using customized asynchronous patterns and designs.
 
-* **Production Ready**: **SIPd** was written and tested with [Genesys](http://www.genesys.com) devices for high-volume Samsung Electronics of America traffic.
+- **Production ready** and currently running in a production environment against [Genesys](http://www.genesys.com) devices and [Samsung Electronics of America](http://www.samsung.com) call traffic.
 
 ## Dependencies
 
@@ -24,18 +24,22 @@ The key features of **SIPd** are:
 
 ## Usage
 
-`sipd.json` is a configuration file that customizes runtime environment of **SIPd**.
+[sipd.json](./sipd.json) is a configuration file that customizes runtime environment. Although default setting will run fine in a staging environment, it can also be tuned for higher performance.
 
 ```bash
 ~$ # emacs sipd.json
 ~$ make run
 ```
 
+## Tests
+
 To run tests, type `make test`. If the test exists with exit status 0, then it's ready to be run!
 
 ```bash
 ~$ make test
 ```
+
+## Deploy
 
 Use `make` to build and deploy to a remote server:
 
