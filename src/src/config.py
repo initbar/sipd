@@ -22,11 +22,15 @@
 
 from copy import deepcopy
 
+import logging
+
 try:
     from src.parser import parse_json
     from src.parser import safe_encode
     from src.sockets import get_server_address
 except ImportError: raise
+
+logger = logging.getLogger(__name__)
 
 def parse_config(config={}):
     ''' parse `sipd.json` and load/initialize with runtime environment.
@@ -37,23 +41,20 @@ def parse_config(config={}):
     # save server address information to the configuration.
     server_address = str(get_server_address())
     parsed_config['sip']['server']['address'] = server_address
+    logger.debug("server address set to '%s'" % server_address)
 
     # initialize SIP.
     try:
-        sip_allow   = parsed_config['sip']['defaults']['Allow']
-        sip_contact = parsed_config['sip']['defaults']['Contact']
-        parsed_config['sip']['defaults']['Allow']   = ', '.join(sip_allow)
-        parsed_config['sip']['defaults']['Contact'] = sip_contact % server_address
-    except:
-        parsed_config['sip']['defaults'] = {
+        sip_allow = parsed_config['sip']['worker']['headers']['Allow']
+    except Exception as message:
+        logger.error('failed to parse config: %s' % message)
+        logger.warning('resorting to default configuration.')
+        parsed_config['sip']['worker']['headers'] = {
             'Allow': 'ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE',
-            'Contact': '<sip:%s:5060;transport=udp>' % server_address,
-            'Max-Forwards': '70',
-            'Min-SE': '1800',
+            'Max-Forwards': 70,
             'Require': 'timer',
             'Server': 'sipd',
-            'Session-Expires': '1800;refresher=uac',
-            'Supported': 'timer'
+            'Session-Expires': 1800,
+            'Supported': 'timer, uui'
         }
-
     return parsed_config

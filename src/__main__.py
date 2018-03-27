@@ -112,14 +112,10 @@ if __name__ == '__main__':
             with open(config_file) as f:
                 content = f.read()
                 config = parse_config(content)
-        except: config = None
-        finally:
-            if config:
-                logger.info('successfully loaded configurations:')
-                logger.debug(str(config))
-            else:
-                logger.error('unable to load configuration file: ' + config_file)
-                logger.warning('falling back to default configurations.')
+            logger.info('successfully loaded configurations:')
+            logger.debug(str(config))
+        except AssertionError:
+            logger.error('unable to load configuration file: ' + config_file)
 
         # deploy.
         server = AsynchronousSIPServer(config)

@@ -217,8 +217,6 @@ class AsynchronousSIPRouter(SIPRouterPrototype):
             sip_endpoint = tuple(message[1])
             sip_message  = str(message[0])
         except: return
-        # TODO: try load balance to the child nodes or decide to handle by itself.
-
         # we want a balanced distribution to our workers. For example, we want
         # to reflect round robin distribution closely as possible - yet have
         # enough chance to delegate two short tasks to the same worker.
@@ -301,8 +299,6 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
         '''
         self.sip_endpoint = self.sip_message = None
         self.event.clear()
-        logger.debug('----- [sip] [%s] <<%s>> work relinquished.' % (
-            self.name, self.tag))
 
     def handle(self):
         ''' worker logic implementation.
@@ -318,7 +314,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
         except SIPBrokenProtocol:
             # instead of error correction, relinquish the work from worker
             # so that it can move on to the next future task.
-            logger.error("----- [sip] [%s] <<%s>> PARSE FAILED: '%s'" % (
+            logger.error("---- [sip] [%s] <<%s>> PARSE FAILED: '%s'" % (
                 self.name, self.tag, self.sip_message))
             return self.relinquish_work()
 
@@ -329,8 +325,8 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
             self.sip_datagram['sip'][field] = value
 
         # handler mapping.
-        logger.debug('--->> [sip] [%s] <<%s>> <%s>' % (self.name, self.tag, self.method))
-        self.handler.get(self.method, 'DEFAULT')()
+        logger.debug('-->> [sip] [%s] <<%s>> <%s>' % (self.name, self.tag, self.method))
+        self.handlers.get(self.method, 'DEFAULT')()
         self.relinquish_work()
 
     #
@@ -360,14 +356,21 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
                 sip_tag=self.tag,
                 sip_datagram=self.sip_datagram,
                 rtp_state='stop')
-        self.__send_sip_term(sip_datagram)
+        self.__send_sip_term()
 
     def handler_invite(self):
         ''' INVITE event handler.
         '''
+        logger.debug('---- [sip] deciding to load balance to other server(s)..')
+        # TODO: decide to delegate to another server.
+        self.sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % (
+            SERVER_SETTINGS['sip']['server']['address']
+        )
+        logger.debug('---- [sip] balancing to node: %s' % self.sip_datagram['sip']['Contact'])
+
         self.__send_sip_trying()
         if not self._rtp_handler:
-            self.__send_sip_ok(sip_datagram)
+            self.__send_sip_ok(self.sip_datagram)
             return
 
         # prepare RTP delegation. An external RTP handler must reply with two
@@ -415,7 +418,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
     def __send_sip_cancel(self):
         ''' send SIP CANCEL to endpoint.
         '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <CANCEL>' % (self.name, self.tag))
+        logger.debug('<<-- [sip] [%s] <<%s>> <CANCEL>' % (self.name, self.tag))
         sip_packet = convert_to_sip_packet(SIP_CANCEL, self.sip_datagram)
         self._socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.tag)
@@ -423,7 +426,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
     def __send_sip_ok(self):
         ''' send SIP OK to endpoint.
         '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <OK>' % (self.name, self.tag))
+        logger.debug('<<-- [sip] [%s] <<%s>> <OK>' % (self.name, self.tag))
         sip_packet = convert_to_sip_packet(SIP_OK, self.sip_datagram)
         self._socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.tag)
@@ -431,7 +434,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
     def __send_sip_options(self):
         ''' send SIP OPTIONS to endpoint.
         '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <OPTIONS>' % (self.name, self.tag))
+        logger.debug('<<-- [sip] [%s] <<%s>> <OPTIONS>' % (self.name, self.tag))
         sip_packet = convert_to_sip_packet(SIP_OPTIONS, self.sip_datagram)
         self._socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.tag)
@@ -439,7 +442,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
     def __send_sip_ringing(self):
         ''' send SIP RINGING to endpoint.
         '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <RINGING>' % (self.name, self.tag))
+        logger.debug('<<-- [sip] [%s] <<%s>> <RINGING>' % (self.name, self.tag))
         sip_packet = convert_to_sip_packet(SIP_RINGING, self.sip_datagram)
         self._socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.tag)
@@ -447,7 +450,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
     def __send_sip_term(self):
         ''' send SIP TERMINATE to endpoint.
         '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <TERM>' % (self.name, self.tag))
+        logger.debug('<<-- [sip] [%s] <<%s>> <TERM>' % (self.name, self.tag))
         sip_packet = convert_to_sip_packet(SIP_TERMINATE, self.sip_datagram)
         self._socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.tag)
@@ -455,7 +458,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
     def __send_sip_trying(self):
         ''' send SIP TRYING to endpoint.
         '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <TRYING>' % (self.name, self.tag))
+        logger.debug('<<-- [sip] [%s] <<%s>> <TRYING>' % (self.name, self.tag))
         sip_packet = convert_to_sip_packet(SIP_TRYING, self.sip_datagram)
         self._socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.tag)

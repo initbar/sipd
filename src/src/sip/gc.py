@@ -20,6 +20,7 @@ from collections import deque
 
 import logging
 import threading
+import time
 
 try: import Queue             # Python 2
 except: import queue as Queue # Python 3
