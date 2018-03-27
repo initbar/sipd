@@ -17,10 +17,20 @@
 # https://github.com/initbar/sipd
 
 #-------------------------------------------------------------------------------
-# server.py -- synchronous RTP routing module.
+# server.py -- synchronous external RTP routing module.
 #-------------------------------------------------------------------------------
 
 import logging
+
+try:
+    from src.debug import *
+    from src.parser import *
+    from src.rtp.start import RTPD_START
+    from src.rtp.stop import RTPD_STOP
+    from src.sockets import *
+    import socket
+except ImportError: raise
+
 logger = logging.getLogger(__name__)
 
 # RTP router
@@ -31,45 +41,142 @@ class RTPRouterPrototype(object):
     '''
     def __init__(self, setting={}):
         self.setting = setting
-        self.internal = self.external = False
 
-        try: # configure internal handler.
-            handler = self.setting['rtp']['handler']['internal']
-            assert handler.get('enabled')
-            self.host     = handler['host']
-            self.port     = handler['port']
-            self.protocol = handler['protocol']
-            self._server  = tuple((self.host, self.port))
-            self.internal = True
+        self.tag = None # session tag from worker.
+
+        try: # configure handler.
+            handler = self.setting['rtp']['handler']
+            assert handler.get('enabled', False)
+            self.host    = handler['host']
+            self.port    = handler['port']
+            self._server = tuple((self.host, self.port))
         except: pass
-
-        try: # configure external handler.
-            handler = self.setting['rtp']['handler']['external']
-            assert handler.get('enabled')
-            self.host     = handler['host']
-            self.port     = handler['port']
-            self.protocol = handler['protocol']
-            self._server  = tuple((self.host, self.port))
-            self.external = True
-        except: pass
-
-        self.tag = None # no active sessions yet.
         logger.debug('[rtp] successfully initialized.')
 
-    def _internal_handler(self, *args, **kwargs):
-        return
-
-    def _external_handler(self, *args, **kwargs):
-        return
-
     def handle(self, *args, **kwargs):
-        # there can only one handler active at once. For that reason,
-        # external handler takes precedence over internal handler.
-        if self.external:   return self._external_handler(*args, **kwargs)
-        elif self.internal: return self._internal_handler(*args, **kwargs)
-        else: return
+        return self._external_handler(*args, **kwargs)
+
+    def _external_handler(self, sip_tag, sip_datagram, rtp_state='start'):
+        raise NotImplementedError
 
 class SynchronousRTPRouter(RTPRouterPrototype):
     ''' RTP router implementation.
     '''
-    pass
+    def _external_handler(self, sip_tag, sip_datagram, rtp_state='start'):
+        ''' `rttd` implementation.
+        '''
+        if not sip_datagram: return
+        self.tag = sip_tag
+
+        # signal the external RTP decoder to open new ports.
+        if rtp_state == 'start':
+            return self.send_start_signal(sip_datagram)
+
+        # signal the external RTP decoder to close existing ports.
+        else:
+            call_id = sip_datagram['sip'].get('Call-ID')
+            return self.send_stop_signal(call_id)
+
+    def send_start_signal(self, sip_datagram):
+        ''' request external RTP decoder to open new RTP proxy ports.
+        '''
+        if not sip_datagram: return
+
+        template = RTPD_START
+
+        # replace payload to send to external RTP decoder.
+        rtpd_param = ['Call-ID', 'X-Genesys-GVP-Session-ID']
+        for key in rtpd_param:
+            template[key] = sip_datagram['sip'].get(key, '')
+
+        # allocate a temporary socket to send the payload.
+        with safe_allocate_random_udp_socket() as udp_socket:
+            udp_socket.sendto(dump_json(template), self._server)
+            logger.info("<<--- [rtp] <<%s>> sent 'start' to external rtpd." % self.tag)
+            logger.info("[rtp] <<%s>> waiting response from external rtpd." % self.tag)
+            try: buffer = udp_socket.recvfrom(0xff)
+            except Exception as message:
+                logger.error('[rtp] <<%s>> external rtpd is DOWN: %s.' % (self.tag, str(message)))
+                return
+
+            logger.info('[rtp] <<%s>> external rtpd is UP.' % self.tag)
+            rtpd_server, rtpd_payload = tuple(buffer[1]), str(buffer[0])
+            logger.debug("--->> [rtp] <<%s>> [%s] received %s Bytes from external rtpd." % (
+                self.tag, self._server, hex(len(rtpd_payload))))
+
+            # receive RTP ports.
+            rtpd_json = parse_json(rtpd_payload)
+            logger.info("[rtp] <<%s>> parsed responses from external rtpd." % self.tag)
+
+            # generate static SDP data.
+            tx_port, rx_port = rtpd_json.get('TxPort'), rtpd_json.get('RxPort')
+            logger.debug('[rtp] <<%s>> RxPort = %s' % (self.tag, rx_port))
+            logger.debug('[rtp] <<%s>> TxPort = %s' % (self.tag, tx_port))
+            host_address = self.setting['sip']['server']['address']
+
+            # currently only delegates: G.711, G.729 encodings.
+            static_sdp = [
+                'v=0',
+                's=phone-call',
+                'c=IN IP4 %s' % host_address,
+                't=0 0',
+
+                # [caller]
+                'm=audio %s RTP/AVP 0 8 18 96' % tx_port,
+                'a=rtpmap:0 PCMU/8000',
+                'a=rtpmap:8 PCMA/8000',
+                'a=rtpmap:18 G729/8000', # G729/8000
+                'a=rtpmap:96 telephone-event/8000',
+                'a=fmtp:96 0-15',
+                'a=recvonly',
+                'a=ptime:20',
+                'a=maxptime:1000',
+
+                    # [agent]
+                    'm=audio %s RTP/AVP 0 8 18 96' % rx_port,
+                'a=rtpmap:0 PCMU/8000',
+                'a=rtpmap:8 PCMA/8000',
+                'a=rtpmap:18 G729/8000', # G729/8000
+                'a=rtpmap:96 telephone-event/8000',
+                'a=fmtp:96 0-15',
+                'a=recvonly',
+                'a=ptime:20',
+                'a=maxptime:1000'
+            ]
+            for sdp in static_sdp:
+                sip_datagram['sdp'].append(sdp)
+
+        # return original/updated sip datagram.
+        return sip_datagram
+
+    def send_stop_signal(self, call_id):
+        if not call_id: return
+
+        # replace payload to send to external RTP decoder.
+        template = RTPD_STOP
+        template['Call-ID'] = call_id
+
+        # allocate a temporary socket to send the payload.
+        with safe_allocate_random_udp_socket() as udp_socket:
+            udp_socket.sendto(dump_json(template), self._server)
+            logger.info("<<--- [rtp] <<%s>> sent 'stop' to external rtpd." % self.tag)
+            logger.info("[rtp] <<%s>> waiting response from external rtpd." % self.tag)
+            try: buffer = udp_socket.recvfrom(0xff)
+            except Exception as message:
+                logger.error('[rtp] <<%s>> external rtpd is DOWN: %s.' % (self.tag, str(message)))
+                return False
+
+            logger.info('[rtp] <<%s>> external rtpd is UP.' % self.tag)
+            rtpd_server, rtpd_payload = tuple(buffer[1]), str(buffer[0])
+            logger.debug("--->> [rtp] <<%s>> [%s] received %s Bytes from external rtpd." % (
+                self.tag, self._server, hex(len(rtpd_payload))))
+
+            rtpd_json = parse_json(rtpd_payload)
+            logger.info("[rtp] <<%s>> parsed responses from external rtpd." % self.tag)
+            status_code = rtpd_json.get('ResultCode')
+            status_message = rtpd_json.get('Message')
+            logger.debug('[rtp] <<%s>> ResultCode: %s' % (self.tag, status_code))
+            logger.debug('[rtp] <<%s>> Message: %s' % (self.tag, status_message))
+
+        # return original/updated sip datagram.
+        return call_id

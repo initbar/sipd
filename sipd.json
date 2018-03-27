@@ -41,7 +41,12 @@
         }
     },
     "rtp": {
-        "max_retry": 1
+        "max_retry": 1,
+        "handler": {
+            "enabled": true,
+            "host": "127.0.0.1",
+            "port": 5900
+        }
     },
     "database": {
         "impala": {

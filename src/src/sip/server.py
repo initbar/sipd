@@ -176,7 +176,7 @@ class SIPRouterPrototype(asyncore.dispatcher):
             self._worker_size = min(max(worker_size, 1), cpu_count())
         except:
             self._worker_size = 1 + int(cpu_count() * 0.32)
-        logger.debug('[sip] router workers: %i.', self._worker_size)
+        logger.debug('[sip] total router workers: %i.', self._worker_size)
 
         self._random = random.random # cache random number generator.
 
@@ -361,7 +361,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
     def handler_invite(self):
         ''' INVITE event handler.
         '''
-        logger.debug('---- [sip] deciding to load balance to other server(s)..')
+        logger.debug('---- [sip] deciding to load balance to another server..')
         # TODO: decide to delegate to another server.
         self.sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % (
             SERVER_SETTINGS['sip']['server']['address']
