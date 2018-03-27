@@ -22,6 +22,6 @@
 
 RTPD_START = {
     'Call-ID': '',
-    'Method':  'INVITE',
+    'Method': 'INVITE',
     'X-Genesys-GVP-Session-ID': ''
 }
