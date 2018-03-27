@@ -26,7 +26,7 @@ setup(
     name='sipd',
     scripts=['sipd'],
     url='https://github.com/initbar/sipd',
-    version='1.2.1',
+    version='1.2.3',
     keywords=' '.join([
         'active-record',
         'genesys',
