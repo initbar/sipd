@@ -25,7 +25,8 @@
         },
         "router":{
             "protocol":"udp",
-            "port":5060
+            "port":5060,
+            "nodes": ["127.0.0.1"]
         },
         "worker":{
             "count":1,

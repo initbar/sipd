@@ -370,7 +370,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
 
                 # prepare proxy to RTP handler. An external RTP handler must reply
                 # with two ports to receive TX/RX RTP traffic.
-                try:    chances = SERVER_SETTINGS['sip']['worker']['retry']
+                try: chances = SERVER_SETTINGS['sip']['worker']['retry']
                 except: chances = 1
                 while chances:
                     self.__send_sip_ringing(sip_datagram)
