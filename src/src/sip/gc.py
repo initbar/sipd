@@ -18,8 +18,8 @@
 
 from collections import deque
 
-import threading
 import logging
+import threading
 
 try: import Queue             # Python 2
 except: import queue as Queue # Python 3
@@ -100,7 +100,7 @@ class SynchronousSIPGarbageCollector(object):
     def gc_consume_garbage(self):
         ''' consume garbage.
         '''
-        if self._gc_locked or self._futures.empty(): return
+        if self.is_locked() or self._futures.empty(): return
         else: self._gc_locked = True # lock thread.
 
         # catch up on delinquent deferred tasks inside polled queue.

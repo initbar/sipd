@@ -53,6 +53,7 @@ import time
 try:
     from src.debug import create_random_uuid
     from src.debug import dissect_packet
+    from src.errors import SIPBrokenProtocol
     from src.parser import convert_to_sip_packet
     from src.parser import parse_sip_packet
     from src.parser import validate_sip_signature
@@ -71,13 +72,13 @@ except ImportError: raise
 
 logger = logging.getLogger(__name__)
 
-SERVER_SETTINGS = {} # `sipd.json`
-
 # each worker should not instantiate a new garbage collector since a subsequent
 # related requests can not guarantee to hit the same worker. Therefore, the
 # workers should all use the same garbage collector and just register a new
 # collection tasks to the collector queue.
-_GC = SynchronousSIPGarbageCollector()
+GC = SynchronousSIPGarbageCollector()
+
+SERVER_SETTINGS = {} # `sipd.json`
 
 # SIP socket
 #-------------------------------------------------------------------------------
@@ -115,8 +116,8 @@ class SIPServerPrototype(object):
     '''
     def __init__(self, setting):
         if isinstance(setting, dict):
-            global SERVER_SETTINGS
-            SERVER_SETTINGS = setting
+            global SERVER_SETTINGS; SERVER_SETTINGS = setting
+            logger.info('[sip] globalized inherited settings.')
         logger.info('[sip] server initialized.')
 
 class AsynchronousSIPServer(SIPServerPrototype):
@@ -216,6 +217,8 @@ class AsynchronousSIPRouter(SIPRouterPrototype):
             sip_endpoint = tuple(message[1])
             sip_message  = str(message[0])
         except: return
+        # TODO: try load balance to the child nodes or decide to handle by itself.
+
         # we want a balanced distribution to our workers. For example, we want
         # to reflect round robin distribution closely as possible - yet have
         # enough chance to delegate two short tasks to the same worker.
@@ -258,7 +261,18 @@ class SIPWorkerPrototype(object):
         try: self.lifetime = SERVER_SETTINGS['gc']['call_lifetime'] # seconds
         except: self.lifetime = 60 * 60
 
-        # tag the current call to contextualize worker. A tag is in UUID format.
+        # custom handlers.
+        self.handlers = {
+            'BYE':     self.handler_cancel,
+            'CANCEL':  self.handler_bye,
+            'DEFAULT': self.handler_default,
+            'INVITE':  self.handler_invite
+        }
+
+        # shared objects.
+        self.sip_datagram = None
+        self.call_id = None
+        self.method = None
         self.tag = None
 
 class SynchronousSIPWorker(SIPWorkerPrototype):
@@ -268,58 +282,6 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
         super(SynchronousSIPWorker, self).__init__(*args, **kwargs)
         self.sip_endpoint = self.sip_message = None # "work"
         logger.debug('[sip] %s initialized.' % self.name)
-
-    #
-    # worker responses
-    #
-
-    def __send_sip_cancel(self, sip_datagram):
-        ''' send SIP CANCEL to endpoint.
-        '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <CANCEL>' % (self.name, self.tag))
-        sip_packet = convert_to_sip_packet(SIP_CANCEL, sip_datagram)
-        self._socket.sendto(sip_packet, self.sip_endpoint)
-        if self.verbose: dissect_packet(sip_packet, self.tag)
-
-    def __send_sip_ok(self, sip_datagram):
-        ''' send SIP OK to endpoint.
-        '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <OK>' % (self.name, self.tag))
-        sip_packet = convert_to_sip_packet(SIP_OK, sip_datagram)
-        self._socket.sendto(sip_packet, self.sip_endpoint)
-        if self.verbose: dissect_packet(sip_packet, self.tag)
-
-    def __send_sip_options(self, sip_datagram):
-        ''' send SIP OPTIONS to endpoint.
-        '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <OPTIONS>' % (self.name, self.tag))
-        sip_packet = convert_to_sip_packet(SIP_OPTIONS, sip_datagram)
-        self._socket.sendto(sip_packet, self.sip_endpoint)
-        if self.verbose: dissect_packet(sip_packet, self.tag)
-
-    def __send_sip_ringing(self, sip_datagram):
-        ''' send SIP RINGING to endpoint.
-        '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <RINGING>' % (self.name, self.tag))
-        sip_packet = convert_to_sip_packet(SIP_RINGING, sip_datagram)
-        self._socket.sendto(sip_packet, self.sip_endpoint)
-        if self.verbose: dissect_packet(sip_packet, self.tag)
-
-    def __send_sip_term(self, sip_datagram):
-        ''' send SIP TERMINATE to endpoint.
-        '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <TERM>' % (self.name, self.tag))
-        sip_packet = convert_to_sip_packet(SIP_TERMINATE, sip_datagram)
-        self._socket.sendto(sip_packet, self.sip_endpoint)
-        if self.verbose: dissect_packet(sip_packet, self.tag)
-
-    def __send_sip_trying(self, sip_datagram):
-        ''' send SIP TRYING to endpoint.
-        '''
-        logger.debug('<<--- [sip] [%s] <<%s>> <TRYING>' % (self.name, self.tag))
-        sip_packet = convert_to_sip_packet(SIP_TRYING, sip_datagram)
-        self._socket.sendto(sip_packet, self.sip_endpoint)
-        if self.verbose: dissect_packet(sip_packet, self.tag)
 
     #
     # worker interface
@@ -334,105 +296,166 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
         self.event.set() # worker is now assigned.
         self.handle() # worker hook to force work.
 
+    def relinquish_work(self):
+        ''' relinquish a worker from "work".
+        '''
+        self.sip_endpoint = self.sip_message = None
+        self.event.clear()
+        logger.debug('----- [sip] [%s] <<%s>> work relinquished.' % (
+            self.name, self.tag))
+
     def handle(self):
         ''' worker logic implementation.
         '''
         self.tag = create_random_uuid() # session tag.
-        try:
 
-            # error check.
+        try: # error check if worker has work.
             assert self.sip_endpoint and self.sip_message
-            logger.debug("--->> [sip] [%s] <<%s>> received %s Bytes from [%s]." % (
-                self.name, self.tag, hex(len(self.sip_message)), self.sip_endpoint))
+            if not validate_sip_signature(self.sip_message):
+                raise SIPBrokenProtocol
+            self.sip_datagram = parse_sip_packet(self.sip_message)
+        except AssertionError: return
+        except SIPBrokenProtocol:
+            # instead of error correction, relinquish the work from worker
+            # so that it can move on to the next future task.
+            logger.error("----- [sip] [%s] <<%s>> PARSE FAILED: '%s'" % (
+                self.name, self.tag, self.sip_message))
+            return self.relinquish_work()
 
-            try: # check and parse message.
-                assert validate_sip_signature(self.sip_message)
-                sip_datagram = parse_sip_packet(self.sip_message)
-            except:
-                logger.error("----- [sip] [%s] <<%s>> FAILED TO PARSE: '%s'." % (
-                    self.name, self.tag, self.sip_message))
-                return
+        # override parsed values with pre-defined fields.
+        self.call_id = self.sip_datagram['sip'].get('Call-ID')
+        self.method  = self.sip_datagram['sip'].get('Method')
+        for (field, value) in self._sip_defaults.items():
+            self.sip_datagram['sip'][field] = value
 
-            # override parsed values with pre-defined fields.
-            call_id = sip_datagram['sip'].get('Call-ID')
-            method  = sip_datagram['sip'].get('Method')
-            for (x, y) in self._sip_defaults.items():
-                sip_datagram['sip'][x] = y
+        # handler mapping.
+        logger.debug('--->> [sip] [%s] <<%s>> <%s>' % (self.name, self.tag, self.method))
+        self.handler.get(self.method, 'DEFAULT')()
+        self.relinquish_work()
 
-            # INVITE
-            #-------------------------------------------------------------------
-            logger.debug('--->> [sip] [%s] <<%s>> <%s>' % (self.name, self.tag, method))
-            if method == 'INVITE':
-                self.__send_sip_trying(sip_datagram)
-                if not self._rtp_handler:
-                    self.__send_sip_ok(sip_datagram)
-                    return
+    #
+    # worker handlers
+    #
 
-                # prepare proxy to RTP handler. An external RTP handler must reply
-                # with two ports to receive TX/RX RTP traffic.
-                try: chances = SERVER_SETTINGS['sip']['worker']['retry']
-                except: chances = 1
-                while chances:
-                    self.__send_sip_ringing(sip_datagram)
-                    _sip_datagram = self._rtp_handler.handle(self.tag, sip_datagram)
-                    if _sip_datagram:
-                        sip_datagram = _sip_datagram
-                        break
-                    chances -= (not _sip_datagram)
+    def handler_default(self):
+        ''' default event handler.
+        '''
+        self.__send_sip_ok()
 
-                # create a deferred task and register to the garbage collection
-                # queue. All task context is explained in gc implementation.
-                def register_new_host(method, call_id):
-                    # register new session to history and membership.
-                    if not _GC.membership.get(call_id):
-                        _GC.calls_history[call_id] = None
-                        _GC.calls_stats += (call_id in _GC.calls_history)
-                        _GC.membership[call_id] = {
-                            'state': method,
-                            'tags': [self.tag],
-                            'tags_cnt': 1
-                        }
-                    else: # add current session to existing membership.
-                        _GC.membership[call_id]['tags'].append(self.tag)
-                        _GC.membership[call_id]['tags_cnt'] += 1
-                        _GC._garbage.append({
-                            'Call-ID': call_id,
-                            'ttl': self.lifetime + int(time.time()),
-                            'tag': self.tag
-                        })
+    def handler_bye(self):
+        ''' BYE event handler.
+        '''
+        self.__send_sip_ok()
+        deferred_revoke_host = lambda: GC.gc_consume_membership(
+            call_tag=self.tag, call_id=self.call_id, forced=True)
+        GC.register_new_task(lambda: deferred_revoke_host())
+        self.__send_sip_term()
 
-                # add deferred to garbage collection queue to linearly task
-                # demultiplexed jobs.
-                _GC.register_new_task(lambda:register_new_host(method, call_id))
-                self.__send_sip_ok(sip_datagram)
+    def handler_cancel(self):
+        ''' CANCEL event handler.
+        '''
+        self.__send_sip_ok()
+        if self._rtp_handler:
+            self._rtp_handler.handle(
+                sip_tag=self.tag,
+                sip_datagram=self.sip_datagram,
+                rtp_state='stop')
+        self.__send_sip_term(sip_datagram)
 
-            # BYE, CANCEL
-            #-------------------------------------------------------------------
-            elif method in ['BYE', 'CANCEL']:
-                self.__send_sip_ok(sip_datagram)
-                if not self._rtp_handler: pass
-                try: # clean up existing sessions.
-                    if method == 'CANCEL':
-                        self._rtp_handler.handle(
-                            sip_tag=self.tag,
-                            sip_datagram=sip_datagram,
-                            rtp_state='stop')
-                    else: # BYE
-                        def revoke_host(call_id):
-                            _GC.gc_consume_membership(
-                                call_tag=self.tag,
-                                call_id=call_id,
-                                forced=True)
-                        _GC.register_new_task(lambda:revoke_host(call_id))
-                except: pass
-                finally: self.__send_sip_term(sip_datagram)
+    def handler_invite(self):
+        ''' INVITE event handler.
+        '''
+        self.__send_sip_trying()
+        if not self._rtp_handler:
+            self.__send_sip_ok(sip_datagram)
+            return
 
-            # Default
-            #-------------------------------------------------------------------
-            else: self.__send_sip_ok(sip_datagram)
+        # prepare RTP delegation. An external RTP handler must reply with two
+        # ports to receive TX/RX RTP traffic.
+        try: chances = max(1, SERVER_SETTINGS['rtp'].get('max_retry'))
+        except: chances = 1
+        while chances:
+            self.__send_sip_ringing()
+            chances -= 1
 
-        # if anything goes wrong, relinquish work from worker for availability.
-        except AssertionError: pass
-        finally:
-            self.sip_endpoint = self.sip_message = None
-            self.event.clear()
+            # if external RTP handler replies with one or more ports, rewrite
+            # and update the SIP datagram with new SDP information.
+            sip_datagram = self._rtp_handler.handle(self.tag, self.sip_datagram)
+            if sip_datagram:
+                self.sip_datagram = sip_datagram
+                break
+
+        # create a deferred task and register to the garbage collection
+        # queue. All task context is explained in gc implementation.
+        def deferred_register_new_host():
+            # register new session to history and membership.
+            if not GC.membership.get(self.call_id):
+                GC.calls_history[self.call_id] = None
+                GC.calls_stats += (self.call_id in GC.calls_history)
+                GC.membership[self.call_id] = {
+                    'state': self.method,
+                    'tags': [self.tag],
+                    'tags_cnt': 1}
+            else: # add current session to existing membership.
+                GC.membership[self.call_id]['tags'].append(self.tag)
+                GC.membership[self.call_id]['tags_cnt'] += 1
+                GC._garbage.append({
+                    'Call-ID': self.call_id,
+                    'tag': self.tag,
+                    'ttl': self.lifetime + int(time.time())})
+
+        # add deferred to GC queue to linearly task demultiplexed jobs.
+        GC.register_new_task(lambda: deferred_register_new_host())
+        self.__send_sip_ok()
+
+    #
+    # worker responses
+    #
+
+    def __send_sip_cancel(self):
+        ''' send SIP CANCEL to endpoint.
+        '''
+        logger.debug('<<--- [sip] [%s] <<%s>> <CANCEL>' % (self.name, self.tag))
+        sip_packet = convert_to_sip_packet(SIP_CANCEL, self.sip_datagram)
+        self._socket.sendto(sip_packet, self.sip_endpoint)
+        if self.verbose: dissect_packet(sip_packet, self.tag)
+
+    def __send_sip_ok(self):
+        ''' send SIP OK to endpoint.
+        '''
+        logger.debug('<<--- [sip] [%s] <<%s>> <OK>' % (self.name, self.tag))
+        sip_packet = convert_to_sip_packet(SIP_OK, self.sip_datagram)
+        self._socket.sendto(sip_packet, self.sip_endpoint)
+        if self.verbose: dissect_packet(sip_packet, self.tag)
+
+    def __send_sip_options(self):
+        ''' send SIP OPTIONS to endpoint.
+        '''
+        logger.debug('<<--- [sip] [%s] <<%s>> <OPTIONS>' % (self.name, self.tag))
+        sip_packet = convert_to_sip_packet(SIP_OPTIONS, self.sip_datagram)
+        self._socket.sendto(sip_packet, self.sip_endpoint)
+        if self.verbose: dissect_packet(sip_packet, self.tag)
+
+    def __send_sip_ringing(self):
+        ''' send SIP RINGING to endpoint.
+        '''
+        logger.debug('<<--- [sip] [%s] <<%s>> <RINGING>' % (self.name, self.tag))
+        sip_packet = convert_to_sip_packet(SIP_RINGING, self.sip_datagram)
+        self._socket.sendto(sip_packet, self.sip_endpoint)
+        if self.verbose: dissect_packet(sip_packet, self.tag)
+
+    def __send_sip_term(self):
+        ''' send SIP TERMINATE to endpoint.
+        '''
+        logger.debug('<<--- [sip] [%s] <<%s>> <TERM>' % (self.name, self.tag))
+        sip_packet = convert_to_sip_packet(SIP_TERMINATE, self.sip_datagram)
+        self._socket.sendto(sip_packet, self.sip_endpoint)
+        if self.verbose: dissect_packet(sip_packet, self.tag)
+
+    def __send_sip_trying(self):
+        ''' send SIP TRYING to endpoint.
+        '''
+        logger.debug('<<--- [sip] [%s] <<%s>> <TRYING>' % (self.name, self.tag))
+        sip_packet = convert_to_sip_packet(SIP_TRYING, self.sip_datagram)
+        self._socket.sendto(sip_packet, self.sip_endpoint)
+        if self.verbose: dissect_packet(sip_packet, self.tag)

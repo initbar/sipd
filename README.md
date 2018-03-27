@@ -13,7 +13,7 @@ Some key features are:
 
 - **High performance** using [reactor asynchronous design pattern](https://en.wikipedia.org/wiki/Reactor_pattern).
 
-- **SIP load balance** to other SIP servers.
+- **SIP load balance** to other SIP daemons.
 
 - **Fast RTP routing** using dynamic [Session Description Protocol](https://en.wikipedia.org/wiki/Session_Description_Protocol) generation. For the optimal performance, using an external [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol) decoder is highly recommended.
 
