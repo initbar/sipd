@@ -115,9 +115,8 @@ if __name__ == '__main__':
             logger.info('successfully loaded configurations:')
             logger.debug(str(config))
         except AssertionError:
-            logger.error('unable to load configuration file: ' + config_file)
-
-        # deploy.
+            config = None
+            logger.error('unable to load configurations: ' + config_file)
         server = AsynchronousSIPServer(config)
         sys.exit(server.serve())
     except KeyboardInterrupt: pass
