@@ -11,7 +11,9 @@ Some key features are:
 
 - **Maximum portability** implemented in pure Python and [non-mandatory dependencies](./requirements.txt). You can either run it by cloning the git repository or [building a single binary](#deploy).
 
-- **High performance** using [customized asynchronous designs and patterns]().
+- **High performance** using [reactor asynchronous design pattern](https://en.wikipedia.org/wiki/Reactor_pattern).
+
+- **SIP load balance** to other SIP servers.
 
 - **Fast RTP routing** using dynamic [Session Description Protocol](https://en.wikipedia.org/wiki/Session_Description_Protocol) generation. For the optimal performance, using an external [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol) decoder is highly recommended.
 
