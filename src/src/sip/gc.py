@@ -55,7 +55,10 @@ class SynchronousSIPGarbageCollector(object):
         # garbage is collected under self._garbage. In order to reduce thread
         # conflict with the main thread, garbage collector uses its own
         # thread. By default, garbage collector runs once every minute.
-        self._gc_interval = 60.0 # seconds
+        try: gc_interval = float(settings['gc']['check_interval'])
+        except: gc_interval = 60.0 # seconds
+        self._gc_interval = gc_interval
+
         self._gc_locked = False # "thread lock".
         self._gc = self.initialize_garbage_collector()
         self._garbage = deque()

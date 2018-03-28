@@ -117,7 +117,7 @@ class SIPServerPrototype(object):
     def __init__(self, setting):
         if isinstance(setting, dict):
             global SERVER_SETTINGS; SERVER_SETTINGS = setting
-            logger.info('[sip] globalized inherited settings.')
+            logger.debug('[sip] globalized settings.')
         logger.info('[sip] server initialized.')
 
 class AsynchronousSIPServer(SIPServerPrototype):
