@@ -21,6 +21,7 @@
 #-------------------------------------------------------------------------------
 
 import logging
+import random
 
 try:
     from src.parser import dump_json
@@ -28,7 +29,6 @@ try:
     from src.rtp.start import RTPD_START
     from src.rtp.stop import RTPD_STOP
     from src.sockets import safe_allocate_random_udp_socket
-    import socket
 except ImportError: raise
 
 logger = logging.getLogger(__name__)
@@ -41,21 +41,30 @@ class RTPRouterPrototype(object):
     '''
     def __init__(self, setting={}):
         self.setting = setting
-        try: # configure RTP handler.
-            handler = setting['rtp']['handler']
-            assert handler.get('enabled', False)
-            self.host   = handler['host']
-            self.port   = handler['port']
-            self.server = tuple((self.host, self.port))
-        except: pass
-        self.tag = None # session tag from worker.
+
+        # load RTP handlers and filter by enabled handlers.
+        try: self.rtp_handlers = filter(lambda handler: handler.get('enabled'),
+                                        setting['rtp'].get('handler', []))
+        except: self.rtp_handlers = None
+        self.tag = None # inherited session tag from worker.
         logger.debug('[rtp] successfully initialized.')
 
-    def handle(self, *args, **kwargs):
-        return self._external_handler(*args, **kwargs)
+    def get_random_rtp_handler(self):
+        return random.choice(self.rtp_handlers)
+
+    def get_random_rtp_handler_address(self):
+        handler = self.get_random_rtp_handler()
+        try:
+            address = str(handler['host'])
+            port    = int(handler['port'])
+            return tuple(address, port)
+        except: return
 
     def _external_handler(self, *args, **kwargs):
         raise NotImplementedError
+
+    def handle(self, *args, **kwargs):
+        return self._external_handler(*args, **kwargs)
 
 class SynchronousRTPRouter(RTPRouterPrototype):
     ''' RTP router implementation.
@@ -64,8 +73,7 @@ class SynchronousRTPRouter(RTPRouterPrototype):
         ''' `rttd` implementation.
         '''
         if not sip_datagram: return
-        self.tag = sip_tag
-
+        self.tag = sip_tag # register session tag to the router.
         # signal the external RTP decoder to open new ports.
         if rtp_state == 'start': return self.send_start_signal(sip_datagram)
         else: # signal the external RTP decoder to close existing ports.
@@ -82,7 +90,10 @@ class SynchronousRTPRouter(RTPRouterPrototype):
         for key in rtpd_param: template[key] = sip_datagram['sip'].get(key, '')
 
         with safe_allocate_random_udp_socket() as udp_socket:
-            udp_socket.sendto(dump_json(template), self.server)
+            rtp_handler = self.get_random_rtp_handler_address()
+            if not rtp_handler: return
+
+            udp_socket.sendto(dump_json(template), rtp_handler)
             logger.info("<<--- [rtp] <<%s>> sent 'start' to external rtpd." % self.tag)
             logger.info("[rtp] <<%s>> waiting response from external rtpd." % self.tag)
             try: payload = udp_socket.recvfrom(0xff)
@@ -93,7 +104,7 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             logger.info('[rtp] <<%s>> external rtpd is UP.' % self.tag)
             rtpd_server, rtpd_payload = tuple(payload[1]), str(payload[0])
             logger.debug("--->> [rtp] <<%s>> [%s] received %s Bytes from external rtpd." % (
-                self.tag, self.server, hex(len(rtpd_payload))))
+                self.tag, rtp_handler, hex(len(rtpd_payload))))
 
             # receive RTP ports.
             rtpd_json = parse_json(rtpd_payload)
@@ -149,7 +160,10 @@ class SynchronousRTPRouter(RTPRouterPrototype):
 
         # allocate a temporary socket to send the payload.
         with safe_allocate_random_udp_socket() as udp_socket:
-            udp_socket.sendto(dump_json(template), self.server)
+            rtp_handler = self.get_random_rtp_handler_address()
+            if not rtp_handler: return
+
+            udp_socket.sendto(dump_json(template), rtp_handler)
             logger.info("<<--- [rtp] <<%s>> sent 'stop' to external rtpd." % self.tag)
             logger.info("[rtp] <<%s>> waiting response from external rtpd." % self.tag)
             try: payload = udp_socket.recvfrom(0xff)
@@ -160,7 +174,7 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             logger.info('[rtp] <<%s>> external rtpd is UP.' % self.tag)
             rtpd_server, rtpd_payload = tuple(payload[1]), str(payload[0])
             logger.debug("--->> [rtp] <<%s>> [%s] received %s Bytes from external rtpd." % (
-                self.tag, self.server, hex(len(rtpd_payload))))
+                self.tag, rtp_handler, hex(len(rtpd_payload))))
 
             rtpd_json = parse_json(rtpd_payload)
             logger.info("[rtp] <<%s>> parsed responses from external rtpd." % self.tag)
