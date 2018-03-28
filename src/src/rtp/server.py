@@ -43,9 +43,13 @@ class RTPRouterPrototype(object):
         self.setting = setting
 
         # load RTP handlers and filter by enabled handlers.
-        try: self.rtp_handlers = filter(lambda handler: handler.get('enabled'),
-                                        setting['rtp'].get('handler', []))
-        except: self.rtp_handlers = None
+        try:
+            self.rtp_handlers = filter(lambda handler: handler['enabled'],
+                                        setting['rtp']['handler'])
+            logger.debug('---- [rtp] loaded handlers: %s' % self.rtp_handlers)
+        except Exception as message:
+            logger.error('---- [rtp] failed to load: %s' % message)
+            self.rtp_handlers = None
         self.tag = None # inherited session tag from worker.
         logger.debug('[rtp] successfully initialized.')
 
@@ -57,8 +61,12 @@ class RTPRouterPrototype(object):
         try:
             address = str(handler['host'])
             port    = int(handler['port'])
-            return tuple(address, port)
-        except: return
+            server  = (address, port)
+            logger.debug('---- [rtp] balancing to handler: %s' % str(server))
+            return server
+        except Exception as message:
+            logger.error('---- [rtp] failed to balance to handler: %s' % message)
+            return
 
     def _external_handler(self, *args, **kwargs):
         raise NotImplementedError
