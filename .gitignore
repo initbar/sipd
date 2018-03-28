@@ -2,4 +2,5 @@
 .pypirc
 build/
 dist/
+sipd
 sipd.egg-info/
