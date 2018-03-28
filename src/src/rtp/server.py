@@ -23,6 +23,7 @@
 import logging
 
 try:
+    from src.parser import dump_json
     from src.parser import parse_json
     from src.rtp.start import RTPD_START
     from src.rtp.stop import RTPD_STOP
