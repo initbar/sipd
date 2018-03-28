@@ -76,7 +76,7 @@ logger = logging.getLogger(__name__)
 # related requests can not guarantee to hit the same worker. Therefore, the
 # workers should all use the same garbage collector and just register a new
 # collection tasks to the collector queue.
-GC = SynchronousSIPGarbageCollector()
+GC = None
 
 SERVER_SETTINGS = {} # `sipd.json`
 
@@ -116,7 +116,9 @@ class SIPServerPrototype(object):
     '''
     def __init__(self, setting):
         if isinstance(setting, dict):
+            # globalize settings and garbage collector.
             global SERVER_SETTINGS; SERVER_SETTINGS = setting
+            global GC; GC = SynchronousSIPGarbageCollector(setting)
             logger.debug('[sip] globalized settings.')
         logger.info('[sip] server initialized.')
 
