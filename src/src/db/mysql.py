@@ -42,12 +42,12 @@ class safe_allocate_mysql_client(object):
                  username, password,
                  database, table=None):
         # configuration.
-        self.host = host
-        self.port = port
+        self.host     = host
+        self.port     = port
         self.username = username
         self.password = password
         self.database = database
-        self.table = table
+        self.table    = table
         # database session.
         self._cursor = None
 
@@ -81,17 +81,17 @@ class MySQLClient(object):
         self.database = str(database)
         self.table =    str(table)
         # session cursor.
-        self.session = None
+        self._session = None
 
     def connect(self):
         ''' connect to MySQL database.
         '''
-        try: self.session = mysql.connect(
-                host=self.host,     port=self.port,
+        try: self._session = mysql.connect(
+                host=self.host, port=self.port,
                 user=self.username, passwd=self.password,
                 db=self.database)
         except: pass
-        return (self.session and self.session.open())
+        return (self._session and self._session.open())
 
     def run(self, query):
         ''' run SQL statement.
