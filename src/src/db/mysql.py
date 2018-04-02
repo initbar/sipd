@@ -64,10 +64,10 @@ class safe_allocate_mysql_client(object):
         try: self._cursor.close()
         except: del self._cursor
 
-# MySQL client wrapper
+# MySQL clients
 #-------------------------------------------------------------------------------
 
-class MySQLClient(object):
+class MySQLClientPrototype(object):
     ''' MySQL client wrapper implementation.
     '''
     def __init__(self, host, port,
@@ -86,11 +86,12 @@ class MySQLClient(object):
     def connect(self):
         ''' connect to MySQL database.
         '''
-        try: self._session = mysql.connect(
-                host=self.host, port=self.port,
-                user=self.username, passwd=self.password,
-                db=self.database)
-        except: pass
+        try: self._session = mysql.connect(host=self.host,
+                                           port=self.port,
+                                           user=self.username,
+                                           passwd=self.password,
+                                           db=self.database)
+        except: pass # catch failures later.
         return (self._session and self._session.open())
 
     def run(self, query):
