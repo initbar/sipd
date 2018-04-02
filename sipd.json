@@ -58,23 +58,25 @@
         "impala": {
             "enabled": false,
             "host": "127.0.0.1",
-            "port": 1234,
+            "port": 21050,
             "username": "",
             "password": ""
         },
         "mssql": {
             "enabled": false,
             "host": "127.0.0.1",
-            "port": 1234,
+            "port": 1433,
             "username": "",
             "password": ""
         },
         "mysql": {
             "enabled": false,
             "host": "127.0.0.1",
-            "port": 1234,
+            "port": 3306,
             "username": "",
-            "password": ""
+            "password": "",
+            "database": "",
+            "db_table": ""
         }
     },
     "gc": {

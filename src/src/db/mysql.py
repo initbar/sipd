@@ -19,9 +19,15 @@
 import MySQLdb as mysql
 
 class MySQLClient(object):
+    ''' MySQL client template.
+    '''
 
-    def __init__(self, host, username, password, db):
+    def __init__(self, host, port,
+                 username, password,
+                 db, table=None):
         self.host = host
+        self.port = port
         self.username = usernmae
         self.password = password
         self.db = db
+        self.table = table
