@@ -19,6 +19,13 @@ Some key features are:
 
 - **Production ready** and currently running in a production environment against [Genesys](http://www.genesys.com) devices and handling [Samsung Electronics of America](http://www.samsung.com) call traffic.
 
+## Dependencies
+
+```bash
+~$ sudo apt install libmysqlclient-dev
+~$ sudo pip install -r requirements.txt
+```
+
 ## Usage
 
 [sipd.json](./sipd.json) is a non-mandatory configuration file that allows customization to the runtime environment. Although default settings is fine, it can also be tuned for higher performance.
@@ -27,7 +34,6 @@ Some key features are:
 ~$ git clone https://github.com/initbar/sipd
 ~$ cd ~/sipd
 ~$ # vi sipd.json
-~$ pip install -r requirements.txt
 ~$ make run
 ```
 
