@@ -17,6 +17,7 @@
 # https://github.com/initbar/sipd
 
 import MySQLdb as mysql
+import datetime
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,8 +76,9 @@ class MySQLClientPrototype(object):
         self.username = str(username)
         self.password = str(password)
         self.database = str(database)
-        # session cursor.
+        # session.
         self._session = None
+        self._cursor = None
 
     def connect(self):
         ''' connect to MySQL database.
@@ -87,10 +89,13 @@ class MySQLClientPrototype(object):
                                            passwd=self.password,
                                            db=self.database)
         except: raise # catch failures later.
-        return (self._session and self._session.open)
+        if (self._session and self._session.open):
+            self._cursor = self._session.cursor() # static cursor.
+        return bool(self._cursor)
 
-    def run(self, query):
+    def run(self, statement):
         ''' run SQL statement.
         '''
-        if not statement: yield
-        yield []
+        if not (self._session and statement): return
+        self._cursor.execute(statement)
+        yield self._cursor.fetchall()
