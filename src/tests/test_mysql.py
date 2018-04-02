@@ -18,7 +18,19 @@
 
 from src.db.mysql import safe_allocate_mysql_client
 
-if __name__ == '__name__':
+import logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format=' '.join(
+        [
+            '[%(asctime)-15s]',
+            '<%(filename)s:%(lineno)s>',
+            '[%(levelname)s]',
+            '%(message)s'
+        ])
+); logger = logging.getLogger(__name__)
+
+if __name__ == '__main__':
 
     with safe_allocate_mysql_client(
             host='127.0.0.1',
