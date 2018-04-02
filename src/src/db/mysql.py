@@ -21,18 +21,18 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# MySQL allocator
+# MySQL client allocator
 #-------------------------------------------------------------------------------
 
 def unsafe_allocate_mysql_client(*args, **kwargs):
-    ''' allocate a MySQL client.
+    ''' unsafely allocate a MySQL client.
     '''
     try:
         mysql_client = MySQLClient(*args, **kwargs)
-        assert mysql_client.connect() # test database connection.
+        assert mysql_client.connect() # connect to database.
         logger.info("[mysql] successfully allocated MySQL client.")
     except Exception as message:
-        logger.error("[mysql] unable to allocate client: '%s'" % message)
+        logger.error("[mysql] unable to allocate client: '%s'." % message)
     return locals().get('mysql_client')
 
 class safe_allocate_mysql_client(object):
@@ -48,7 +48,7 @@ class safe_allocate_mysql_client(object):
         self.password = password
         self.database = database
         self.table = table
-        # database client.
+        # database session.
         self._cursor = None
 
     def __enter__(self):
@@ -64,23 +64,22 @@ class safe_allocate_mysql_client(object):
         try: self._cursor.close()
         except: del self._cursor
 
-# MySQL client
+# MySQL client wrapper
 #-------------------------------------------------------------------------------
 
 class MySQLClient(object):
-    ''' MySQL client template.
+    ''' MySQL client wrapper implementation.
     '''
-
     def __init__(self, host, port,
                  username, password,
-                 database, table=None):
+                 database, table=''):
         # configuration.
-        self.host = host
-        self.port = port
-        self.username = usernmae
-        self.password = password
-        self.database = database
-        self.table = table
+        self.host = str(host)
+        self.port = int(port)
+        self.username = str(usernmae)
+        self.password = str(password)
+        self.database = str(database)
+        self.table = str(table)
         # session cursor.
         self.session = None
 
