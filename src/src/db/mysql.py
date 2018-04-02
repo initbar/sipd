@@ -24,32 +24,29 @@ logger = logging.getLogger(__name__)
 # MySQL client allocator
 #-------------------------------------------------------------------------------
 
-def unsafe_allocate_mysql_client(host, port, username, password, database, table):
+def unsafe_allocate_mysql_client(*args, **kwargs):
     ''' unsafely allocate a MySQL client.
     '''
     try:
-        mysql_client = MySQLClientPrototype(host, port,
-                                            username, password,
-                                            database, table)
+        mysql_client = MySQLClientPrototype(*args, **kwargs)
         assert mysql_client.connect() # connect to database.
-        logger.info("[mysql] successfully allocated MySQL client.")
     except Exception as message:
         logger.error("[mysql] unable to allocate client: '%s'." % message)
-    return locals().get('mysql_client')
+        logger.warning("[mysql] disabled from future commits.")
+        return
+    logger.info("[mysql] successfully allocated MySQL client.")
+    return mysql_client
 
 class safe_allocate_mysql_client(object):
     ''' allocate exception-safe MySQL client.
     '''
-    def __init__(self, host, port,
-                 username, password,
-                 database, table=None):
+    def __init__(self, host, port, username, password, database):
         # configuration.
         self.host     = host
         self.port     = port
         self.username = username
         self.password = password
         self.database = database
-        self.table    = table
         # database session.
         self._session = None
 
@@ -58,8 +55,7 @@ class safe_allocate_mysql_client(object):
                                                      self.port,
                                                      self.username,
                                                      self.password,
-                                                     self.database,
-                                                     self.table)
+                                                     self.database)
         return self._session # assumed that client is connected.
 
     def __exit__(self, type, value, traceback):
@@ -72,16 +68,13 @@ class safe_allocate_mysql_client(object):
 class MySQLClientPrototype(object):
     ''' MySQL client wrapper implementation.
     '''
-    def __init__(self, host, port,
-                 username, password,
-                 database, table=''):
+    def __init__(self, host, port, username, password, database):
         # configuration.
         self.host =     str(host)
         self.port =     int(port)
         self.username = str(username)
         self.password = str(password)
         self.database = str(database)
-        self.table =    str(table)
         # session cursor.
         self._session = None
 
