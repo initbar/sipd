@@ -1,1 +1,2 @@
 impyla==0.14.0
+mysqlclient==1.3.12

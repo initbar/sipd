@@ -1,4 +1,3 @@
-
 # Active recording Session Initiation Protocol daemon (sipd).
 # Copyright (C) 2018  Herbert Shin
 #
@@ -16,3 +15,13 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 # https://github.com/initbar/sipd
+
+import mysqlclient
+
+class MySQLClient(object):
+
+    def __init__(self, host, username, password, db):
+        self.host = host
+        self.username = usernmae
+        self.password = password
+        self.db = db
