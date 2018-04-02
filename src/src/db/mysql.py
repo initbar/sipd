@@ -24,11 +24,13 @@ logger = logging.getLogger(__name__)
 # MySQL client allocator
 #-------------------------------------------------------------------------------
 
-def unsafe_allocate_mysql_client(*args, **kwargs):
+def unsafe_allocate_mysql_client(host, port, username, password, database, table):
     ''' unsafely allocate a MySQL client.
     '''
     try:
-        mysql_client = MySQLClient(*args, **kwargs)
+        mysql_client = MySQLClientPrototype(host, port,
+                                            username, password,
+                                            database, table)
         assert mysql_client.connect() # connect to database.
         logger.info("[mysql] successfully allocated MySQL client.")
     except Exception as message:
@@ -49,20 +51,20 @@ class safe_allocate_mysql_client(object):
         self.database = database
         self.table    = table
         # database session.
-        self._cursor = None
+        self._session = None
 
     def __enter__(self):
-        self._cursor = unsafe_allocate_mysql_client(self.host,
-                                                    self.port,
-                                                    self.username,
-                                                    self.password,
-                                                    self.database,
-                                                    self.table)
-        return self._cursor # assumed that client is connected.
+        self._session = unsafe_allocate_mysql_client(self.host,
+                                                     self.port,
+                                                     self.username,
+                                                     self.password,
+                                                     self.database,
+                                                     self.table)
+        return self._session # assumed that client is connected.
 
-    def __exit__(self):
-        try: self._cursor.close()
-        except: del self._cursor
+    def __exit__(self, type, value, traceback):
+        try: self._session.close()
+        except: del self._session
 
 # MySQL clients
 #-------------------------------------------------------------------------------
@@ -76,7 +78,7 @@ class MySQLClientPrototype(object):
         # configuration.
         self.host =     str(host)
         self.port =     int(port)
-        self.username = str(usernmae)
+        self.username = str(username)
         self.password = str(password)
         self.database = str(database)
         self.table =    str(table)
@@ -91,8 +93,8 @@ class MySQLClientPrototype(object):
                                            user=self.username,
                                            passwd=self.password,
                                            db=self.database)
-        except: pass # catch failures later.
-        return (self._session and self._session.open())
+        except: raise # catch failures later.
+        return (self._session and self._session.open)
 
     def run(self, query):
         ''' run SQL statement.
