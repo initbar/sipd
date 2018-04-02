@@ -1,6 +1,11 @@
 *.py[cod]
 .pypirc
+bin/
 build/
 dist/
+include/
+lib/
+local/
+pip-selfcheck.json
 sipd
 sipd.egg-info/
