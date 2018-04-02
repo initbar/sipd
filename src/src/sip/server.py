@@ -83,11 +83,11 @@ SERVER_SETTINGS = {} # `sipd.json`
 # SIP socket
 #-------------------------------------------------------------------------------
 
-def unsafe_allocate_sip_socket(port=5060, timeout=1.0):
+def unsafe_allocate_sip_socket(host='0.0.0.0', port=5060, timeout=1.0):
     ''' allocate listening SIP socket that must be manually cleaned up.
     '''
     logger.debug('attempting to create SIP socket on port: %i.' % port)
-    return unsafe_allocate_udp_socket(host='0.0.0.0', port=port, timeout=timeout, is_reused=True)
+    return unsafe_allocate_udp_socket(host, port, timeout, is_reused=True)
 
 class safe_allocate_sip_socket(object):
     ''' allocate exception-safe listening SIP socket.
@@ -98,7 +98,7 @@ class safe_allocate_sip_socket(object):
         self._socket = None
 
     def __enter__(self):
-        self._socket = unsafe_allocate_sip_socket(self.port, self.timeout)
+        self._socket = unsafe_allocate_sip_socket(port=self.port, timeout=self.timeout)
         return self._socket
 
     def __exit__(self, type, value, traceback):
