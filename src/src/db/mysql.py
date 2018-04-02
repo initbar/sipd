@@ -74,23 +74,24 @@ class MySQLClient(object):
                  username, password,
                  database, table=''):
         # configuration.
-        self.host = str(host)
-        self.port = int(port)
+        self.host =     str(host)
+        self.port =     int(port)
         self.username = str(usernmae)
         self.password = str(password)
         self.database = str(database)
-        self.table = str(table)
+        self.table =    str(table)
         # session cursor.
         self.session = None
 
     def connect(self):
         ''' connect to MySQL database.
         '''
-        self.session = mysql.connect(
-            host=self.host,     port=self.port,
-            user=self.username, passwd=self.password,
-            db=self.database)
-        return self.session.open()
+        try: self.session = mysql.connect(
+                host=self.host,     port=self.port,
+                user=self.username, passwd=self.password,
+                db=self.database)
+        except: pass
+        return (self.session and self.session.open())
 
     def run(self, query):
         ''' run SQL statement.
