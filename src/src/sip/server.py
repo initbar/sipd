@@ -261,6 +261,7 @@ class SIPWorkerPrototype(object):
 
         # custom handlers.
         self.handlers = {
+            'ACK':     self.handler_ack,
             'BYE':     self.handler_cancel,
             'CANCEL':  self.handler_bye,
             'DEFAULT': self.handler_default,
@@ -337,6 +338,9 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
         ''' default event handler.
         '''
         self.__send_sip_ok()
+
+    def handler_ack(self):
+        pass # ignore ACK.
 
     def handler_bye(self):
         ''' BYE event handler.
