@@ -24,40 +24,45 @@ logger = logging.getLogger(__name__)
 # MySQL allocator
 #-------------------------------------------------------------------------------
 
-def unsafe_allocate_mysql_client(host, port, username, password, database, table=None):
+def unsafe_allocate_mysql_client(*args, **kwargs):
     ''' allocate a MySQL client.
     '''
-    if not all(host, port, username, password, database): return
     try:
-        mysql_client = MySQLClient(host, port, username, password, database, table)
-        assert mysql_client.connect()
+        mysql_client = MySQLClient(*args, **kwargs)
+        assert mysql_client.connect() # test database connection.
         logger.info("[mysql] successfully allocated MySQL client.")
     except Exception as message:
         logger.error("[mysql] unable to allocate client: '%s'" % message)
-    return locals().get(mysql_client)
+    return locals().get('mysql_client')
 
-def safe_allocate_mysql_client(host, port, username, password, database, table):
+class safe_allocate_mysql_client(object):
     ''' allocate exception-safe MySQL client.
     '''
-    def __init__(self, host, port, username, password, database, table):
+    def __init__(self, host, port,
+                 username, password,
+                 database, table=None):
+        # configuration.
         self.host = host
         self.port = port
         self.username = username
         self.password = password
         self.database = database
         self.table = table
+        # database client.
+        self._cursor = None
 
     def __enter__(self):
-        self._cursor = unsafe_allocate_mysql_client(self.host, self.port,
-                                                    self.username, self.password,
-                                                    self.database, self.table)
-        return self._cursor # connected client.
+        self._cursor = unsafe_allocate_mysql_client(self.host,
+                                                    self.port,
+                                                    self.username,
+                                                    self.password,
+                                                    self.database,
+                                                    self.table)
+        return self._cursor # assumed that client is connected.
 
     def __exit__(self):
         try: self._cursor.close()
-        except:
-            self._cursor.close() # try again
-            del self._cursor
+        except: del self._cursor
 
 # MySQL client
 #-------------------------------------------------------------------------------
@@ -69,22 +74,27 @@ class MySQLClient(object):
     def __init__(self, host, port,
                  username, password,
                  database, table=None):
-        # MySQL configuration.
+        # configuration.
         self.host = host
         self.port = port
         self.username = usernmae
         self.password = password
         self.database = database
         self.table = table
-        # MySQL cursor.
+        # session cursor.
         self.session = None
 
     def connect(self):
-        mysql.connect(host=self.host, port=self.port,
-                      user=self.username, passwd=self.password,
-                      db=self.database)
+        ''' connect to MySQL database.
+        '''
+        self.session = mysql.connect(
+            host=self.host,     port=self.port,
+            user=self.username, passwd=self.password,
+            db=self.database)
         return self.session.open()
 
-    def query(self, statement):
+    def run(self, query):
+        ''' run SQL statement.
+        '''
         if not statement: yield
         yield []
