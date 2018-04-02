@@ -16,7 +16,7 @@
 #
 # https://github.com/initbar/sipd
 
-import mysqlclient
+import MySQLdb as mysql
 
 class MySQLClient(object):
 
