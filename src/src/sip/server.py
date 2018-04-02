@@ -226,10 +226,8 @@ class AsynchronousSIPRouter(SIPRouterPrototype):
             p_index = int(self._random() * self._worker_size)
             worker = self._workers[p_index]
             if worker.is_ready():
-                work_delegated = True
-                worker.event.clear()
                 worker.assign(sip_endpoint, sip_message)
-                break
+                work_delegated = True # break loop.
 
 # SIP worker
 #-------------------------------------------------------------------------------
