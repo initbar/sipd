@@ -259,6 +259,14 @@ class SIPWorkerPrototype(object):
         try: self.lifetime = SERVER_SETTINGS['gc']['call_lifetime'] # seconds
         except: self.lifetime = 60 * 60
 
+        # shared objects.
+        [
+            self.sip_datagram,
+            self.call_id,
+            self.method,
+            self.tag
+        ] = [None] * 4
+
         # custom handlers.
         self.handlers = {
             'ACK':     self.handler_ack,
@@ -267,12 +275,6 @@ class SIPWorkerPrototype(object):
             'DEFAULT': self.handler_default,
             'INVITE':  self.handler_invite
         }
-
-        # shared objects.
-        self.sip_datagram = None
-        self.call_id = None
-        self.method = None
-        self.tag = None
 
 class SynchronousSIPWorker(SIPWorkerPrototype):
     ''' Asynchronous SIP worker component implementation.
@@ -370,14 +372,17 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
         self.sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % SERVER_SETTINGS['sip']['server']['address']
         logger.debug('---- [sip] balancing to node: %s' % self.sip_datagram['sip']['Contact'])
 
-        self.__send_sip_trying()
-        if not self._rtp_handler:
+        # if duplicate INVITE message was received with same Call-ID, then it's
+        # necessary to ignore the future duplicates.
+        if self.call_id in GC.calls_history or not self._rtp_handler:
             self.__send_sip_ok_no_sdp()
             return
+        else:
+            self.__send_sip_trying()
 
         # prepare RTP delegation. An external RTP handler must reply with two
         # ports to receive TX/RX RTP traffic.
-        try: chances = max(1, SERVER_SETTINGS['rtp'].get('max_retry', 1))
+        try: chances = max(1, SERVER_SETTINGS['rtp']['max_retry'])
         except: chances = 1
         while chances:
             self.__send_sip_ringing()

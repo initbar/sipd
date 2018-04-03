@@ -58,12 +58,12 @@ class SynchronousSIPGarbageCollector(object):
         self._gc_locked = False # "thread lock"
         self._garbage = deque()
 
-        # custom RTP handler for garbage clean up.
-        self._rtp_handler = SynchronousRTPRouter(settings)
-
         # since a locked collector should not receive new blocking tasks,
         # any new "tasks" are polled under self._futures object.
         self._futures = Queue.Queue() # thread-safe FIFO.
+
+        # custom RTP handler for garbage clean up.
+        self._rtp_handler = SynchronousRTPRouter(settings)
         logger.info('[gc] garbage collector initialized.')
 
     def initialize_garbage_collector(self):
@@ -114,11 +114,11 @@ class SynchronousSIPGarbageCollector(object):
                     call_id=peek['Call-ID'],
                     sip_tag=peek['tag']
                 )
+            logger.debug('[gc] finished consuming objects.')
         except Exception as message:
             logger.error('[gc] unable to cleanly collect garbage: %s.' % str(message))
         finally:
             self._gc_locked = False # release thread.
-            logger.debug('[gc] finished consuming objects.')
 
     def consume_membership(self, call_id, call_tag, forced=False):
         ''' consume a call from membership.
