@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/initbar/sipd.svg?branch=master)](https://travis-ci.org/initbar/sipd)
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Finitbar%2Fsipd.svg?type=shield)](https://app.fossa.io/projects/git%2Bgithub.com%2Finitbar%2Fsipd?ref=badge_shield)
 <p align="center">
   <img src="./docs/logo.png">
 </p>
@@ -56,3 +57,6 @@ You can either use `make` to build and deploy to a remote server or `pip` to dow
 
 ## License
 **sipd** is licensed under [GNU GPLv3](./LICENSE.md).
+
+
+[![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Finitbar%2Fsipd.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Finitbar%2Fsipd?ref=badge_large)
