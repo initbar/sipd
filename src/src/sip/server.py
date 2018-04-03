@@ -346,7 +346,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
         ''' BYE event handler.
         '''
         self.__send_sip_ok()
-        deferred_revoke_host = lambda: GC.gc_consume_membership(
+        deferred_revoke_host = lambda: GC.consume_membership(
             call_tag=self.tag, call_id=self.call_id, forced=True)
         GC.register_new_task(lambda: deferred_revoke_host())
         self.__send_sip_term()

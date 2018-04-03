@@ -52,11 +52,10 @@ class SynchronousSIPGarbageCollector(object):
         # garbage is collected under self._garbage. In order to reduce thread
         # conflict with the main thread, garbage collector uses its own
         # thread. By default, garbage collector runs once every minute.
-        try: gc_interval = float(settings['gc']['check_interval'])
-        except: gc_interval = 60.0 # seconds
-        self._gc_interval = gc_interval
-        self._gc_locked = False # "thread lock".
+        try: self._gc_interval = float(settings['gc']['check_interval'])
+        except: self._gc_interval = 60.0 # seconds
         self._gc = self.initialize_garbage_collector()
+        self._gc_locked = False # "thread lock"
         self._garbage = deque()
 
         # custom RTP handler for garbage clean up.
@@ -67,16 +66,6 @@ class SynchronousSIPGarbageCollector(object):
         self._futures = Queue.Queue() # thread-safe FIFO.
         logger.info('[gc] garbage collector initialized.')
 
-    def is_locked(self):
-        ''' check if garbage collector is locked.
-        '''
-        return self._gc_locked
-
-    def is_free(self):
-        ''' check if garbage collector is free.
-        '''
-        return not self.is_locked()
-
     def initialize_garbage_collector(self):
         ''' initialize a new thread for garbage collector.
         '''
@@ -85,7 +74,7 @@ class SynchronousSIPGarbageCollector(object):
         def initialization():
             thread_event = threading.Event()
             while not thread_event.wait(self._gc_interval):
-                self.gc_consume_garbage()
+                self.consume_garbage()
         gc = threading.Timer(self._gc_interval, initialization)
         gc.daemon = True
         gc.start()
@@ -99,7 +88,7 @@ class SynchronousSIPGarbageCollector(object):
         try: self._futures.put(item=function)
         except: raise
 
-    def gc_consume_garbage(self):
+    def consume_garbage(self):
         ''' consume garbage.
         '''
         if self.is_locked() or self._futures.empty(): return
@@ -121,7 +110,7 @@ class SynchronousSIPGarbageCollector(object):
                 # element must be placed back inside the garbage.
                 peek    = self._garbage.popleft()
                 call_id = self.membership[peek['Call-ID']]
-                self.gc_consume_membership(
+                self.consume_membership(
                     call_id=peek['Call-ID'],
                     sip_tag=peek['tag']
                 )
@@ -131,7 +120,7 @@ class SynchronousSIPGarbageCollector(object):
             self._gc_locked = False # release thread.
             logger.debug('[gc] finished consuming objects.')
 
-    def gc_consume_membership(self, call_id, call_tag, forced=False):
+    def consume_membership(self, call_id, call_tag, forced=False):
         ''' consume a call from membership.
         '''
         # since it is possible that there are multiple sessions ("tag") with
@@ -147,3 +136,13 @@ class SynchronousSIPGarbageCollector(object):
             logger.info('[gc] safe consumption: %s' % call_id)
         except Exception as message:
             logger.error('[gc] failed consumption: %s' % str(message))
+
+    def is_locked(self):
+        ''' check if garbage collector is locked.
+        '''
+        return self._gc_locked
+
+    def is_free(self):
+        ''' check if garbage collector is free.
+        '''
+        return not self.is_locked()
