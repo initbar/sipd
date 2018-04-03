@@ -365,21 +365,19 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
     def handler_invite(self):
         ''' INVITE event handler.
         '''
-        logger.debug('---- [sip] deciding to load balance to another server..')
         # TODO: decide to delegate to another server.
-        self.sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % (
-            SERVER_SETTINGS['sip']['server']['address']
-        )
+        logger.debug('---- [sip] deciding to load balance to another server..')
+        self.sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % SERVER_SETTINGS['sip']['server']['address']
         logger.debug('---- [sip] balancing to node: %s' % self.sip_datagram['sip']['Contact'])
 
         self.__send_sip_trying()
         if not self._rtp_handler:
-            self.__send_sip_ok(self.sip_datagram)
+            self.__send_sip_ok_no_sdp()
             return
 
         # prepare RTP delegation. An external RTP handler must reply with two
         # ports to receive TX/RX RTP traffic.
-        try: chances = max(1, SERVER_SETTINGS['rtp'].get('max_retry'))
+        try: chances = max(1, SERVER_SETTINGS['rtp'].get('max_retry', 1))
         except: chances = 1
         while chances:
             self.__send_sip_ringing()
@@ -406,10 +404,10 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
             else: # add current session to existing membership.
                 GC.membership[self.call_id]['tags'].append(self.tag)
                 GC.membership[self.call_id]['tags_cnt'] += 1
-                GC._garbage.append({
-                    'Call-ID': self.call_id,
-                    'tag': self.tag,
-                    'ttl': self.lifetime + int(time.time())})
+            GC._garbage.append({
+                'Call-ID': self.call_id,
+                'tag': self.tag,
+                'ttl': self.lifetime + int(time.time())})
 
         # add deferred to GC queue to linearly task demultiplexed jobs.
         GC.register_new_task(lambda: deferred_register_new_host())
@@ -432,6 +430,12 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
         '''
         logger.debug('<<-- [sip] [%s] <<%s>> <OK>' % (self.name, self.tag))
         sip_packet = convert_to_sip_packet(SIP_OK, self.sip_datagram)
+        self._socket.sendto(sip_packet, self.sip_endpoint)
+        if self.verbose: dissect_packet(sip_packet, self.tag)
+
+    def __send_sip_ok_no_sdp(self):
+        logger.debug('<<-- [sip] [%s] <<%s>> <OK>' % (self.name, self.tag))
+        sip_packet = convert_to_sip_packet(SIP_OK_NO_SDP, self.sip_datagram)
         self._socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.tag)
 
