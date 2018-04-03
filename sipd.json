@@ -1,6 +1,7 @@
 {
-    "program": "sipd",
+    "program": "sipd -- Active recording Session Initiation Protocol daemon.",
     "source": "https://github.com/initbar/sipd",
+    "docs": "https://github.com/initbar/sipd/blob/master/docs/CONFIG.md",
     "sip": {
         "server": {
             "address": "<overridden>"
