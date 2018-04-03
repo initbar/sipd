@@ -82,7 +82,7 @@
     },
     "gc": {
         "call_lifetime": 3600,
-        "check_interval": 60.0
+        "check_interval": 0.1
     },
     "log": {
         "level": "DEBUG",
