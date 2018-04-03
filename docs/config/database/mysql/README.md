@@ -1,4 +1,4 @@
-# impala
+# mysql
 
 | **Setting** | **Description** |
 |:------------|:----------------|

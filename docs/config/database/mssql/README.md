@@ -1,4 +1,4 @@
-# impala
+# mssql
 
 | **Setting** | **Description** |
 |:------------|:----------------|
