@@ -33,9 +33,9 @@ def unsafe_allocate_mysql_client(*args, **kwargs):
         assert mysql_client.connect() # connect to database.
     except Exception as message:
         logger.error("[mysql] unable to allocate client: '%s'." % message)
-        logger.warning("[mysql] disabled from future commits.")
+        logger.warning("[mysql] disabled future database operations.")
         return
-    logger.info("[mysql] successfully allocated MySQL client.")
+    logger.info("[mysql] successfully allocated db client.")
     return mysql_client
 
 class safe_allocate_mysql_client(object):

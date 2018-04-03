@@ -58,7 +58,7 @@ try:
     from src.parser import parse_sip_packet
     from src.parser import validate_sip_signature
     from src.rtp.server import SynchronousRTPRouter
-    from src.sip.gc import SynchronousSIPGarbageCollector
+    from src.sip.garbage import SynchronousSIPGarbageCollector
     from src.sip.static.busy import SIP_BUSY
     from src.sip.static.bye import SIP_BYE
     from src.sip.static.ok import SIP_OK

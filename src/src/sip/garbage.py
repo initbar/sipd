@@ -49,19 +49,18 @@ class SynchronousSIPGarbageCollector(object):
         self.calls_stats = 0
         self.membership = {}
 
-        # custom RTP handler for garbage clean up.
-        self._rtp_handler = SynchronousRTPRouter(settings)
-
         # garbage is collected under self._garbage. In order to reduce thread
         # conflict with the main thread, garbage collector uses its own
         # thread. By default, garbage collector runs once every minute.
         try: gc_interval = float(settings['gc']['check_interval'])
         except: gc_interval = 60.0 # seconds
         self._gc_interval = gc_interval
-
         self._gc_locked = False # "thread lock".
         self._gc = self.initialize_garbage_collector()
         self._garbage = deque()
+
+        # custom RTP handler for garbage clean up.
+        self._rtp_handler = SynchronousRTPRouter(settings)
 
         # since a locked collector should not receive new blocking tasks,
         # any new "tasks" are polled under self._futures object.
@@ -81,14 +80,13 @@ class SynchronousSIPGarbageCollector(object):
     def initialize_garbage_collector(self):
         ''' initialize a new thread for garbage collector.
         '''
-        if self.__dict__.get('_gc'): return self._gc # error check.
-        def task():
+        if self.__dict__.get('_gc'):
+            return self._gc # error check.
+        def initialization():
             thread_event = threading.Event()
             while not thread_event.wait(self._gc_interval):
-                logger.debug('[gc] running garbage collection.')
                 self.gc_consume_garbage()
-                logger.debug('[gc] finished garbage collection.')
-        gc = threading.Timer(self._gc_interval, task)
+        gc = threading.Timer(self._gc_interval, initialization)
         gc.daemon = True
         gc.start()
         return gc
@@ -129,7 +127,9 @@ class SynchronousSIPGarbageCollector(object):
                 )
         except Exception as message:
             logger.error('[gc] unable to cleanly collect garbage: %s.' % str(message))
-        finally: self._gc_locked = False # release thread.
+        finally:
+            self._gc_locked = False # release thread.
+            logger.debug('[gc] finished consuming objects.')
 
     def gc_consume_membership(self, call_id, call_tag, forced=False):
         ''' consume a call from membership.
