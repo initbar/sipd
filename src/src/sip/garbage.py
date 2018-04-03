@@ -110,11 +110,7 @@ class SynchronousSIPGarbageCollector(object):
                 # element must be placed back inside the garbage.
                 peek    = self._garbage.popleft()
                 call_id = self.membership[peek['Call-ID']]
-                self.consume_membership(
-                    call_id=peek['Call-ID'],
-                    sip_tag=peek['tag']
-                )
-            logger.debug('[gc] finished consuming objects.')
+                self.consume_membership(call_id=peek['Call-ID'], sip_tag=peek['tag'])
         except Exception as message:
             logger.error('[gc] unable to cleanly collect garbage: %s.' % str(message))
         finally:
@@ -131,9 +127,9 @@ class SynchronousSIPGarbageCollector(object):
             if any([ self.membership[call_id]['tags_cnt'] <= 0,
                      self.membership[call_id]['state'] == 'BYE',
                      forced ]): # consumption conditions.
+                logger.info('[gc] safe revoke member: %s' % call_id)
                 self._rtp_handler.send_stop_signal(call_id, call_tag)
                 del self.membership[call_id]
-            logger.info('[gc] safe consumption: %s' % call_id)
         except Exception as message:
             logger.error('[gc] failed consumption: %s' % str(message))
 

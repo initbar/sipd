@@ -17,7 +17,7 @@
 # https://github.com/initbar/sipd
 
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.2.4'
+__version__ = '1.2.5'
 __license__ = 'GNU GPLv3'
 
 try: # check supported version.

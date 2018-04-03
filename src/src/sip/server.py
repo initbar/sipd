@@ -62,6 +62,7 @@ try:
     from src.sip.static.busy import SIP_BUSY
     from src.sip.static.bye import SIP_BYE
     from src.sip.static.ok import SIP_OK
+    from src.sip.static.ok import SIP_OK_NO_SDP
     from src.sip.static.options import SIP_OPTIONS
     from src.sip.static.ringing import SIP_RINGING
     from src.sip.static.terminated import SIP_TERMINATE
@@ -347,7 +348,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
     def handler_bye(self):
         ''' BYE event handler.
         '''
-        self.__send_sip_ok()
+        self.__send_sip_ok_no_sdp()
         deferred_revoke_host = lambda: GC.consume_membership(
             call_tag=self.tag, call_id=self.call_id, forced=True)
         GC.register_new_task(lambda: deferred_revoke_host())
@@ -374,7 +375,12 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
 
         # if duplicate INVITE message was received with same Call-ID, then it's
         # necessary to ignore the future duplicates.
-        if self.call_id in GC.calls_history or not self._rtp_handler:
+        if self.call_id in GC.calls_history:
+            logger.warning('---- [sip] received duplicate Call-ID: %s' % self.call_id)
+            self.__send_sip_ok_no_sdp()
+            return
+        elif not self._rtp_handler:
+            logger.error('---- [sip] external RTP handler is not configured.')
             self.__send_sip_ok_no_sdp()
             return
         else:
@@ -433,13 +439,13 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
     def __send_sip_ok(self):
         ''' send SIP OK to endpoint.
         '''
-        logger.debug('<<-- [sip] [%s] <<%s>> <OK>' % (self.name, self.tag))
+        logger.debug('<<-- [sip] [%s] <<%s>> <OK +SDP>' % (self.name, self.tag))
         sip_packet = convert_to_sip_packet(SIP_OK, self.sip_datagram)
         self._socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.tag)
 
     def __send_sip_ok_no_sdp(self):
-        logger.debug('<<-- [sip] [%s] <<%s>> <OK>' % (self.name, self.tag))
+        logger.debug('<<-- [sip] [%s] <<%s>> <OK -SDP>' % (self.name, self.tag))
         sip_packet = convert_to_sip_packet(SIP_OK_NO_SDP, self.sip_datagram)
         self._socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.tag)
