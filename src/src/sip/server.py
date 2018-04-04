@@ -251,14 +251,16 @@ class SIPWorkerPrototype(object):
         self._rtp_handler = SynchronousRTPRouter(SERVER_SETTINGS)
 
         # default SIP headers to override parsed requests and respond with.
-        try: self._sip_defaults = SERVER_SETTINGS['sip']['defaults']
+        try: self._sip_defaults = SERVER_SETTINGS['sip']['worker']['headers']
         except: self._sip_defaults = {}
+        logger.debug('[env] sip defaults: %s' % self._sip_defaults)
 
         # if SIP server did not receive CANCEL/BYE due to unforseen error(s),
         # then we need absolute maximum time-to-live (ttl) value to force-expire
         # a call from RTP decoder. By default, all calls expire after one hour.
         try: self.lifetime = SERVER_SETTINGS['gc']['call_lifetime'] # seconds
         except: self.lifetime = 60 * 60
+        logger.debug('[env] call lifetime: %s' % self.lifetime)
 
         # shared objects.
         [

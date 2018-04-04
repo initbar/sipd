@@ -44,17 +44,4 @@ def parse_config(config={}):
     logger.debug("server address set to '%s'" % server_address)
 
     # initialize SIP.
-    try:
-        sip_allow = parsed_config['sip']['worker']['headers']['Allow']
-    except Exception as message:
-        logger.error('failed to parse config: %s' % message)
-        logger.warning('resorting to default configuration.')
-        parsed_config['sip']['worker']['headers'] = {
-            'Allow': 'ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE',
-            'Max-Forwards': 70,
-            'Require': 'timer',
-            'Server': 'sipd',
-            'Session-Expires': 1800,
-            'Supported': 'timer, uui'
-        }
     return parsed_config

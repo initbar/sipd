@@ -98,6 +98,7 @@ class SynchronousSIPGarbageCollector(object):
         while not self._futures.empty():
             run_task = self._futures.get()
             run_task() # deferred execute.
+            logger.debug('[gc] executed deferred task: %s', run_task)
 
         # since the garbage is a FIFO, technically, the oldest call is pushed
         # first (top) and the youngest call is pushed last (bottom).
@@ -110,8 +111,9 @@ class SynchronousSIPGarbageCollector(object):
                 # element must be placed back inside the garbage.
                 peek    = self._garbage.popleft()
                 call_id = self.membership[peek['Call-ID']]
-                self.consume_membership(call_id=peek['Call-ID'], sip_tag=peek['tag'])
+                self.consume_membership(call_id=peek['Call-ID'], call_tag=peek['tag'])
         except Exception as message:
+            self._garbage.append(peek)
             logger.error('[gc] unable to cleanly collect garbage: %s.' % str(message))
         finally:
             self._gc_locked = False # release thread.
@@ -127,9 +129,9 @@ class SynchronousSIPGarbageCollector(object):
             if any([ self.membership[call_id]['tags_cnt'] <= 0,
                      self.membership[call_id]['state'] == 'BYE',
                      forced ]): # consumption conditions.
-                logger.info('[gc] safe revoke member: %s' % call_id)
-                self._rtp_handler.send_stop_signal(call_id, call_tag)
+                self._rtp_handler.send_stop_signal(call_id)
                 del self.membership[call_id]
+                logger.info('[gc] safe revoke member: %s' % call_id)
         except Exception as message:
             logger.error('[gc] failed consumption: %s' % str(message))
 
