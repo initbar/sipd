@@ -20,13 +20,10 @@
 # config.py -- config parser, custom overrides, and default states.
 #-------------------------------------------------------------------------------
 
-from copy import deepcopy
-
 import logging
 
 try:
     from src.parser import parse_json
-    from src.parser import safe_encode
     from src.sockets import get_server_address
 except ImportError: raise
 
@@ -35,13 +32,15 @@ logger = logging.getLogger(__name__)
 def parse_config(config={}):
     ''' parse `sipd.json` and load/initialize with runtime environment.
     '''
-    parsed_config = parse_json(config)
-    if not parsed_config: return {}
+    try:
+        parsed_config = parse_json(config)
+        assert parsed_config
 
-    # save server address information to the configuration.
-    server_address = str(get_server_address())
-    parsed_config['sip']['server']['address'] = server_address
-    logger.debug("server address set to '%s'" % server_address)
+        # save server address information to the configuration.
+        server_address = get_server_address()
+        parsed_config['sip']['server']['address'] = server_address
+        logger.debug("server address set to '%s'" % server_address)
 
-    # initialize SIP.
-    return parsed_config
+        return parsed_config
+    except:
+        return {}

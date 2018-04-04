@@ -316,17 +316,22 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
             if not validate_sip_signature(self.sip_message):
                 raise SIPBrokenProtocol
             self.sip_datagram = parse_sip_packet(self.sip_message)
-        except AssertionError: return
         except SIPBrokenProtocol:
             # instead of error correction, relinquish the work from worker
             # so that it can move on to the next future task.
             logger.error("---- [sip] [%s] <<%s>> PARSE FAILED: '%s'" % (
                 self.name, self.tag, self.sip_message))
             return self.relinquish_work()
+        except Exception as message:
+            logger.error("----- [sip] %s" % message)
+            return self.relinquish_work()
 
         # override parsed values with pre-defined fields.
-        self.call_id = self.sip_datagram['sip'].get('Call-ID')
-        self.method  = self.sip_datagram['sip'].get('Method')
+        try:
+            self.call_id = self.sip_datagram['sip'].get('Call-ID')
+            self.method  = self.sip_datagram['sip'].get('Method')
+        except:
+            logger.error('---- [sip] malformed packet: %s' % self.sip_datagram)
         for (field, value) in self._sip_defaults.items():
             self.sip_datagram['sip'][field] = value
 

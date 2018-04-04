@@ -25,9 +25,9 @@ from functools import wraps
 # memoization
 #-------------------------------------------------------------------------------
 
+# @memcache
 def memcache(function):
     ''' cache function return values for faster return.
-    note: use as `@memcache` decorator.
     '''
     memcache = {}
     memcache_size = 0

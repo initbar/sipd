@@ -121,10 +121,8 @@ def unsafe_allocate_random_udp_socket(is_reused=False):
     ''' allocate a random listening UDP socket that must be manually cleaned up.
     '''
     host, port = '0.0.0.0', get_random_unprivileged_port()
-    _socket = None
-    while not _socket:
-        try: _socket = unsafe_allocate_udp_socket(host=host, port=port,
-                                                  is_reused=is_reused)
+    while not locals().get('_socket'):
+        try: _socket = unsafe_allocate_udp_socket(host=host, port=port, is_reused=is_reused)
         except: port = get_random_unprivileged_port()
     return _socket
 

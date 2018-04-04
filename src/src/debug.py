@@ -24,12 +24,6 @@ from datetime import datetime
 from uuid import uuid4 as UUID
 
 import hashlib
-import pprint
-import sys
-
-try:
-    from src.optimizer import memcache
-except ImportError: raise
 
 # namespace
 #-------------------------------------------------------------------------------
@@ -55,19 +49,3 @@ def time_in_ntp():
     now = datetime.utcnow() - datetime(1900, 1, 1, 0, 0, 0)
     ntp = now.seconds + (now.days * 0x15180) # 24 * 60 ** 2
     return str(ntp)
-
-# packet dissection
-#-------------------------------------------------------------------------------
-
-pp      = pprint.PrettyPrinter(indent=2, width=80)
-pformat = pp.pformat # localized function cache.
-
-_stderr = sys.stderr.write # localized function cache.
-
-_delim = '+-' * 40 # localized delimiter cache.
-
-@memcache
-def dissect_packet(packet):
-    ''' pretty-print a text-based network packet.
-    '''
-    _stderr('\n'.join([ _delim, pformat(packet), _delim ]) + '\n')

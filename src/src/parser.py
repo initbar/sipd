@@ -42,23 +42,19 @@ REGX_SDP  = re.compile('^[a-z]{1}=.+$')
 # string entities
 #-------------------------------------------------------------------------------
 
+COLON = ':'
+COMMA = ','
 CRLF = '\r\n'
 
-def safe_encode(plaintext, encoding='utf-8', errors='surrogateescape'):
+def safe_encode(plaintext, encoding='utf-8'):
     ''' safely encode a string to `encoding` type.
     '''
-    try: return plaintext.encode(encoding, errors)
-    except:
-        logger.error('failed to encode: %s' % str(plaintext))
-        return
+    return plaintext.encode(encoding)
 
-def safe_decode(plaintext, encoding='utf-8', errors='surrogateescape'):
+def safe_decode(plaintext, encoding='utf-8'):
     ''' safely decode a string to `encoding` type.
     '''
-    try: return plaintext.decode(encoding, errors)
-    except:
-        logger.error('failed to decode: %s' % str(plaintext))
-        return
+    return plaintext.decode(encoding)
 
 # JSON entities
 #-------------------------------------------------------------------------------
@@ -66,18 +62,12 @@ def safe_decode(plaintext, encoding='utf-8', errors='surrogateescape'):
 def parse_json(_json):
     ''' read JSON and return dictionary.
     '''
-    try: return json.loads(_json)
-    except:
-        logger.error('failed to parse: %s' % str(_json))
-        return
+    return json.loads(safe_encode(_json))
 
-def dump_json(_json={}):
+def dump_json(_json):
     ''' read dictionary and return JSON.
     '''
-    try: return json.dumps(_json)
-    except:
-        logger.error('failed to parse: %s' % str(_json))
-        return
+    return safe_encode(json.dumps(_json))
 
 # SIP entities
 #-------------------------------------------------------------------------------
@@ -85,7 +75,7 @@ def dump_json(_json={}):
 # check if SIP signature exists inside SIP message.
 validate_sip_signature = lambda message: 'SIP' in str(message)
 
-def convert_to_sip_packet(sip_template, sip_datagram={}):
+def convert_to_sip_packet(sip_template, sip_datagram):
     ''' convert human-readable text into ready-only SIP packet.
     '''
     if not sip_template:
@@ -96,7 +86,7 @@ def convert_to_sip_packet(sip_template, sip_datagram={}):
     packet += CRLF.join([
         '%s: %s' % (sip_field, sip_datagram['sip'].get(sip_field))
         for sip_field in sip_template['sip']
-        if sip_datagram['sip'].get(sip_field)])
+        if sip_datagram['sip'].get(sip_field) ])
 
     # reconstruct SDP from datagram.
     if sip_template.get('sdp'):
@@ -124,10 +114,6 @@ def parse_sip_packet(sip_buffer):
         logger.warning('sip_buffer format is incorrect: ' + str(sip_buffer))
         return
 
-    sip_delim = ':'
-
-    comma = ','
-
     # allocate Pythonic object to interface with SIP headers. Originally, the
     # design was to whitelist known SIP headers into a SIP datagram using
     # SIPResponse and SIPRequest datagrams. However, since headers will be
@@ -145,7 +131,9 @@ def parse_sip_packet(sip_buffer):
     # SIP method - parse the method first.
     header = queue.popleft()
     try: method = (SIP_METHODS & set(header.split())).pop()
-    except: logger.error(SIPBrokenProtocol(header))
+    except:
+        logger.error(SIPBrokenProtocol(header))
+        raise
     datagram['sip']['Method'] = [method]
 
     # for the remaining headers, split by the first occurance of header and
@@ -156,7 +144,7 @@ def parse_sip_packet(sip_buffer):
         header = queue.popleft()
         try:
             assert not REGX_SDP.match(header)
-            k, v = header.split(sip_delim, 1)
+            k, v = header.split(COLON, 1)
             datagram['sip'].setdefault(k, [])
             datagram['sip'][k].append(v.strip())
         except:
@@ -168,7 +156,7 @@ def parse_sip_packet(sip_buffer):
     try: # compress multiple SIP keys into single key.
         for (k,v) in list(datagram['sip'].items()):
             datagram_compressed['sip'].setdefault(k, [])
-            datagram_compressed['sip'][k] = comma.join(v)
+            datagram_compressed['sip'][k] = COMMA.join(v)
     except: pass
 
     try: # compress multiple SDP keys into single key.
