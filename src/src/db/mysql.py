@@ -101,7 +101,7 @@ class MySQLClient(object):
             raise DBConnectionError(message)
         return bool(self._cursor)
 
-    @memcache
+    @memcache(size=128)
     def db_execute(self, statement):
         ''' execute SQL statement.
         @statement<str> -- SQL statement.
