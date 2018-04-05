@@ -109,7 +109,12 @@ class MySQLClient(object):
         if not statement:
             return []
         elif not self._cursor: # retry
-            self.db_connect()
+            self.db_connect(
+                host=self.host,
+                port=self.port,
+                username=self.username,
+                password=self.password,
+                database=self.database)
         result = self._blind_sql_execute(sanitize_sql(statement))
         return result
 
