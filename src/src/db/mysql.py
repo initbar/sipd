@@ -16,10 +16,17 @@
 #
 # https://github.com/initbar/sipd
 
-import MySQLdb as mysql
 import datetime
-import logging
 
+try:
+    import MySQLdb as mysql
+
+    from src.db.errors import DBConnectionError
+    from src.db.errors import DBError
+    from src.optimizer import memcache
+except ImportError: raise
+
+import logging
 logger = logging.getLogger(__name__)
 
 # MySQL client allocator
@@ -30,7 +37,7 @@ def unsafe_allocate_mysql_client(*args, **kwargs):
     '''
     try:
         mysql_client = MySQLClientPrototype(*args, **kwargs)
-        assert mysql_client.connect() # connect to database.
+        assert mysql_client.db_connect() # connect to database.
     except Exception as message:
         logger.error("[mysql] unable to allocate client: '%s'." % message)
         logger.warning("[mysql] disabled future database operations.")
@@ -42,13 +49,11 @@ class safe_allocate_mysql_client(object):
     ''' allocate exception-safe MySQL client.
     '''
     def __init__(self, host, port, username, password, database):
-        # configuration.
-        self.host     = host
-        self.port     = port
+        self.host = host
+        self.port = port
         self.username = username
         self.password = password
         self.database = database
-        # database session.
         self._session = None
 
     def __enter__(self):
@@ -69,35 +74,87 @@ class safe_allocate_mysql_client(object):
 class MySQLClientPrototype(object):
     ''' MySQL client wrapper implementation.
     '''
-    def __init__(self, host, port, username, password, database):
-        # configuration.
-        self.host =     str(host)
-        self.port =     int(port)
-        self.username = str(username)
-        self.password = str(password)
-        self.database = str(database)
-        # session.
-        self._session = None
-        self._cursor = None
+    def __init__(self,
+                 host=None,
+                 port=None,
+                 username=None,
+                 password=None,
+                 database=None):
+        ''' MySQL client prototype.
+        @host<str> -- MySQL database address.
+        @port<int> -- MySQL database port.
+        @username<str> -- MySQL database username.
+        @password<str> -- MySQL database password.
+        @database<str> -- MySQL database name.
 
-    def connect(self):
-        ''' connect to MySQL database.
+        : lazy-loaded:
+        @_session<mysql> -- authenticated database session.
+        @_cursor<mysql> -- authenticated database cursor.
         '''
-        try: self._session = mysql.connect(host=self.host,
-                                           port=self.port,
-                                           user=self.username,
-                                           passwd=self.password,
-                                           db=self.database)
-        except: raise # catch failures later.
-        if (self._session and self._session.open):
-            self._cursor = self._session.cursor() # static cursor.
+        self.host = host
+        self.port = port
+        self.username = username
+        self.password = password
+        self.database = database
+
+    def db_connect(self,
+                   host='127.0.0.1',
+                   port=3306,
+                   username='root',
+                   password='',
+                   database):
+        ''' connect to database.
+        @host<str> -- MySQL database address.
+        @port<int> -- MySQL database port.
+        @username<str> -- MySQL database username.
+        @password<str> -- MySQL database password.
+        @database<str> -- MySQL database name.
+        '''
+        if not all([ host, port, username, database ]):
+            raise DBParameterError
+        else:
+            self.host = host
+            self.port = port
+            self.username = username
+            self.password = password
+            self.database = database
+
+        self._session = self._cursor = None
+        try: # connecting to database.
+            self._session = mysql.connect(host=host,
+                                          port=port,
+                                          user=username,
+                                          passwd=password,
+                                          db=database)
+        except Exception as message:
+            raise DBConnectionError(message)
+
+        try: # cache database cursor.
+            assert self._session and self._session.open
+            self._cursor = self._session.cursor()
+            assert self._session and self._cursor
+        except Exception as message:
+            raise DBConnectionError(message)
         return bool(self._cursor)
 
-    def run(self, statement):
-        ''' run SQL statement.
+    @memcache
+    def db_execute(self, statement):
+        ''' execute SQL statement.
+        @statement<str> -- SQL statement.
         '''
-        if not (self._session and statement): yield []
-        try: self._cursor.execute(statement)
+        if not statement:
+            return []
+        elif not self._cursor: # retry
+            self.db_connect()
+        result = self._blind_sql_execute(sanitize_sql(statement))
+        return result
+
+    def _blind_sql_execute(self, statement):
+        ''' blind execute SQL statement.
+        @statement<str> -- SQL statement.
+        '''
+        try:
+            self._cursor.execute(statement)
         except Exception as message:
-            logger.error("[mysql] failed to execute query: '%s'." % message)
+            raise DBExecutionError(message)
         yield self._cursor.fetchall()
