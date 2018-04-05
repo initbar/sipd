@@ -22,27 +22,42 @@
 
 from functools import wraps
 
-# memoization
+try:
+   import cPickle as pickle
+except:
+   import pickle
+
+# memoization technique
 #-------------------------------------------------------------------------------
 
-# @memcache
-def memcache(function):
-    ''' cache function return values for faster return.
+def memcache(size=64):
+    ''' decorator for caching function returns.
+    @size<int> -- max cache limit.
     '''
-    memcache = {}
-    memcache_size = 0
-    memcache_max = 64
-    @wraps(function)
-    def wrapper(*entry):
-        # make sure cache has upper memory limit.
-        if memcache_size >= memcache_max:
-            memcache_size = 0
-            memcache.clear()
-        if entry in memcache: # hit.
-            return memcache.get(entry)
-        else: # miss.
-            _ = function(*entry)
-            memcache[entry] = _
-            memcache_size += 1
-            return _
-    return wrapper
+    size = max(1, size)
+    queue = []
+    cache = {}
+
+    def memcache_impl(function):
+        @wraps(function)
+        def wrapper(*entry):
+            key = ''.join(pickle.dumps(entry).split()) # serialize the object.
+            try:
+                # every time a certain cached object is hit, escalate the
+                # priority of that object by moving it to the top of cache.
+                queue.insert(0, (queue.pop(queue.index(key))))
+                return cache[key]
+            except:
+                # if cache is missed, then calculate the result and consider
+                # the object to have extremely high priority.
+                result = function(*entry)
+                cache[key] = result
+                queue.insert(0, key)
+
+                # enforce size constraint and evict least-used object.
+                if len(queue) > size:
+                    del cache[queue.pop()]
+            print queue
+            return cache[key]
+        return wrapper
+    return memcache_impl
