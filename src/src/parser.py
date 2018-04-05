@@ -23,7 +23,6 @@
 from collections import deque
 
 import json
-import logging
 import re
 
 try:
@@ -31,6 +30,7 @@ try:
     from src.sip.methods import SIP_METHODS
 except ImportError: raise
 
+import logging
 logger = logging.getLogger(__name__)
 
 # pre-compiled regex

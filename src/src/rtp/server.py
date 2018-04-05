@@ -20,7 +20,6 @@
 # server.py -- synchronous external RTP routing module.
 #-------------------------------------------------------------------------------
 
-import logging
 import random
 
 try:
@@ -31,6 +30,7 @@ try:
     from src.sockets import safe_allocate_random_udp_socket
 except ImportError: raise
 
+import logging
 logger = logging.getLogger(__name__)
 
 # RTP router

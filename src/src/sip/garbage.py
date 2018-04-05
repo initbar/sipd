@@ -18,7 +18,6 @@
 
 from collections import deque
 
-import logging
 import threading
 import time
 
@@ -29,6 +28,7 @@ try:
     from src.rtp.server import SynchronousRTPRouter
 except ImportError: raise
 
+import logging
 logger = logging.getLogger(__name__)
 
 #-------------------------------------------------------------------------------

@@ -44,7 +44,6 @@
 from multiprocessing import cpu_count
 
 import asyncore
-import logging
 import random
 import sys
 import threading
@@ -70,6 +69,7 @@ try:
     from src.sockets import unsafe_allocate_udp_socket
 except ImportError: raise
 
+import logging
 logger = logging.getLogger(__name__)
 
 # each worker should not instantiate a new garbage collector since a subsequent

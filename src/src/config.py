@@ -20,13 +20,12 @@
 # config.py -- config parser, custom overrides, and default states.
 #-------------------------------------------------------------------------------
 
-import logging
-
 try:
     from src.parser import parse_json
     from src.sockets import get_server_address
 except ImportError: raise
 
+import logging
 logger = logging.getLogger(__name__)
 
 def parse_config(config={}):

@@ -22,9 +22,9 @@
 
 from random import randint
 
-import logging
 import socket
 
+import logging
 logger = logging.getLogger(__name__)
 
 # network
