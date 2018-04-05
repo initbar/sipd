@@ -20,24 +20,18 @@
 # errors.py -- custom error suite.
 #-------------------------------------------------------------------------------
 
+# default
 class SIPError(Exception):
-    ''' default SIP error.
-    '''
-    def __init__(self, *args):
-        super(SIPError, self).__init__(*args)
-        self.args = args
+    pass
 
+# SIP frame is not parsable by handler.
 class SIPBrokenProtocol(SIPError):
-    ''' invalid SIP message format.
-    '''
     pass
 
+# Python object to SIP message convert error.
 class SIPPackError(SIPError):
-    ''' SIP message to Python object parsing error.
-    '''
     pass
 
+# SIP message to Python object convert error.
 class SIPUnpackError(SIPError):
-    ''' Python object to SIP message conversion error.
-    '''
     pass
