@@ -41,7 +41,7 @@ def memcache(size=64):
     def memcache_impl(function):
         @wraps(function)
         def wrapper(*entry):
-            key = ''.join(pickle.dumps(entry).split()) # serialize the object.
+            key = pickle.dumps(entry) # serialize the object.
             try:
                 # every time a certain cached object is hit, escalate the
                 # priority of that object by moving it to the top of cache.
