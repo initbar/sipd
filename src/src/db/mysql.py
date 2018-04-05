@@ -20,58 +20,22 @@ import datetime
 
 try:
     import MySQLdb as mysql
-
-    from src.db.errors import DBConnectionError
-    from src.db.errors import DBError
     from src.optimizer import memcache
+    from src.db.errors import (
+        DBConnectionError,
+        DBError,
+        DBExecutionError,
+        DBParameterError
+    )
 except ImportError: raise
 
 import logging
 logger = logging.getLogger(__name__)
 
-# MySQL client allocator
+# MySQL client
 #-------------------------------------------------------------------------------
 
-def unsafe_allocate_mysql_client(*args, **kwargs):
-    ''' unsafely allocate a MySQL client.
-    '''
-    try:
-        mysql_client = MySQLClientPrototype(*args, **kwargs)
-        assert mysql_client.db_connect() # connect to database.
-    except Exception as message:
-        logger.error("[mysql] unable to allocate client: '%s'." % message)
-        logger.warning("[mysql] disabled future database operations.")
-        return
-    logger.info("[mysql] successfully allocated db client.")
-    return mysql_client
-
-class safe_allocate_mysql_client(object):
-    ''' allocate exception-safe MySQL client.
-    '''
-    def __init__(self, host, port, username, password, database):
-        self.host = host
-        self.port = port
-        self.username = username
-        self.password = password
-        self.database = database
-        self._session = None
-
-    def __enter__(self):
-        self._session = unsafe_allocate_mysql_client(self.host,
-                                                     self.port,
-                                                     self.username,
-                                                     self.password,
-                                                     self.database)
-        return self._session # assumed that client is connected.
-
-    def __exit__(self, type, value, traceback):
-        try: self._session.close()
-        except: del self._session
-
-# MySQL clients
-#-------------------------------------------------------------------------------
-
-class MySQLClientPrototype(object):
+class MySQLClient(object):
     ''' MySQL client wrapper implementation.
     '''
     def __init__(self,
