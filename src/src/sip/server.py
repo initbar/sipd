@@ -52,7 +52,6 @@ import time
 
 try:
     from src.debug import create_random_uuid
-    from src.debug import dissect_packet
     from src.errors import SIPBrokenProtocol
     from src.parser import convert_to_sip_packet
     from src.parser import parse_sip_packet

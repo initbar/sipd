@@ -55,8 +55,23 @@ You can either use `make` to build and deploy to a remote server or `pip` to dow
 ~$ make
 ```
 
+## Database
+
+Install the appropriate packages to connect to a db server:
+
+**impala**
+
+```bash
+~$ pip install impyla==0.14.0
+```
+
+**mysql**
+
+```bash
+~$ pip install mysqlclient==1.3.12
+```
+
 ## License
 **sipd** is licensed under [GNU GPLv3](./LICENSE.md).
-
 
 [![FOSSA Status](https://app.fossa.io/api/projects/git%2Bgithub.com%2Finitbar%2Fsipd.svg?type=large)](https://app.fossa.io/projects/git%2Bgithub.com%2Finitbar%2Fsipd?ref=badge_large)
