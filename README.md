@@ -57,19 +57,7 @@ You can either use `make` to build and deploy to a remote server or `pip` to dow
 
 ## Database
 
-Install the appropriate packages to connect to a db server:
-
-**impala**
-
-```bash
-~$ pip install impyla==0.14.0
-```
-
-**mysql**
-
-```bash
-~$ pip install mysqlclient==1.3.12
-```
+By default, **sipd** only supports MySQL database. For more, please feel free to fork the project and PR.
 
 ## License
 **sipd** is licensed under [GNU GPLv3](./LICENSE.md).
