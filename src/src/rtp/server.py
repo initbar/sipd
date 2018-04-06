@@ -46,12 +46,13 @@ class RTPRouterPrototype(object):
         try:
             self.rtp_handlers = filter(lambda handler: handler['enabled'],
                                         setting['rtp']['handler'])
-            logger.debug('---- [rtp] loaded handlers: %s' % self.rtp_handlers)
+            logger.info('[rtp] loaded handlers:')
+            logger.info(self.rtp_handlers)
         except Exception as message:
             logger.error('---- [rtp] failed to load: %s' % message)
             self.rtp_handlers = None
         self.tag = None # inherited session tag from worker.
-        logger.debug('[rtp] successfully initialized.')
+        logger.info('[rtp] successfully initialized.')
 
     def get_random_rtp_handler(self):
         return random.choice(self.rtp_handlers)

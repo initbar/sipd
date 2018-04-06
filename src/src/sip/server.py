@@ -83,11 +83,11 @@ SERVER_SETTINGS = {} # `sipd.json`
 # SIP socket
 #-------------------------------------------------------------------------------
 
-def unsafe_allocate_sip_socket(host='0.0.0.0', port=5060, timeout=1.0):
+def unsafe_allocate_sip_socket(port=5060, timeout=1.0):
     ''' allocate listening SIP socket that must be manually cleaned up.
     '''
     logger.debug('attempting to create SIP socket on port: %i.' % port)
-    return unsafe_allocate_udp_socket(host, port, timeout, is_reused=True)
+    return unsafe_allocate_udp_socket(port=port, timeout=timeout, is_reused=True)
 
 class safe_allocate_sip_socket(object):
     ''' allocate exception-safe listening SIP socket.
@@ -95,7 +95,6 @@ class safe_allocate_sip_socket(object):
     def __init__(self, port=5060, timeout=1.0):
         self.port = port
         self.timeout = timeout
-        self._socket = None
 
     def __enter__(self):
         self._socket = unsafe_allocate_sip_socket(port=self.port, timeout=self.timeout)
@@ -115,11 +114,11 @@ class SIPServerPrototype(object):
     ''' Asynchronous SIP server prototype.
     '''
     def __init__(self, setting):
-        if isinstance(setting, dict):
-            # globalize settings and garbage collector.
+        # globalize settings and garbage collector.
+        if setting and isinstance(setting, dict):
             global SERVER_SETTINGS; SERVER_SETTINGS = setting
             global GC; GC = SynchronousSIPGarbageCollector(setting)
-            logger.debug('[sip] globalized settings.')
+            logger.info('[sip] globalized settings.')
         logger.info('[sip] server initialized.')
 
 class AsynchronousSIPServer(SIPServerPrototype):
@@ -178,7 +177,7 @@ class SIPRouterPrototype(asyncore.dispatcher):
             self._worker_size = min(max(worker_size, 1), cpu_count())
         except:
             self._worker_size = 1 + int(cpu_count() * 0.32)
-        logger.debug('[sip] total router workers: %i.', self._worker_size)
+        logger.info('[sip] total router workers: %i.', self._worker_size)
 
         self._random = random.random # cache random number generator.
 
@@ -252,14 +251,14 @@ class SIPWorkerPrototype(object):
         # default SIP headers to override parsed requests and respond with.
         try: self._sip_defaults = SERVER_SETTINGS['sip']['worker']['headers']
         except: self._sip_defaults = {}
-        logger.debug('[env] sip defaults: %s' % self._sip_defaults)
+        logger.info('[sip] sip defaults: %s' % self._sip_defaults)
 
         # if SIP server did not receive CANCEL/BYE due to unforseen error(s),
         # then we need absolute maximum time-to-live (ttl) value to force-expire
         # a call from RTP decoder. By default, all calls expire after one hour.
         try: self.lifetime = SERVER_SETTINGS['gc']['call_lifetime'] # seconds
         except: self.lifetime = 60 * 60
-        logger.debug('[env] call lifetime: %s' % self.lifetime)
+        logger.info('[sip] call lifetime: %s' % self.lifetime)
 
         # shared objects.
         [
@@ -321,8 +320,7 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
             logger.error("---- [sip] [%s] <<%s>> PARSE FAILED: '%s'" % (
                 self.name, self.tag, self.sip_message))
             return self.relinquish_work()
-        except Exception as message:
-            logger.error("----- [sip] %s" % message)
+        except:
             return self.relinquish_work()
 
         # override parsed values with pre-defined fields.

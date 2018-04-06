@@ -17,7 +17,7 @@
 # https://github.com/initbar/sipd
 
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.2.6'
+__version__ = '1.2.7'
 __license__ = 'GNU GPLv3'
 
 try: # check supported version.
@@ -113,7 +113,7 @@ if __name__ == '__main__':
                 content = f.read()
                 config = parse_config(content)
             logger.info('successfully loaded configurations:')
-            logger.debug(str(config))
+            logger.info(str(config))
         except AssertionError:
             config = None
             logger.error('unable to load configurations: ' + config_file)
