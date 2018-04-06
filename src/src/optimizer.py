@@ -53,11 +53,11 @@ def memcache(size=64):
                 result = function(*entry)
                 cache[key] = result
                 queue.insert(0, key)
-
+                return cache[key]
+            finally:
                 # enforce size constraint and evict least-used objects.
                 queue_size = len(queue)
                 while queue_size > size:
                     del cache[queue.pop()]
-            return cache[key]
         return wrapper
     return memcache_impl
