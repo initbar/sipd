@@ -27,6 +27,7 @@ import re
 
 try:
     from src.errors import SIPBrokenProtocol
+    from src.optimizer import memcache
     from src.sip.methods import SIP_METHODS
 except ImportError: raise
 
@@ -75,6 +76,7 @@ def dump_json(_json):
 # check if SIP signature exists inside SIP message.
 validate_sip_signature = lambda message: 'SIP' in str(message)
 
+@memcache(size=128)
 def convert_to_sip_packet(sip_template, sip_datagram):
     ''' convert human-readable text into ready-only SIP packet.
     '''
@@ -107,6 +109,7 @@ def convert_to_sip_packet(sip_template, sip_datagram):
         packet += CRLF
     return packet
 
+@memcache(size=128)
 def parse_sip_packet(sip_buffer):
     ''' deconstruct a SIP packet to a list of headers.
     '''
