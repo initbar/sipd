@@ -96,7 +96,7 @@ class MySQLClient(object):
         try: # cache database cursor.
             assert self._session and self._session.open
             self._cursor = self._session.cursor()
-            assert self._session and self._cursor
+            assert self._cursor
         except Exception as message:
             raise DBConnectionError(message)
         return bool(self._cursor)
