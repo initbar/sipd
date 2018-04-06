@@ -16,10 +16,6 @@
 #
 # https://github.com/initbar/sipd
 
-__program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.2.7'
-__license__ = 'GNU GPLv3'
-
 try: # check supported version.
     import sys
     assert (2,7) <= sys.version_info <= (3,7)
@@ -33,17 +29,37 @@ try:
     from src.sip.server import AsynchronousSIPServer
 except ImportError: raise
 
+__program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
+__version__ = '1.2.8'
+__license__ = 'GNU GPLv3'
+
+# Logging
+#-------------------------------------------------------------------------------
+
 import logging
-logging.basicConfig(
-    level=logging.DEBUG,
-    format=' '.join(
-        [
-            '[%(asctime)-15s]',
-            '<%(filename)s:%(lineno)s>',
-            '[%(levelname)s]',
-            '%(message)s'
-        ])
-); logger = logging.getLogger(__name__)
+
+from logging.handlers import RotatingFileHandler
+from logging import handlers
+
+log_format = ' '.join(
+    [
+        '[%(asctime)-15s]',
+        '<%(filename)s:%(lineno)s>',
+        '[%(levelname)s]',
+        '%(message)s'
+    ]
+)
+
+logger_console = logging.StreamHandler(sys.stdout)
+logger_file = handlers.RotatingFileHandler('./sipd.log', maxBytes=5*0x100000, backupCount=7)
+
+logging.basicConfig(format=log_format, level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+logger.addHandler(logger_console)
+logger.addHandler(logger_file)
+
+# Test
+#-------------------------------------------------------------------------------
 
 def test():
     logger.info('initializing self-tests ..')
@@ -69,9 +85,8 @@ def test():
     result = unittest.TextTestRunner(verbosity=2).run(unittest.TestSuite(test_suites))
     return (not result.wasSuccessful())
 
-#
-# sipd
-#
+# CLI
+#-------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 

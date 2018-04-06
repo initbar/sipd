@@ -9,3 +9,4 @@ local/
 pip-selfcheck.json
 sipd
 sipd.egg-info/
+sipd.log

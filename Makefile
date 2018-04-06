@@ -20,6 +20,7 @@ test:
 
 clean:
 	rm -fv $(BINARY)
+	rm -fv $(PROJECT)/sipd.log
 	find $(SOURCE) \
 	     -type f \
 	     -iname "*.py[oc]" \

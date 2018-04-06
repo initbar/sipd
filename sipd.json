@@ -83,10 +83,5 @@
     "gc": {
         "call_lifetime": 3600,
         "check_interval": 0.1
-    },
-    "log": {
-        "level": "DEBUG",
-        "stdout_file": "sipd.log",
-        "stderr_file": "sipd.err"
     }
 }
