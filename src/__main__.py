@@ -30,7 +30,7 @@ try:
 except ImportError: raise
 
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.2.8'
+__version__ = '1.2.9'
 __license__ = 'GNU GPLv3'
 
 # Logging
@@ -38,10 +38,12 @@ __license__ = 'GNU GPLv3'
 
 import logging
 
+from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
-from logging import handlers
 
-log_format = ' '.join(
+logging_file = os.path.abspath(os.path.curdir) + '/sipd.log'
+logging_size = 10 * 0x100000 # MB
+logging_format = ' '.join(
     [
         '[%(asctime)-15s]',
         '<%(filename)s:%(lineno)s>',
@@ -50,13 +52,21 @@ log_format = ' '.join(
     ]
 )
 
-logger_console = logging.StreamHandler(sys.stdout)
-logger_file = handlers.RotatingFileHandler('./sipd.log', maxBytes=5*0x100000, backupCount=7)
+handler_console = StreamHandler(sys.stdout)
+handler_file    = RotatingFileHandler(logging_file,
+                                      maxBytes=logging_size,
+                                      backupCount=30)
 
-logging.basicConfig(format=log_format, level=logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG,
+                    format=logging_format,
+                    handlers=[
+                        handler_console,
+                        handler_file
+                    ])
+
 logger = logging.getLogger(__name__)
-logger.addHandler(logger_console)
-logger.addHandler(logger_file)
+# logger.addHandler(handler_console)
+# logger.addHandler(handler_file)
 
 # Test
 #-------------------------------------------------------------------------------
@@ -118,7 +128,9 @@ if __name__ == '__main__':
 
     try:
         args = argsparser.parse_args()
-        if args.test: sys.exit(test()) # unit tests.
+
+        # run unit tests.
+        if args.test: sys.exit(test())
 
         # parse configuration.
         config_file = str(args.config)
@@ -130,9 +142,10 @@ if __name__ == '__main__':
             logger.info('successfully loaded configurations:')
             logger.info(str(config))
         except AssertionError:
-            config = None
             logger.error('unable to load configurations: ' + config_file)
-        server = AsynchronousSIPServer(config)
+
+        # deploy server.
+        server = AsynchronousSIPServer(locals().get('config'))
         sys.exit(server.serve())
     except KeyboardInterrupt: pass
     finally:
