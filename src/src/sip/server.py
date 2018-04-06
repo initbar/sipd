@@ -87,7 +87,7 @@ def unsafe_allocate_sip_socket(port=5060, timeout=1.0):
     ''' allocate listening SIP socket that must be manually cleaned up.
     '''
     logger.debug('attempting to create SIP socket on port: %i.' % port)
-    return unsafe_allocate_udp_socket(port=port, timeout=timeout, is_reused=True)
+    return unsafe_allocate_udp_socket(host='0.0.0.0', port=port, timeout=timeout, is_reused=True)
 
 class safe_allocate_sip_socket(object):
     ''' allocate exception-safe listening SIP socket.
