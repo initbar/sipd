@@ -56,8 +56,7 @@ def memcache(size=64):
                 return cache[key]
             finally:
                 # enforce size constraint and evict least-used objects.
-                queue_size = len(queue)
-                while queue_size > size:
+                while len(queue) > size:
                     del cache[queue.pop()]
         return wrapper
     return memcache_impl
