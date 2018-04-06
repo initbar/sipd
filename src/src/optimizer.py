@@ -31,8 +31,8 @@ except:
 #-------------------------------------------------------------------------------
 
 def memcache(size=64):
-    ''' decorator for caching function returns.
-    @size<int> -- max cache limit.
+    ''' decorator implementation for caching function returns.
+    @size<int> -- max cache entry limit.
     '''
     size = max(1, size)
     queue = []
@@ -54,8 +54,9 @@ def memcache(size=64):
                 cache[key] = result
                 queue.insert(0, key)
 
-                # enforce size constraint and evict least-used object.
-                if len(queue) > size:
+                # enforce size constraint and evict least-used objects.
+                queue_size = len(queue)
+                while queue_size > size:
                     del cache[queue.pop()]
             return cache[key]
         return wrapper
