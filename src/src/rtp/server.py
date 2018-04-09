@@ -44,13 +44,12 @@ class RTPRouterPrototype(object):
         try:
             self.rtp_handlers = filter(lambda handler: handler['enabled'],
                                         setting['rtp']['handler'])
-            logger.info('[rtp] loaded handlers:')
-            logger.info(self.rtp_handlers)
+            logger.debug('<rtp>:successfully loaded RTP handler configuration.')
         except Exception as message:
-            logger.error('---- [rtp] failed to load: %s' % message)
+            logger.error('<rtp>:failed to load: %s' % message)
             self.rtp_handlers = None
         self.tag = None # inherited session tag from worker.
-        logger.info('[rtp] successfully initialized.')
+        logger.info('<rtp>:successfully initialized RTP handlers.')
 
     def get_random_rtp_handler(self):
         return random.choice(self.rtp_handlers)
@@ -61,10 +60,10 @@ class RTPRouterPrototype(object):
             address = str(handler['host'])
             port    = int(handler['port'])
             server  = (address, port)
-            logger.debug('---- [rtp] balancing to handler: %s' % str(server))
+            logger.debug('<rtp>:balancing to available handler: %s' % str(server))
             return server
         except Exception as message:
-            logger.error('---- [rtp] failed to balance to handler: %s' % message)
+            logger.error('<rtp>:failed to balance to handler: %s' % message)
             return
 
     def _external_handler(self, *args, **kwargs):
@@ -101,26 +100,26 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             if not rtp_handler: return
 
             udp_socket.sendto(dump_json(template), rtp_handler)
-            logger.info("<<-- [rtp] <<%s>> sent 'start' to external rtpd." % self.tag)
-            logger.info("---- [rtp] <<%s>> waiting response from external rtpd." % self.tag)
+            logger.info("\033[93m\033[01m<<<\033[00m <rtp>:<<%s>> requesting external rtpd." % self.tag)
+            logger.info("<rtp>:<<%s>> waiting response from external rtpd." % self.tag)
             try: payload = udp_socket.recvfrom(0xff)
             except Exception as message:
-                logger.error('---- [rtp] <<%s>> external rtpd is DOWN: %s.' % (self.tag, str(message)))
+                logger.error('<rtp>:<<%s>> external rtpd is down: %s.' % (self.tag, str(message)))
                 return
 
-            logger.info('---- [rtp] <<%s>> external rtpd is UP.' % self.tag)
+            logger.info('<rtp>:<<%s>> external rtpd is UP.' % self.tag)
             rtpd_server, rtpd_payload = tuple(payload[1]), str(payload[0])
-            logger.debug("-->> [rtp] <<%s>> [%s] received %s Bytes from external rtpd." % (
+            logger.debug("\033[93m\033[01m>>>\033[00m <rtp>:<<%s>> [%s] received %s Bytes from external rtpd." % (
                 self.tag, rtp_handler, hex(len(rtpd_payload))))
 
             # receive RTP ports.
             rtpd_json = parse_json(rtpd_payload)
-            logger.info("---- [rtp] <<%s>> parsed responses from external rtpd." % self.tag)
+            logger.info("<rtp>:<<%s>> parsed responses from external rtpd." % self.tag)
 
             # generate static SDP data.
             tx_port, rx_port = rtpd_json.get('TxPort'), rtpd_json.get('RxPort')
-            logger.debug('---- [rtp] <<%s>> RxPort = %s' % (self.tag, rx_port))
-            logger.debug('---- [rtp] <<%s>> TxPort = %s' % (self.tag, tx_port))
+            logger.debug('<rtp>:<<%s>> RxPort = %s' % (self.tag, rx_port))
+            logger.debug('<rtp>:<<%s>> TxPort = %s' % (self.tag, tx_port))
             server_address = self.setting['sip']['server']['address']
 
             # currently only delegates: G.711, G.729 encodings.
@@ -171,24 +170,24 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             if not rtp_handler: return
 
             udp_socket.sendto(dump_json(template), rtp_handler)
-            logger.info("<<-- [rtp] <<%s>> sent 'stop' to external rtpd." % self.tag)
-            logger.info("---- [rtp] <<%s>> waiting response from external rtpd." % self.tag)
+            logger.info("\033[93m\033[01m<<<\033[00m <rtp>:<<%s>> sent 'stop' to external rtpd." % self.tag)
+            logger.info("<rtp>:<<%s>> waiting response from external rtpd." % self.tag)
             try: payload = udp_socket.recvfrom(0xff)
             except Exception as message:
-                logger.error('[rtp] <<%s>> external rtpd is DOWN: %s.' % (self.tag, str(message)))
+                logger.error('<rtp>:<<%s>> external rtpd is DOWN: %s.' % (self.tag, str(message)))
                 return False
 
-            logger.info('---- [rtp] <<%s>> external rtpd is UP.' % self.tag)
+            logger.info('<rtp>:<<%s>> external rtpd is UP.' % self.tag)
             rtpd_server, rtpd_payload = tuple(payload[1]), str(payload[0])
-            logger.debug("-->> [rtp] <<%s>> [%s] received %s Bytes from external rtpd." % (
+            logger.debug("\033[93m\033[01m>>>\033[00m <rtp>:<<%s>> [%s] received %s Bytes from external rtpd." % (
                 self.tag, rtp_handler, hex(len(rtpd_payload))))
 
             rtpd_json = parse_json(rtpd_payload)
-            logger.info("---- [rtp] <<%s>> parsed responses from external rtpd." % self.tag)
+            logger.info("<rtp>:<<%s>> parsed responses from external rtpd." % self.tag)
             status_code = rtpd_json.get('ResultCode')
             status_message = rtpd_json.get('Message')
-            logger.debug('---- [rtp] <<%s>> ResultCode: %s' % (self.tag, status_code))
-            logger.debug('---- [rtp] <<%s>> Message: %s' % (self.tag, status_message))
+            logger.debug('<rtp>:<<%s>> ResultCode: %s' % (self.tag, status_code))
+            logger.debug('<rtp>:<<%s>> Message: %s' % (self.tag, status_message))
 
         # return original/updated sip datagram.
         return call_id

@@ -45,7 +45,8 @@ def get_server_address():
             if not address.startswith("127.")
         ][0]
     except Exception as message:
-        logger.error('failed to get server address: %s' % message)
+        logger.error("<socket>:failed to get server address: '%s'" % message)
+        logger.warning("<socket>:using '127.0.0.1' as server address.")
         return '127.0.0.1'
 
 # get random port number from unprivileged port range.
@@ -63,7 +64,7 @@ def unsafe_allocate_udp_socket(host='127.0.0.1', port=None, timeout=1.0,
     if not is_client and any([
             host not in ['127.0.0.1', 'localhost', '0.0.0.0'],
             not (1024 < port <= 65535 )]):
-        logger.error('wrong socket allocation parameters: (%s,%s)' % (host, port))
+        logger.error('<socket>:incorrect socket parameters: (%s,%s)' % (host, port))
         return
 
     # create a UDP socket.
@@ -77,12 +78,12 @@ def unsafe_allocate_udp_socket(host='127.0.0.1', port=None, timeout=1.0,
         _socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, True)
 
     try: # bind listening sockets.
-        logger.debug('attempting to bind udp socket: %i.' % port)
+        logger.debug("<socket>:attempting to bind udp socket: '%i'" % port)
         _socket.settimeout(timeout)
         _socket.bind((host, port))
-        logger.debug('udp socket successfully binded.')
+        logger.debug("<socket>:successfully binded udp socket: '%i'" % port)
     except:
-        logger.error('cannot bind udp socket to port: %i.' % port)
+        logger.error("<socket>:failed to bind udp socket: '%i'" % port)
         return
     return _socket
 
@@ -92,9 +93,9 @@ def unsafe_allocate_udp_socket(host='127.0.0.1', port=None, timeout=1.0,
 def unsafe_allocate_udp_client(timeout=1.0):
     ''' allocate a random UDP client that must be manually cleaned up.
     '''
-    logger.info('attempting to create udp client.')
+    logger.debug('<socket>:attempting to create udp client.')
     try: return unsafe_allocate_udp_socket(is_client=True, timeout=timeout)
-    finally: logger.info('successfully created udp client.')
+    finally: logger.debug('successfully created udp client.')
 
 class safe_allocate_udp_client(object):
     ''' allocate exception-safe random UDP client.
@@ -110,8 +111,6 @@ class safe_allocate_udp_client(object):
     def __exit__(self, type, value, traceback):
         try: self._socket.close()
         except:
-            self._socket.shutdown()
-            self._socket.close()
             del self._socket
 
 # UDP server
@@ -140,6 +139,4 @@ class safe_allocate_random_udp_socket(object):
     def __exit__(self, type, value, traceback):
         try: self._socket.close()
         except:
-            self._socket.shutdown()
-            self._socket.close()
             del self._socket

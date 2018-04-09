@@ -68,7 +68,7 @@ logger = logging.getLogger(__name__)
 
 try: # colorize log entries.
     import coloredlogs
-    coloredlogs.install(level='DEBUG', logger=logger)
+    coloredlogs.install(level='DEBUG', logger=logger, milliseconds=True)
 except: pass
 
 # Test
@@ -140,10 +140,10 @@ if __name__ == '__main__':
             with open(config_file) as f:
                 content = f.read()
                 config = parse_config(content)
-            logger.info('successfully loaded configurations:')
-            logger.info(str(config))
+            logger.info("<config>:successfully loaded configuration file: '%s'" % config_file)
+            logger.debug(str(config))
         except AssertionError:
-            logger.error('unable to load configurations: ' + config_file)
+            logger.warning("configuration file does not exist: '%s'" % config_file)
 
         # deploy server.
         server = AsynchronousSIPServer(locals().get('config'))

@@ -74,7 +74,7 @@ class SynchronousSIPWorker(object):
                  settings={},
                  gc=None,
                  verbose=False):
-        self.name = 'worker-' + str(worker_id)
+        self.name = 'worker-node-' + str(worker_id)
         self.verbose = verbose
 
         self.__settings = settings
@@ -91,17 +91,19 @@ class SynchronousSIPWorker(object):
 
         try: # load any SIP headers from setting.
             self.sip_headers = settings['sip']['worker']['headers']
+            logger.debug('<sip>:successfully loaded `sip headers`.')
         except:
-            logger.warning('[sip] failed to parse sip headers setting.')
+            logger.error('<sip>:failed to parse `sip headers`.')
+            logger.warning('<sip>:using empty headers.')
             self.sip_headers = {}
-        logger.info('[sip] sip defaults: %s' % self.sip_headers)
 
         try: # load call lifetime from setting.
             self.lifetime = settings['gc']['call_lifetime'] # seconds
+            logger.debug("<sip>:successfully loaded `call lifetime`: '%i'" % self.lifetime)
         except:
-            logger.warning('[sip] failed to parse sip lifetime setting.')
+            logger.error('<sip>:failed to parse `call lifetime`.')
+            logger.warning('<sip>:using default 1 hour lifetime.')
             self.lifetime = 60 * 60
-        logger.info('[sip] call lifetime: %s' % self.lifetime)
 
         # handler configuration.
         self.handlers = {
@@ -113,7 +115,7 @@ class SynchronousSIPWorker(object):
         }
 
         self.__sip_endpoint = self.__sip_message = None # "work"
-        logger.info("[sip] '%s' initialized." % self.name)
+        logger.info("<sip>:successfully initialized: '%s'" % self.name)
 
     @property
     def sip_endpoint(self):
@@ -158,31 +160,26 @@ class SynchronousSIPWorker(object):
             if not validate_sip_signature(self.sip_message):
                 raise SIPBrokenProtocol
             self.__sip_datagram = parse_sip_packet(self.sip_message)
-
-        # instead of error correction, relinquish the work from worker so that
-        # it can move on to the next future task.
         except SIPBrokenProtocol:
-            logger.error("---- [sip] [%s] <<%s>> PARSE FAILED: '%s'" % (self.name,
-                                                                        self.__tag,
-                                                                        self.sip_message))
-            logger.warning('---- [sip] [%s] prematurely relinquishing work.' % self.name)
+            logger.error("<sip>:[%s] <<%s>> PARSE FAILED: '%s'" % (self.name, self.__tag, self.sip_message))
+            logger.warning('<sip>:[%s] <<%s>> prematurely relinquishing work.' % (self.name, self.__tag))
             return self.cleanup()
         except:
-            logger.warning('---- [sip] [%s] prematurely relinquishing work.' % self.name)
+            logger.error('<sip>:[%s] <<%s>> no work received or available.' % (self.name, self.__tag))
             return self.cleanup()
 
         try: # override parsed SIP headers with default headers.
             self.__call_id = self.__sip_datagram['sip'].get('Call-ID')
             self.__method  = self.__sip_datagram['sip'].get('Method')
         except:
-            logger.error('---- [sip] malformed packet: %s' % self.__sip_datagram)
-            logger.warning('---- [sip] [%s] prematurely relinquishing work.' % self.name)
+            logger.error('<sip>:[%s] <<%s>> malformed SIP packet: %s' % (self.name, self.__tag, self.__sip_datagram))
+            logger.warning('<sip>:[%s] <<%s>> prematurely relinquishing work.' % (self.name, self.__tag))
             return self.cleanup()
 
         for (field, value) in self.sip_headers.items():
             self.__sip_datagram['sip'][field] = value
 
-        logger.debug('-->> [sip] [%s] <<%s>> <%s>' % (self.name, self.__tag, self.__method))
+        logger.debug('\033[93m\033[01m>>>\033[00m <sip>:[%s] <<%s>> <%s>' % (self.name, self.__tag, self.__method))
         self.handlers.get(self.__method, 'DEFAULT')()
         self.cleanup()
 
@@ -221,11 +218,11 @@ class SynchronousSIPWorker(object):
 
         # if there is duplicate SIP INVITE packet, then consider as HOLD.
         if self.__call_id in self.__garbage.calls_history:
-            logger.warning('---- [sip] received duplicate Call-ID: %s' % self.__call_id)
+            logger.warning('<sip>: [%s] <<%s>> received duplicate Call-ID: %s' % % (self.name, self.__tag, self.__call_id))
             return self.__send_sip_ok_no_sdp()
         elif not self.__rtp_handler:
             # TODO: retry setting up RTP handler.
-            logger.error('---- [sip] external RTP handler is not configured.')
+            logger.error('<sip>: [%s] <<%s>> external RTP handler is not configured.' % (self.name, self.__tag))
             return self.__send_sip_ok_no_sdp()
 
         # prepare RTP delegation. An external RTP handler must reply with two
@@ -245,10 +242,12 @@ class SynchronousSIPWorker(object):
             sip_datagram = self.__rtp_handler.handle(self.__tag, self.__sip_datagram)
             if sip_datagram:
                 self.__sip_datagram = sip_datagram
+                self.__index_callid()
+                self.__send_sip_ok()
                 break
-
-        self.__index_callid() # add to garbage queue to linearly task demultiplexed jobs.
-        self.__send_sip_ok()
+            else:
+                logger.warning('<sip>:no RX/TX information received from RTP handler.')
+                self.__send_sip_ok_no_sdp()
 
     #
     # worker defer
@@ -286,7 +285,7 @@ class SynchronousSIPWorker(object):
     def __send_sip_cancel(self):
         ''' send SIP CANCEL to endpoint.
         '''
-        logger.debug('<<-- [sip] [%s] <<%s>> <CANCEL>' % (self.name, self.__tag))
+        logger.debug('\033[93m\033[01m<<<\033[00m <sip>:[%s] <<%s>> <CANCEL>' % (self.name, self.__tag))
         sip_packet = convert_to_sip_packet(SIP_CANCEL, self.__sip_datagram)
         self.__socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.__tag)
@@ -294,13 +293,13 @@ class SynchronousSIPWorker(object):
     def __send_sip_ok(self):
         ''' send SIP OK to endpoint.
         '''
-        logger.debug('<<-- [sip] [%s] <<%s>> <OK +SDP>' % (self.name, self.__tag))
+        logger.debug('\033[93m\033[01m<<<\033[00m <sip>:[%s] <<%s>> <OK +SDP>' % (self.name, self.__tag))
         sip_packet = convert_to_sip_packet(SIP_OK, self.__sip_datagram)
         self.__socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.__tag)
 
     def __send_sip_ok_no_sdp(self):
-        logger.debug('<<-- [sip] [%s] <<%s>> <OK -SDP>' % (self.name, self.__tag))
+        logger.debug('\033[93m\033[01m<<<\033[00m <sip>:[%s] <<%s>> <OK -SDP>' % (self.name, self.__tag))
         sip_packet = convert_to_sip_packet(SIP_OK_NO_SDP, self.__sip_datagram)
         self.__socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.__tag)
@@ -308,7 +307,7 @@ class SynchronousSIPWorker(object):
     def __send_sip_options(self):
         ''' send SIP OPTIONS to endpoint.
         '''
-        logger.debug('<<-- [sip] [%s] <<%s>> <OPTIONS>' % (self.name, self.__tag))
+        logger.debug('\033[93m\033[01m<<<\033[00m <sip>:[%s] <<%s>> <OPTIONS>' % (self.name, self.__tag))
         sip_packet = convert_to_sip_packet(SIP_OPTIONS, self.__sip_datagram)
         self.__socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.__tag)
@@ -316,7 +315,7 @@ class SynchronousSIPWorker(object):
     def __send_sip_ringing(self):
         ''' send SIP RINGING to endpoint.
         '''
-        logger.debug('<<-- [sip] [%s] <<%s>> <RINGING>' % (self.name, self.__tag))
+        logger.debug('\033[93m\033[01m<<<\033[00m <sip>:[%s] <<%s>> <RINGING>' % (self.name, self.__tag))
         sip_packet = convert_to_sip_packet(SIP_RINGING, self.__sip_datagram)
         self.__socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.__tag)
@@ -324,7 +323,7 @@ class SynchronousSIPWorker(object):
     def __send_sip_term(self):
         ''' send SIP TERMINATE to endpoint.
         '''
-        logger.debug('<<-- [sip] [%s] <<%s>> <TERM>' % (self.name, self.__tag))
+        logger.debug('\033[93m\033[01m<<<\033[00m <sip>:[%s] <<%s>> <TERM>' % (self.name, self.__tag))
         sip_packet = convert_to_sip_packet(SIP_TERMINATE, self.__sip_datagram)
         self.__socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.__tag)
@@ -332,7 +331,7 @@ class SynchronousSIPWorker(object):
     def __send_sip_trying(self):
         ''' send SIP TRYING to endpoint.
         '''
-        logger.debug('<<-- [sip] [%s] <<%s>> <TRYING>' % (self.name, self.__tag))
+        logger.debug('\033[93m\033[01m<<<\033[00m <sip>:[%s] <<%s>> <TRYING>' % (self.name, self.__tag))
         sip_packet = convert_to_sip_packet(SIP_TRYING, self.__sip_datagram)
         self.__socket.sendto(sip_packet, self.sip_endpoint)
         if self.verbose: dissect_packet(sip_packet, self.__tag)

@@ -64,7 +64,7 @@ class SynchronousSIPGarbageCollector(object):
 
         # custom RTP handler for garbage clean up.
         self._rtp_handler = SynchronousRTPRouter(settings)
-        logger.info('[gc] garbage collector initialized.')
+        logger.info('<gc>:successfully initialized garbage collector.')
 
     def initialize_garbage_collector(self):
         ''' initialize a new thread for garbage collector.
@@ -98,7 +98,7 @@ class SynchronousSIPGarbageCollector(object):
         while not self._futures.empty():
             run_task = self._futures.get()
             run_task() # deferred execute.
-            logger.debug('[gc] executed deferred task: %s', run_task)
+            logger.debug('<gc>:executed deferred task: %s', run_task)
 
         # since the garbage is a FIFO, technically, the oldest call is pushed
         # first (top) and the youngest call is pushed last (bottom).
@@ -114,7 +114,7 @@ class SynchronousSIPGarbageCollector(object):
                 self.consume_membership(call_id=peek['Call-ID'], call_tag=peek['tag'])
         except Exception as message:
             self._garbage.append(peek)
-            logger.error('[gc] unable to cleanly collect garbage: %s.' % str(message))
+            logger.error('<gc>:unable to cleanly collect garbage: %s.' % str(message))
         finally:
             self._gc_locked = False # release thread.
 
@@ -131,9 +131,9 @@ class SynchronousSIPGarbageCollector(object):
                      forced ]): # consumption conditions.
                 self._rtp_handler.send_stop_signal(call_id)
                 del self.membership[call_id]
-                logger.info('[gc] safe revoke member: %s' % call_id)
+                logger.info('<gc>:safe revoke member: %s' % call_id)
         except Exception as message:
-            logger.error('[gc] failed consumption: %s' % str(message))
+            logger.error('<gc>:failed consumption: %s' % str(message))
 
     def is_locked(self):
         ''' check if garbage collector is locked.

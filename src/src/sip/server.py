@@ -88,8 +88,6 @@ class safe_allocate_sip_socket(object):
     def __exit__(self, type, value, traceback):
         try: self.__socket.close()
         except:
-            self.__socket.shutdown()
-            self.__socket.close()
             del self.__socket
 
 # SIP server
@@ -104,9 +102,9 @@ class SIPServerPrototype(object):
             global GARBAGE_COLLECTOR
             SERVER_SETTINGS = setting
             GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
-            logger.info('[sip] server initialized.')
+            logger.info('<sip>:successfully initialized SIP server.')
         else:
-            logger.error('[sip] failed to initialize server.')
+            logger.error('<sip>:failed to initialize SIP server.')
             sys.exit()
 
 class AsynchronousSIPServer(SIPServerPrototype):
@@ -170,9 +168,12 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             worker_size = SERVER_SETTINGS['sip']['worker']['count']
             assert worker_size > 0 # check for dynamic allocation.
             self.__worker_size = min(worker_size, cpu_count())
+            logger.debug('<sip>:successfully loaded `worker size` value.')
         except:
+            logger.error('<sip>:invalid `worker size` value.')
             self.__worker_size = 1 + int(0.32 * cpu_count())
-        logger.info('[sip] worker poolsize: %i.', self.__worker_size)
+            logger.warning('<sip>:using dynamic worker allocation.')
+        logger.debug('<sip>:worker pool size is %i.', self.__worker_size)
 
         # workers should never cause conflict with main server thread.
         # For that reason, each worker must exist in their own thread.
@@ -186,7 +187,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             thread.daemon = True
             worker_threads.append(thread)
         map(lambda thread:thread.start(), worker_threads)
-        logger.info('[sip] router initialized.')
+        logger.info('<sip>:successfully initialized router component.')
 
     def handle_read(self):
         # the purpose of router is to only receive data ("work") and delegate

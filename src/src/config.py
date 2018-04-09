@@ -36,7 +36,7 @@ def parse_config(config={}):
         # save server address information to the configuration.
         server_address = get_server_address()
         parsed_config['sip']['server']['address'] = server_address
-        logger.debug("server address set to '%s'" % server_address)
+        logger.debug("<config>:server address set to '%s'" % server_address)
 
         return parsed_config
     except:
