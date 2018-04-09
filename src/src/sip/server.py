@@ -170,8 +170,8 @@ class SIPRouterPrototype(asyncore.dispatcher):
         # workers should never cause conflict with main server thread.
         # For that reason, each worker must exist in their own thread.
         self.__workers = [
-            SynchronousSIPWorker(i)
-            for i in range(self.__worker_size)
+            SynchronousSIPWorker(worker_index, SERVER_SETTINGS, GC)
+            for worker_index in range(self.__worker_size)
         ]
         self.__threads = [
             threading.Thread(name=worker.name, target=worker.handle)
