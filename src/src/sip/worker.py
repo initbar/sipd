@@ -41,21 +41,21 @@
 #                                         using SDP headers.
 #-------------------------------------------------------------------------------
 
-from src.debug import create_random_uuid
-from src.errors import SIPBrokenProtocol
-from src.parser import convert_to_sip_packet
-from src.parser import parse_sip_packet
-from src.parser import validate_sip_signature
-from src.rtp.server import SynchronousRTPRouter
-from src.sip.static.busy import SIP_BUSY
-from src.sip.static.bye import SIP_BYE
-from src.sip.static.ok import SIP_OK
-from src.sip.static.ok import SIP_OK_NO_SDP
-from src.sip.static.options import SIP_OPTIONS
-from src.sip.static.ringing import SIP_RINGING
+from src.debug                 import create_random_uuid
+from src.errors                import SIPBrokenProtocol
+from src.parser                import convert_to_sip_packet
+from src.parser                import parse_sip_packet
+from src.parser                import validate_sip_signature
+from src.rtp.server            import SynchronousRTPRouter
+from src.sip.static.busy       import SIP_BUSY
+from src.sip.static.bye        import SIP_BYE
+from src.sip.static.ok         import SIP_OK
+from src.sip.static.ok         import SIP_OK_NO_SDP
+from src.sip.static.options    import SIP_OPTIONS
+from src.sip.static.ringing    import SIP_RINGING
 from src.sip.static.terminated import SIP_TERMINATE
-from src.sip.static.trying import SIP_TRYING
-from src.sockets import unsafe_allocate_random_udp_socket
+from src.sip.static.trying     import SIP_TRYING
+from src.sockets               import unsafe_allocate_random_udp_socket
 
 import threading
 import time
@@ -63,25 +63,25 @@ import time
 import logging
 logger = logging.getLogger(__name__)
 
-# SIP worker prototype
+# SIP worker implementation
 #-------------------------------------------------------------------------------
 
-class SIPWorkerPrototype(object):
-    ''' Asynchronous SIP worker component prototype.
+class SynchronousSIPWorker(object):
+    ''' Asynchronous SIP worker component implementation.
     '''
     def __init__(self,
                  worker_id,
                  settings={},
                  gc=None,
                  verbose=False):
-        self.name = 'worker-' + worker_id
+        self.name = 'worker-' + str(worker_id)
         self.verbose = verbose
 
         self.__settings = settings
         self.__garbage  = gc
 
         # a worker is considered to be "working" if its' threading event is set.
-        self.__event = threading.Event()
+        self.__event  = threading.Event()
         self.is_ready = lambda: not self.__event.isSet()
         self.is_busy  = lambda: not self.is_ready()
 
@@ -103,8 +103,6 @@ class SIPWorkerPrototype(object):
             self.lifetime = 60 * 60
         logger.info('[sip] call lifetime: %s' % self.lifetime)
 
-        self.__sip_endpoint = self.__sip_message = None # "work"
-
         # handler configuration.
         self.handlers = {
             'ACK':     self.handler_ack,
@@ -114,15 +112,8 @@ class SIPWorkerPrototype(object):
             'INVITE':  self.handler_invite
         }
 
-# SIP worker implementation
-#-------------------------------------------------------------------------------
-
-class SynchronousSIPWorker(SIPWorkerPrototype):
-    ''' Asynchronous SIP worker component implementation.
-    '''
-    def __init__(self, *args, **kwargs):
-        super(SynchronousSIPWorker, self).__init__(*args, **kwargs)
-        logger.debug("[sip] '%s' initialized." % self.name)
+        self.__sip_endpoint = self.__sip_message = None # "work"
+        logger.info("[sip] '%s' initialized." % self.name)
 
     @property
     def sip_endpoint(self):

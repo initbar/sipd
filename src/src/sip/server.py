@@ -43,6 +43,7 @@
 
 from multiprocessing import cpu_count
 from src.sip.garbage import SynchronousSIPGarbageCollector
+from src.sip.worker  import SynchronousSIPWorker
 from src.sockets     import unsafe_allocate_udp_socket
 
 import asyncore
