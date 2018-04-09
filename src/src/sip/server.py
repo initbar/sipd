@@ -47,6 +47,7 @@ from src.sockets     import unsafe_allocate_udp_socket
 
 import asyncore
 import random
+import sys
 import threading
 
 import logging
@@ -56,7 +57,7 @@ logger = logging.getLogger(__name__)
 # related requests can not guarantee to hit the same worker. Therefore, the
 # workers should all use the same garbage collector and just register a new
 # collection tasks to the collector queue.
-GC = None
+GARBAGE_COLLECTOR = None
 
 SERVER_SETTINGS = {} # `sipd.json`
 
@@ -98,9 +99,14 @@ class SIPServerPrototype(object):
     '''
     def __init__(self, setting={}):
         if setting and isinstance(setting, dict):
-            global SERVER_SETTINGS; SERVER_SETTINGS = setting
-        global GC; GC = SynchronousSIPGarbageCollector(setting)
-        logger.info('[sip] server initialized.')
+            global SERVER_SETTINGS
+            global GARBAGE_COLLECTOR
+            SERVER_SETTINGS = setting
+            GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
+            logger.info('[sip] server initialized.')
+        else:
+            logger.error('[sip] failed to initialize server.')
+            sys.exit()
 
 class AsynchronousSIPServer(SIPServerPrototype):
     ''' Asynchronous SIP server implementation.
@@ -170,15 +176,15 @@ class SIPRouterPrototype(asyncore.dispatcher):
         # workers should never cause conflict with main server thread.
         # For that reason, each worker must exist in their own thread.
         self.__workers = [
-            SynchronousSIPWorker(worker_index, SERVER_SETTINGS, GC)
-            for worker_index in range(self.__worker_size)
+            SynchronousSIPWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
+            for i in range(self.__worker_size)
         ]
-        self.__threads = [
+        worker_threads = [
             threading.Thread(name=worker.name, target=worker.handle)
             for worker in self.__workers
         ]
-        map(lambda thread:thread.daemon = True, self.__threads)
-        map(lambda thread:thread.start(), self.__threads)
+        map(lambda thread:thread.daemon = True, worker_threads)
+        map(lambda thread:thread.start(), worker_threads)
         logger.info('[sip] router initialized.')
 
 class AsynchronousSIPRouter(SIPRouterPrototype):
