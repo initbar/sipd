@@ -67,7 +67,15 @@ class safe_allocate_sip_socket(object):
     ''' allocate exception-safe listening SIP socket.
     '''
     def __init__(self, port=5060):
-        self.__port = None
+        self.__port = port
+
+    @property
+    def port(self):
+        return self.__port
+
+    @port.setter
+    def port(self, number):
+        self.__port = number
 
     def __enter__(self):
         self.__socket = unsafe_allocate_udp_socket(
@@ -80,14 +88,6 @@ class safe_allocate_sip_socket(object):
             self.__socket.shutdown()
             self.__socket.close()
             del self.__socket
-
-    @property
-    def port(self):
-        return self.__port
-
-    @port.setter
-    def port(self, number):
-        self.__port = number
 
 # SIP server
 #-------------------------------------------------------------------------------
