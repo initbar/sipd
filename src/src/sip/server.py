@@ -80,7 +80,7 @@ class safe_allocate_sip_socket(object):
         self.__port = number
 
     def __enter__(self):
-        self.__socket = unsafe_allocate_udp_socket(host='0.0.0.0', port=self.__port, is_reused=True)
+        self.__socket = unsafe_allocate_udp_socket(host='0.0.0.0', port=self.port, is_reused=True)
         return self.__socket
 
     def __exit__(self, type, value, traceback):
