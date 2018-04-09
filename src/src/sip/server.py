@@ -67,7 +67,7 @@ class safe_allocate_sip_socket(object):
     ''' allocate exception-safe listening SIP socket.
     '''
     def __init__(self, port=5060):
-        self.__port = port
+        self.__port = int(port)
 
     @property
     def port(self):
@@ -80,8 +80,7 @@ class safe_allocate_sip_socket(object):
         self.__port = number
 
     def __enter__(self):
-        self.__socket = unsafe_allocate_udp_socket(
-            host='0.0.0.0', port=self.__port, is_reused=True)
+        self.__socket = unsafe_allocate_udp_socket(host='0.0.0.0', port=self.__port, is_reused=True)
         return self.__socket
 
     def __exit__(self, type, value, traceback):
@@ -177,7 +176,6 @@ class SIPRouterPrototype(asyncore.dispatcher):
             handler.daemon = True
             self._handlers.append(handler)
         map(lambda thread:thread.start(), self._handlers) # start threads.
-        random.shuffle(self.__workers) # shuffle workers for selection.
         logger.info('[sip] router initialized.')
 
 class AsynchronousSIPRouter(SIPRouterPrototype):
