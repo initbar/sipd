@@ -123,16 +123,16 @@ class SIPRouterPrototype(asyncore.dispatcher):
     ''' Asynchronous SIP routing component prototype.
     '''
     def __init__(self, sip_socket):
-        asyncore.dispatcher.__init__(self, sip_socket)
-
         # in order to prevent double creation of a router socket, inherit
         # SIP port from SIP server. A router should only be used to receive
-        # traffic. For that reason (and also to not cause 100% CPU
-        # utilization by infinite loop checks), override polling states.
+        # traffic.
+        asyncore.dispatcher.__init__(self, sip_socket)
+
+        # override socket read state to read-only.
         self.is_readable = True
         self.readable    = lambda: self.is_readable
 
-        # override socket to disable writes.
+        # override socket read state to disable writes.
         self.is_writable  = False
         self.writable     = lambda: self.is_writable
         self.handle_write = lambda: None
@@ -162,20 +162,23 @@ class SIPRouterPrototype(asyncore.dispatcher):
             # permits only one active thread at a given time.
             worker_size = SERVER_SETTINGS['sip']['worker']['count']
             assert worker_size > 0 # check for dynamic allocation.
-            self.__worker_size = min(max(worker_size, 1), cpu_count())
+            self.__worker_size = min(worker_size, cpu_count())
         except:
-            self.__worker_size = 1 + int(cpu_count() * 0.32)
-        logger.info('[sip] total router workers: %i.', self.__worker_size)
+            self.__worker_size = 1 + int(0.32 * cpu_count())
+        logger.info('[sip] worker poolsize: %i.', self.__worker_size)
 
         # workers should never cause conflict with main server thread.
         # For that reason, each worker must exist in their own thread.
-        self.__workers = [ SynchronousSIPWorker(i) for i in range(self.__worker_size) ]
-        self._handlers = []
-        for worker in self.__workers:
-            handler = threading.Thread(name=worker.name, target=worker.handle)
-            handler.daemon = True
-            self._handlers.append(handler)
-        map(lambda thread:thread.start(), self._handlers) # start threads.
+        self.__workers = [
+            SynchronousSIPWorker(i)
+            for i in range(self.__worker_size)
+        ]
+        self.__threads = [
+            threading.Thread(name=worker.name, target=worker.handle)
+            for worker in self.__workers
+        ]
+        map(lambda thread:thread.daemon = True, self.__threads)
+        map(lambda thread:thread.start(), self.__threads)
         logger.info('[sip] router initialized.')
 
 class AsynchronousSIPRouter(SIPRouterPrototype):
