@@ -21,13 +21,11 @@ try: # check supported version.
     assert (2,7) <= sys.version_info <= (3,7)
 except AssertionError: raise
 
+from src.config import parse_config
+from src.sip.server import AsynchronousSIPServer
+
 import argparse
 import os
-
-try:
-    from src.config import parse_config
-    from src.sip.server import AsynchronousSIPServer
-except ImportError: raise
 
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
 __version__ = '1.2.9'
@@ -75,13 +73,11 @@ def test():
     logger.info('initializing self-tests ..')
     # ignore any `SyntaxWarning` or `SyntaxError` raised from interpreter since
     # lazy loading modules means import pre-optimization will not take place.
-    try:
-        import unittest
-        from tests.test_debug import TestDebug
-        from tests.test_errors import TestErrors
-        from tests.test_parser import TestParser
-        from tests.test_sockets import TestSockets
-    except ImportError: raise
+    import unittest
+    from tests.test_debug import TestDebug
+    from tests.test_errors import TestErrors
+    from tests.test_parser import TestParser
+    from tests.test_sockets import TestSockets
     test_suites, test_cases = [], [
         TestDebug,
         TestErrors,

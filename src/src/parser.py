@@ -21,15 +21,12 @@
 #-------------------------------------------------------------------------------
 
 from collections import deque
+from src.errors import SIPBrokenProtocol
+from src.optimizer import memcache
+from src.sip.methods import SIP_METHODS
 
 import json
 import re
-
-try:
-    from src.errors import SIPBrokenProtocol
-    from src.optimizer import memcache
-    from src.sip.methods import SIP_METHODS
-except ImportError: raise
 
 import logging
 logger = logging.getLogger(__name__)

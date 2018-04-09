@@ -20,15 +20,13 @@
 # server.py -- synchronous external RTP routing module.
 #-------------------------------------------------------------------------------
 
-import random
+from src.parser import dump_json
+from src.parser import parse_json
+from src.rtp.start import RTPD_START
+from src.rtp.stop import RTPD_STOP
+from src.sockets import safe_allocate_random_udp_socket
 
-try:
-    from src.parser import dump_json
-    from src.parser import parse_json
-    from src.rtp.start import RTPD_START
-    from src.rtp.stop import RTPD_STOP
-    from src.sockets import safe_allocate_random_udp_socket
-except ImportError: raise
+import random
 
 import logging
 logger = logging.getLogger(__name__)

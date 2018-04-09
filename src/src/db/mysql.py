@@ -20,18 +20,16 @@
 # mysql.py -- MySQL client.
 #-------------------------------------------------------------------------------
 
-import datetime
+import MySQLdb as mysql
+from src.optimizer import memcache
+from src.db.errors import (
+    DBConnectionError,
+    DBError,
+    DBExecutionError,
+    DBParameterError
+)
 
-try:
-    import MySQLdb as mysql
-    from src.optimizer import memcache
-    from src.db.errors import (
-        DBConnectionError,
-        DBError,
-        DBExecutionError,
-        DBParameterError
-    )
-except ImportError: raise
+import datetime
 
 import logging
 logger = logging.getLogger(__name__)
