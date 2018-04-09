@@ -126,7 +126,7 @@ class AsynchronousSIPServer(SIPServerPrototype):
 # SIP router
 #-------------------------------------------------------------------------------
 
-class SIPRouterPrototype(asyncore.dispatcher):
+class AsynchronousSIPRouter(asyncore.dispatcher):
     ''' Asynchronous SIP routing component prototype.
     '''
     def __init__(self, sip_socket):
@@ -188,9 +188,6 @@ class SIPRouterPrototype(asyncore.dispatcher):
         map(lambda thread:thread.start(), worker_threads)
         logger.info('[sip] router initialized.')
 
-class AsynchronousSIPRouter(SIPRouterPrototype):
-    ''' Asynchronous SIP routing component implementation.
-    '''
     def handle_read(self):
         # the purpose of router is to only receive data ("work") and delegate
         # them to its' workers. A worker holds the logic implementation.

@@ -25,10 +25,11 @@ from src.config import parse_config
 from src.sip.server import AsynchronousSIPServer
 
 import argparse
+import coloredlogs
 import os
 
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.2.9'
+__version__ = '1.2.10'
 __license__ = 'GNU GPLv3'
 
 # Logging
@@ -39,13 +40,15 @@ import logging
 from logging import StreamHandler
 from logging.handlers import RotatingFileHandler
 
+coloredlogs.install(level='DEBUG')
+
 logging_file = os.path.abspath(os.path.curdir) + '/sipd.log'
 logging_size = 10 * 0x100000 # MB
 logging_format = ' '.join(
     [
         '[%(asctime)-15s]',
-        '<%(filename)s:%(lineno)s>',
-        '[%(levelname)s]',
+        '<%(filename)s:\u001b[31m%(lineno)s>',
+        u'\u001b[1m%(levelname)s\u001b[0m',
         '%(message)s'
     ]
 )
