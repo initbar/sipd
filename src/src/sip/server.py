@@ -124,13 +124,19 @@ class SIPRouterPrototype(asyncore.dispatcher):
     ''' Asynchronous SIP routing component prototype.
     '''
     def __init__(self, sip_socket):
+        asyncore.dispatcher.__init__(self, sip_socket)
+
         # in order to prevent double creation of a router socket, inherit
         # SIP port from SIP server. A router should only be used to receive
         # traffic. For that reason (and also to not cause 100% CPU
         # utilization by infinite loop checks), override polling states.
-        asyncore.dispatcher.__init__(self, sip_socket)
         self.is_readable = True
-        self.is_writable = False
+        self.readable    = lambda: self.is_readable
+
+        # override socket to disable writes.
+        self.is_writable  = False
+        self.writable     = lambda: self.is_writable
+        self.handle_write = lambda: None
 
         self._random = random.random # cache random number generator.
 
@@ -152,41 +158,27 @@ class SIPRouterPrototype(asyncore.dispatcher):
         #    +-----------------------------------------------------------
         #      1  2  3  4  5  6  7  8  9  10  11  12  13  14  15  16
         try:
-            worker_size = SERVER_SETTINGS['sip']['worker']['count']
-            assert worker_size > 0 # check for dynamic allocation.
             # if worker size is given, then normalize the count to not
             # exceed the available resources. After all, GIL only
             # permits only one active thread at a given time.
-            self._worker_size = min(max(worker_size, 1), cpu_count())
+            worker_size = SERVER_SETTINGS['sip']['worker']['count']
+            assert worker_size > 0 # check for dynamic allocation.
+            self.__worker_size = min(max(worker_size, 1), cpu_count())
         except:
-            self._worker_size = 1 + int(cpu_count() * 0.32)
-        logger.info('[sip] total router workers: %i.', self._worker_size)
+            self.__worker_size = 1 + int(cpu_count() * 0.32)
+        logger.info('[sip] total router workers: %i.', self.__worker_size)
 
         # workers should never cause conflict with main server thread.
         # For that reason, each worker must exist in their own thread.
-        self._workers = [ SynchronousSIPWorker(i) for i in range(self._worker_size) ]
+        self.__workers = [ SynchronousSIPWorker(i) for i in range(self.__worker_size) ]
         self._handlers = []
-        for worker in self._workers:
-            handler_name = worker.name
+        for worker in self.__workers:
             handler = threading.Thread(name=worker.name, target=worker.handle)
             handler.daemon = True
             self._handlers.append(handler)
         map(lambda thread:thread.start(), self._handlers) # start threads.
-        random.shuffle(self._workers) # shuffle workers for selection.
+        random.shuffle(self.__workers) # shuffle workers for selection.
         logger.info('[sip] router initialized.')
-
-    def readable(self):
-        ''' return current readable state.
-        '''
-        return self.is_readable
-
-    def writable(self):
-        ''' return current writable state.
-        '''
-        return self.is_writable
-
-    def handle_write(self):
-        return
 
 class AsynchronousSIPRouter(SIPRouterPrototype):
     ''' Asynchronous SIP routing component implementation.
@@ -203,8 +195,8 @@ class AsynchronousSIPRouter(SIPRouterPrototype):
         # to reflect round robin distribution closely as possible - yet have
         # enough chance to delegate two short tasks to the same worker.
         while not locals().get('work_delegated', False): # temporary.
-            p_index = int(self._random() * self._worker_size)
-            worker = self._workers[p_index]
+            p_index = int(self._random() * self.__worker_size)
+            worker = self.__workers[p_index]
             if worker.is_ready():
                 worker.assign(sip_endpoint, sip_message)
                 work_delegated = True # break loop.
