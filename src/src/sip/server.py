@@ -179,11 +179,11 @@ class SIPRouterPrototype(asyncore.dispatcher):
             SynchronousSIPWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
             for i in range(self.__worker_size)
         ]
-        worker_threads = [
-            threading.Thread(name=worker.name, target=worker.handle)
-            for worker in self.__workers
-        ]
-        map(lambda thread:thread.daemon = True, worker_threads)
+        worker_threads = []
+        for worker in self.__workers:
+            thread = threading.Thread(name=worker.name, target=worker.handle)
+            thread.daemon = True
+            worker_threads.append(thread)
         map(lambda thread:thread.start(), worker_threads)
         logger.info('[sip] router initialized.')
 

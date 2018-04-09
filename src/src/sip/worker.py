@@ -225,46 +225,42 @@ class SynchronousSIPWorker(SIPWorkerPrototype):
         self.__send_sip_term()
 
     def handler_invite(self):
-        # TODO: decide to delegate to another server.
-        logger.debug('---- [sip] deciding to load balance to another server..')
+        # set future SIP conversation to the router.
         self.__sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % self.__settings['sip']['server']['address']
-        logger.debug('---- [sip] balancing to node: %s' % self.__sip_datagram['sip']['Contact'])
 
-        # if duplicate INVITE message was received with same Call-ID, then it's
-        # necessary to ignore the future duplicates.
+        # if there is duplicate SIP INVITE packet, then consider as HOLD.
         if self.__call_id in self.__garbage.calls_history:
             logger.warning('---- [sip] received duplicate Call-ID: %s' % self.__call_id)
-            # TODO: consider this as HOLD.
-            self.__send_sip_ok_no_sdp()
-            return
+            return self.__send_sip_ok_no_sdp()
         elif not self.__rtp_handler:
+            # TODO: retry setting up RTP handler.
             logger.error('---- [sip] external RTP handler is not configured.')
-            self.__send_sip_ok_no_sdp()
-            return
-        else:
-            self.__send_sip_trying()
+            return self.__send_sip_ok_no_sdp()
 
         # prepare RTP delegation. An external RTP handler must reply with two
         # ports to receive TX/RX RTP traffic.
-        try: chances = max(1, self.__settings['rtp']['max_retry'])
-        except: chances = 1
+        self.__send_sip_trying()
+
+        try:
+            chances = max(1, self.__settings['rtp']['max_retry'])
+        except:
+            chances = 1
         while chances:
-            self.__send_sip_ringing()
             chances -= 1
 
             # if external RTP handler replies with one or more ports, rewrite
             # and update the SIP datagram with new SDP information.
+            self.__send_sip_ringing()
             sip_datagram = self.__rtp_handler.handle(self.__tag, self.__sip_datagram)
             if sip_datagram:
                 self.__sip_datagram = sip_datagram
                 break
 
-        # add deferred to self.__garbage queue to linearly task demultiplexed jobs.
-        self.__index_callid()
+        self.__index_callid() # add to garbage queue to linearly task demultiplexed jobs.
         self.__send_sip_ok()
 
     #
-    # deferred tasks
+    # worker defer
     #
 
     def __index_callid(self):
