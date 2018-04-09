@@ -75,6 +75,8 @@ class safe_allocate_sip_socket(object):
 
     @port.setter
     def port(self, number):
+        try: assert 1025 < port < 65535
+        except: raise ValueError(port)
         self.__port = number
 
     def __enter__(self):
