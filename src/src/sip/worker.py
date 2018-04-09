@@ -218,7 +218,7 @@ class SynchronousSIPWorker(object):
 
         # if there is duplicate SIP INVITE packet, then consider as HOLD.
         if self.__call_id in self.__garbage.calls_history:
-            logger.warning('<sip>: [%s] <<%s>> received duplicate Call-ID: %s' % % (self.name, self.__tag, self.__call_id))
+            logger.warning('<sip>: [%s] <<%s>> received duplicate Call-ID: %s' % (self.name, self.__tag, self.__call_id))
             return self.__send_sip_ok_no_sdp()
         elif not self.__rtp_handler:
             # TODO: retry setting up RTP handler.
