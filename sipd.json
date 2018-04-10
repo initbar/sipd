@@ -83,5 +83,19 @@
     "gc": {
         "call_lifetime": 3600,
         "check_interval": 0.1
+    },
+    "log": {
+        "console": {
+            "enabled": true
+        },
+        "filesystem": {
+            "enabled": true,
+            "name": "sipd.log",
+            "path": "./logs",
+            "size_in_kb": 1024,
+            "total_logs": 10
+        },
+        "coloredlogs": true,
+        "level": "DEBUG"
     }
 }

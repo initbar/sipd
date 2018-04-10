@@ -21,58 +21,17 @@ try: # check supported version.
     assert (2,7) <= sys.version_info <= (3,7)
 except AssertionError: raise
 
+from logging.handlers import RotatingFileHandler
 from src.config import parse_config
 from src.sip.server import AsynchronousSIPServer
 
 import argparse
+import logging
 import os
 
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
 __version__ = '1.2.12'
 __license__ = 'GNU GPLv3'
-
-# Logging
-#-------------------------------------------------------------------------------
-
-import logging
-
-from logging import StreamHandler
-from logging.handlers import RotatingFileHandler
-
-logging_file = os.path.abspath(os.path.curdir) + '/sipd.log'
-logging_size = 10 * 0x100000 # MB
-logging_format = ' '.join(
-    [
-        u'\u001b[0m[%(asctime)-15s]',
-        u'<<\u001b[32;1m%(threadName)s\u001b[0m>>',
-        '%(levelname)s',
-        u'<\u001b[36m%(filename)s\u001b[0m:\u001b[31;1m%(lineno)s\u001b[0m>',
-        '%(message)s',
-    ]
-)
-logging_formatter = logging.Formatter(logging_format)
-
-handler_storage = RotatingFileHandler(logging_file,
-                                      mode='a',
-                                      maxBytes=logging_size,
-                                      encoding='utf-8',
-                                      backupCount=30)
-handler_storage.setFormatter(logging_formatter)
-
-logging.basicConfig(level=logging.DEBUG,
-                    format=logging_format,
-                    handlers=[handler_storage])
-
-logger = logging.getLogger(__name__)
-
-try: # colorize log entries.
-    import coloredlogs
-    coloredlogs.install(level='DEBUG',
-                        logger=logger,
-                        fmt=logging_format,
-                        milliseconds=True)
-    logger.addHandler(handler_storage)
-except: pass
 
 # Test
 #-------------------------------------------------------------------------------
@@ -98,6 +57,74 @@ def test():
         test_suites.append(test_suite)
     result = unittest.TextTestRunner(verbosity=2).run(unittest.TestSuite(test_suites))
     return (not result.wasSuccessful())
+
+# Logging
+#-------------------------------------------------------------------------------
+
+logger = None
+
+def initialize_logger(config={}):
+
+    logging_format = ' '.join(
+        [
+            u'\u001b[0m[%(asctime)-15s]',
+            u'<<\u001b[32;1m%(threadName)s\u001b[0m>>',
+            '%(levelname)s',
+            u'<\u001b[36m%(filename)s\u001b[0m:\u001b[31;1m%(lineno)s\u001b[0m>',
+            '%(message)s',
+        ]
+    ); logging_formatter = logging.Formatter(logging_format)
+
+    # initialize filesystem logging.
+    log_fs = config['log']['filesystem']
+    if log_fs.get('enabled'):
+        log_size = int(log_fs.get('size_in_kb')) * 1024
+        log_cnt  = int(log_fs.get('total_logs'))
+
+        log_file = str(log_fs.get('name'))
+        log_path = str(log_fs.get('path'))
+        if not log_path.endswith('/'):
+            log_path += '/'
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
+        log_path += log_file
+
+        handler_fs = RotatingFileHandler(
+            log_path,
+            mode='a',
+            maxBytes=log_size,
+            encoding='utf-8',
+            backupCount=log_cnt
+        )
+        handler_fs.setFormatter(logging_formatter)
+    else:
+        handler_fs = None
+
+    # initialize console logging.
+    log_cli = config['log']['console']
+    if log_cli.get('enabled'):
+        logging.basicConfig(
+            level=config['log']['level'],
+            format=logging_format,
+            handlers=[handler_fs]
+        )
+
+    # globalize logger.
+    global logger
+    logger = logging.getLogger(__name__)
+
+    try:
+        assert config['log']['coloredlogs']
+        import coloredlogs
+        coloredlogs.install(level=config['log']['level'],
+                            logger=logger,
+                            fmt=logging_format,
+                            milliseconds=True)
+        logger.addHandler(handler_fs)
+    except Exception as message:
+        logger.warning("failed to initialize coloredlogs: '%s'." % message)
+        pass
+    logger.info("<main>:successfully initialized logging.")
 
 # CLI
 #-------------------------------------------------------------------------------
@@ -134,9 +161,6 @@ if __name__ == '__main__':
     try:
         args = argsparser.parse_args()
 
-        # run unit tests.
-        if args.test: sys.exit(test())
-
         # parse configuration.
         config_file = str(args.config)
         try:
@@ -144,14 +168,21 @@ if __name__ == '__main__':
             with open(config_file) as f:
                 content = f.read()
                 config = parse_config(content)
+
+            # initialize logging.
+            initialize_logger(config)
             logger.info("<main>:successfully loaded configuration file: '%s'." % config_file)
             logger.debug(config)
         except AssertionError:
-            logger.warning("configuration file does not exist: '%s'" % config_file)
+            sys.stderr.write("configuration file does not exist: '%s'.\n" % config_file)
+            sys.exit()
+
+        # run unit tests.
+        if args.test: sys.exit(test())
 
         # deploy server.
         server = AsynchronousSIPServer(locals().get('config'))
         sys.exit(server.serve())
     except KeyboardInterrupt: pass
     finally:
-        logger.info('%s (v%s)' % (__program__, __version__))
+        sys.stdout.write('%s (v%s)' % (__program__, __version__))

@@ -3,6 +3,7 @@ PROJECT = $(shell pwd)
 
 SOURCE  = $(PROJECT)/src
 BINARY  = $(PROJECT)/sipd
+LOGS    = $(PROJECT)/logs
 
 all:
 	cd $(SOURCE) && \
@@ -19,8 +20,8 @@ test:
 	python $(SOURCE) --test
 
 clean:
+	rm -rfv $(LOGS)
 	rm -fv $(BINARY)
-	rm -fv $(PROJECT)/sipd.log
 	find $(SOURCE) \
 	     -type f \
 	     -iname "*.py[oc]" \
