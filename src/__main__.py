@@ -73,13 +73,12 @@ def main():
     if os.path.exists(config_file) and os.path.isfile(config_file):
         with open(config_file) as config_buffer:
             config = parse_config(config_buffer.read())
-
         logger = initialize_logger(config)
         logger.info("<main>:successfully loaded configuration: '%s'.", config_file)
         logger.debug(config)
     else:
         sys.stderr.write("configuration file does not exist: '%s'.\n", config_file)
-        sys.exit(errno.ENOENT)
+        return errno.ENOENT
 
     if args.test:
         return run_test_suite()
