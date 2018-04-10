@@ -173,7 +173,7 @@ class SynchronousSIPWorker(object):
         for (field, value) in self.sip_headers.items():
             self.__sip_datagram['sip'][field] = value
 
-        logger.debug('\033[93m\033[01m>>>\033[00m <sip>:[%s] <<%s>> <%s>' % (self.name, self.__tag, self.__method))
+        logger.debug('\033[1m\33[35m>>>\033[00m <sip>:[%s] <<%s>> <%s>' % (self.name, self.__tag, self.__method))
         self.handlers.get(self.__method, 'DEFAULT')()
         self.cleanup()
 
