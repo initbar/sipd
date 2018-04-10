@@ -28,7 +28,7 @@ import argparse
 import os
 
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.2.10'
+__version__ = '1.2.11'
 __license__ = 'GNU GPLv3'
 
 # Logging
@@ -43,10 +43,11 @@ logging_file = os.path.abspath(os.path.curdir) + '/sipd.log'
 logging_size = 10 * 0x100000 # MB
 logging_format = ' '.join(
     [
-        '[%(asctime)-15s]',
-        '<%(filename)s:%(lineno)s>',
-        u'\u001b[1m%(levelname)s\u001b[0m',
-        '%(message)s'
+        u'\u001b[0m[%(asctime)-15s]',
+        u'<<\u001b[32;1m%(threadName)s\u001b[0m>>',
+        '%(levelname)s',
+        u'<\u001b[36m%(filename)s\u001b[0m:\u001b[31;1m%(lineno)s\u001b[0m>',
+        '%(message)s',
     ]
 )
 
@@ -68,7 +69,10 @@ logger = logging.getLogger(__name__)
 
 try: # colorize log entries.
     import coloredlogs
-    coloredlogs.install(level='DEBUG', logger=logger, milliseconds=True)
+    coloredlogs.install(level='DEBUG',
+                        logger=logger,
+                        fmt=logging_format,
+                        milliseconds=True)
 except: pass
 
 # Test

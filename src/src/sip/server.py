@@ -104,7 +104,7 @@ class SIPServerPrototype(object):
             GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
             logger.info('<sip>:successfully initialized SIP server.')
         else:
-            logger.error('<sip>:failed to initialize SIP server.')
+            logger.critical('<sip>:failed to initialize SIP server.')
             sys.exit()
 
 class AsynchronousSIPServer(SIPServerPrototype):
