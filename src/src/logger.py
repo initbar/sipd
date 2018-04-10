@@ -17,13 +17,16 @@
 # https://github.com/initbar/sipd
 
 #-------------------------------------------------------------------------------
-# logger.py -- logging component.
+# logger.py
 #-------------------------------------------------------------------------------
 
-import logger
+import logging
+import os
+import sys
 
 def initialize_logger(configuration):
-
+    '''
+    '''
     logging_format = ' '.join(
         [
             u'\u001b[0m[%(asctime)-15s]',
@@ -34,47 +37,52 @@ def initialize_logger(configuration):
         ]
     ); logging_formatter = logging.Formatter(logging_format)
 
-    # initialize filesystem logging.
+    log_cli = configuration['log']['console']
+    log_clr = configuration['log']['coloredlogs']
     log_fs = configuration['log']['filesystem']
-    if log_fs.get('enabled'):
 
-        # adjust log path.
-        log_file = str(log_fs.get('name'))
-        log_path = str(log_fs.get('path'))
-        if not log_path.endswith('/'):
-            log_path += '/'
+    # filesystem
+    if log_fs.get('enabled'):
+        log_days = log_fs['total_days']
+        log_file = log_fs['name']
+        log_path = log_fs['path']
         if not os.path.exists(log_path):
             os.makedirs(log_path)
+        if not log_path.endswith('/'):
+            log_path += '/'
         log_path += log_file
-
-        # set handler for old logs.
-        log_days = int(log_fs.get('total_days'))
-        handler_fs = logging.handlers.TimedRotatingFileHandler(log_path, 'midnight', 1, log_days)
-        handler_fs.suffix = '%Y%m%d'
-        handler_fs.setFormatter(logging_formatter)
+        fs_handler = logging.handlers.TimedRotatingFileHandler(
+            log_path,
+            'midnight',
+            1,
+            log_days)
+        fs_handler.setFormatter(logging_formatter)
+        fs_handler.suffix = '%Y%m%d'
     else:
-        handler_fs = None
+        fs_handler = None
 
-    # initialize console logging.
-    log_cli = configuration['log']['console']
+    # console
     if log_cli.get('enabled'):
         logging.basicConfig(
             level=configuration['log']['level'],
             format=logging_format,
-            handlers=[handler_fs]
+            handlers=[fs_handler]
         )
 
     logger = logging.getLogger(__name__)
-    if config['log']['coloredlogs']:
+
+    # coloredlogs
+    if log_clr:
         try:
             import coloredlogs
         except ImportError:
             logger.critical("module `coloredlogs` does not exist.")
             sys.exit()
-        coloredlogs.install(level=config['log']['level'],
+        coloredlogs.install(level=configuration['log']['level'],
                             logger=logger,
                             fmt=logging_format,
                             milliseconds=True)
-        logger.addHandler(handler_fs)
+        logger.addHandler(fs_handler)
+
     logger.info("<main>:successfully initialized logging.")
     return logger

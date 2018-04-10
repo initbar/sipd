@@ -28,10 +28,10 @@ from tests.test_errors import TestErrors
 from tests.test_parser import TestParser
 from tests.test_sockets import TestSockets
 
-logger = logging.getLogger('__main__')
+LOGGER = logging.getLogger('__main__')
 
 def run_test_suite():
-    logger.info('initializing self-tests..')
+    LOGGER.info('initializing self-tests..')
     test_suites, test_cases = [], [
         TestDebug,
         TestErrors,
@@ -39,7 +39,7 @@ def run_test_suite():
         TestSockets
     ]
     for test_case in test_cases:
-        logger.info("adding test suite: '%s'.", test_case)
+        LOGGER.info("adding test suite: '%s'.", test_case)
         test_suite = unittest.TestLoader().loadTestsFromTestCase(test_case)
         test_suites.append(test_suite)
     result = unittest.TextTestRunner(verbosity=2).run(unittest.TestSuite(test_suites))
