@@ -127,16 +127,6 @@ class SynchronousSIPWorker(object):
     def sip_message(self, message):
         self.__sip_message = message
 
-    def assign(self, sip_endpoint, sip_message=None):
-        ''' assign a worker with "work".
-        '''
-        if sip_endpoint and sip_message:
-            self.sip_endpoint = sip_endpoint
-            self.sip_message  = sip_message
-            self.__event.set() # worker is now assigned.
-            return True
-        return False
-
     def cleanup(self):
         ''' relinquish a worker from "work".
         '''
@@ -147,11 +137,16 @@ class SynchronousSIPWorker(object):
     # handler interface
     #
 
-    def handle(self):
+    def handle(self, sip_endpoint, sip_message):
+        if not (sip_endpoint and sip_message):
+            return
+
         self.__tag = create_random_uuid() # call context.
+        self.__event.set() # worker is now assigned.
+        self.sip_endpoint = sip_endpoint
+        self.sip_message  = sip_message
 
         try: # check that worker has valid work assignment.
-            assert self.sip_endpoint and self.sip_message
             if not validate_sip_signature(self.sip_message):
                 raise SIPBrokenProtocol
             self.__sip_datagram = parse_sip_packet(self.sip_message)
