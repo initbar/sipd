@@ -92,8 +92,7 @@
             "enabled": true,
             "name": "sipd.log",
             "path": "./logs",
-            "size_in_kb": 1024,
-            "total_logs": 10
+            "total_days": 30
         },
         "coloredlogs": true,
         "level": "DEBUG"

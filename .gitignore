@@ -1,12 +1,13 @@
-*.py[cod]
-.pypirc
 bin/
 build/
 dist/
 include/
 lib/
 local/
+logs/
 pip-selfcheck.json
+*.py[cod]
+.pypirc
 sipd
 sipd.egg-info/
 sipd.log

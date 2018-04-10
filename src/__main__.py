@@ -21,7 +21,7 @@ try: # check supported version.
     assert (2,7) <= sys.version_info <= (3,7)
 except AssertionError: raise
 
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 from src.config import parse_config
 from src.sip.server import AsynchronousSIPServer
 
@@ -30,7 +30,7 @@ import logging
 import os
 
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.2.12'
+__version__ = '1.2.13'
 __license__ = 'GNU GPLv3'
 
 # Test
@@ -78,9 +78,8 @@ def initialize_logger(config={}):
     # initialize filesystem logging.
     log_fs = config['log']['filesystem']
     if log_fs.get('enabled'):
-        log_size = int(log_fs.get('size_in_kb')) * 1024
-        log_cnt  = int(log_fs.get('total_logs'))
 
+        # adjust log path.
         log_file = str(log_fs.get('name'))
         log_path = str(log_fs.get('path'))
         if not log_path.endswith('/'):
@@ -89,13 +88,10 @@ def initialize_logger(config={}):
             os.makedirs(log_path)
         log_path += log_file
 
-        handler_fs = RotatingFileHandler(
-            log_path,
-            mode='a',
-            maxBytes=log_size,
-            encoding='utf-8',
-            backupCount=log_cnt
-        )
+        # set handler for old logs.
+        log_days  = int(log_fs.get('total_days'))
+        handler_fs = TimedRotatingFileHandler(log_path, 'midnight', 1, log_days)
+        handler_fs.suffix = '%Y%m%d'
         handler_fs.setFormatter(logging_formatter)
     else:
         handler_fs = None
