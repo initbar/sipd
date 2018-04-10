@@ -77,7 +77,7 @@ def main():
         logger.info("<main>:successfully loaded configuration: '%s'.", config_file)
         logger.debug(config)
     else:
-        sys.stderr.write("configuration file does not exist: '%s'.\n", config_file)
+        sys.stderr.write("<main>:file does not exist: '%s'.\n", config_file)
         return errno.ENOENT
 
     if args.test:
