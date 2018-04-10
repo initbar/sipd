@@ -41,6 +41,7 @@
 #                                         using SDP headers.
 #-------------------------------------------------------------------------------
 
+from src.db.mysql              import MySQLClient
 from src.debug                 import create_random_uuid
 from src.errors                import SIPBrokenProtocol
 from src.parser                import convert_to_sip_packet
@@ -88,6 +89,15 @@ class SynchronousSIPWorker(object):
         # a worker has its own handling socket and a RTP handler.
         self.__socket = unsafe_allocate_random_udp_socket(is_reused=True)
         self.__rtp_handler = SynchronousRTPRouter(settings)
+
+        # database
+        # self.__mysql = MySQLClient(
+        #     host='127.0.0.1',
+        #     port=0,
+        #     username='',
+        #     password='',
+        #     database
+        # )
 
         try: # load any SIP headers from setting.
             self.sip_headers = settings['sip']['worker']['headers']

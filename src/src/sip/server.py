@@ -178,8 +178,6 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             for i in range(self.__worker_size)
         ]
 
-        # remove main thread + garbage collector count from active thread count.
-        self.__thread_cnt = threading.active_count() - 2
         logger.info('<sip>:successfully initialized SIP router.')
 
     def handle_read(self):
@@ -199,8 +197,12 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             p_index = int(self._random() * self.__worker_size)
             worker = self.__workers[p_index]
 
+            # remove main and garbage collector from active thread count.
+            thread_cnt = threading.active_count() - 2
+
             # assign work to worker if the worker is free.
-            if self.__thread_cnt < self.__worker_size and worker.is_ready():
+            if worker.is_ready() and thread_cnt < self.__worker_size:
+                work_delegated = True # break loop.
                 worker_thread = threading.Thread(
                     name=worker.name,
                     target=worker.handle,
@@ -211,4 +213,3 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                 )
                 worker_thread.daemon = True
                 worker_thread.start()
-                work_delegated = True # break loop.
