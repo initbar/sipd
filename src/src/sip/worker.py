@@ -41,7 +41,7 @@
 #                                         using SDP headers.
 #-------------------------------------------------------------------------------
 
-from src.db.mysql              import MySQLClient
+# from src.db.mysql              import MySQLClient
 from src.debug                 import create_random_uuid
 from src.errors                import SIPBrokenProtocol
 from src.parser                import convert_to_sip_packet
