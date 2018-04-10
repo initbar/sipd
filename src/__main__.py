@@ -117,11 +117,12 @@ if __name__ == '__main__':
                             version=__version__)
 
     # -c, --config: configuration file path.
+    default_config_file = os.path.abspath(os.path.curdir) + '/sipd.json'
     n_exec = argsparser.add_argument_group('execution arguments')
     n_exec.add_argument('-c', '--config',
                         nargs='?',
                         metavar='str',
-                        default='sipd.json',
+                        default=default_config_file,
                         help='configuration file path (default: None)')
 
     # -t, --test: run test suite and exit.
@@ -144,8 +145,8 @@ if __name__ == '__main__':
             with open(config_file) as f:
                 content = f.read()
                 config = parse_config(content)
-            logger.info("<config>:successfully loaded configuration file: '%s'" % config_file)
-            logger.debug(str(config))
+            logger.info("<main>:successfully loaded configuration file: '%s'." % config_file)
+            logger.debug(config)
         except AssertionError:
             logger.warning("configuration file does not exist: '%s'" % config_file)
 

@@ -168,12 +168,8 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             worker_size = SERVER_SETTINGS['sip']['worker']['count']
             assert worker_size > 0 # check for dynamic allocation.
             self.__worker_size = min(worker_size, cpu_count())
-            logger.debug('<sip>:successfully loaded `worker size` value.')
         except:
-            logger.error('<sip>:invalid `worker size` value.')
             self.__worker_size = 1 + int(0.32 * cpu_count())
-            logger.warning('<sip>:using dynamic worker allocation.')
-        logger.debug('<sip>:worker pool size is %i.', self.__worker_size)
 
         # workers should never cause conflict with main server thread.
         # For that reason, each worker must exist in their own thread.
@@ -187,7 +183,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             thread.daemon = True
             worker_threads.append(thread)
         map(lambda thread:thread.start(), worker_threads)
-        logger.info('<sip>:successfully initialized router component.')
+        logger.info('<sip>:successfully initialized SIP router.')
 
     def handle_read(self):
         # the purpose of router is to only receive data ("work") and delegate

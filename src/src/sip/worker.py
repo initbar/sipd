@@ -74,7 +74,7 @@ class SynchronousSIPWorker(object):
                  settings={},
                  gc=None,
                  verbose=False):
-        self.name = 'worker-node-' + str(worker_id)
+        self.name = 'worker-' + str(worker_id)
         self.verbose = verbose
 
         self.__settings = settings
@@ -91,18 +91,12 @@ class SynchronousSIPWorker(object):
 
         try: # load any SIP headers from setting.
             self.sip_headers = settings['sip']['worker']['headers']
-            logger.debug('<sip>:successfully loaded `sip headers`.')
         except:
-            logger.error('<sip>:failed to parse `sip headers`.')
-            logger.warning('<sip>:using empty headers.')
             self.sip_headers = {}
 
         try: # load call lifetime from setting.
             self.lifetime = settings['gc']['call_lifetime'] # seconds
-            logger.debug("<sip>:successfully loaded `call lifetime`: '%i'" % self.lifetime)
         except:
-            logger.error('<sip>:failed to parse `call lifetime`.')
-            logger.warning('<sip>:using default 1 hour lifetime.')
             self.lifetime = 60 * 60
 
         # handler configuration.
