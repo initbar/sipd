@@ -115,7 +115,7 @@ class SynchronousSIPWorker(object):
         }
 
         self.__sip_endpoint = self.__sip_message = None # "work"
-        logger.info("<sip>:successfully initialized: '%s'" % self.name)
+        logger.info("<sip>:successfully initialized '%s'." % self.name)
 
     @property
     def sip_endpoint(self):
