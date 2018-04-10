@@ -134,7 +134,8 @@ class SynchronousSIPWorker(object):
             self.sip_endpoint = sip_endpoint
             self.sip_message  = sip_message
             self.__event.set() # worker is now assigned.
-            self.handle() # worker hook to force work.
+            return True
+        return False
 
     def cleanup(self):
         ''' relinquish a worker from "work".
@@ -159,7 +160,6 @@ class SynchronousSIPWorker(object):
             logger.warning('<sip>:[%s] <<%s>> prematurely relinquishing work.' % (self.name, self.__tag))
             return self.cleanup()
         except:
-            logger.error('<sip>:[%s] <<%s>> no work received or available.' % (self.name, self.__tag))
             return self.cleanup()
 
         try: # override parsed SIP headers with default headers.

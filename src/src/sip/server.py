@@ -201,7 +201,11 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
 
             # assign work to worker if the worker is free.
             if self.__thread_cnt < self.__worker_size and worker.is_ready():
-                thread = threading.Thread(name=worker.name, target=worker.handle)
-                thread.daemon = True
-                thread.start()
-                work_delegated = True # break loop.
+                if worker.assign(sip_endpoint, sip_message):
+                    worker_thread = threading.Thread(
+                        name=worker.name,
+                        target=worker.handle
+                    )
+                    worker_thread.daemon = True
+                    worker_thread.start()
+                    work_delegated = True # break loop.
