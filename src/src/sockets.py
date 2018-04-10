@@ -25,7 +25,7 @@ from random import randint
 import socket
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('__main__')
 
 # network
 #-------------------------------------------------------------------------------

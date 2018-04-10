@@ -28,7 +28,7 @@ import argparse
 import os
 
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.2.11'
+__version__ = '1.2.12'
 __license__ = 'GNU GPLv3'
 
 # Logging
@@ -50,22 +50,20 @@ logging_format = ' '.join(
         '%(message)s',
     ]
 )
+logging_formatter = logging.Formatter(logging_format)
 
-handler_console = StreamHandler(sys.stdout)
-handler_file    = RotatingFileHandler(logging_file,
+handler_storage = RotatingFileHandler(logging_file,
+                                      mode='a',
                                       maxBytes=logging_size,
+                                      encoding='utf-8',
                                       backupCount=30)
+handler_storage.setFormatter(logging_formatter)
 
 logging.basicConfig(level=logging.DEBUG,
                     format=logging_format,
-                    handlers=[
-                        handler_console,
-                        handler_file
-                    ])
+                    handlers=[handler_storage])
 
 logger = logging.getLogger(__name__)
-# logger.addHandler(handler_console)
-# logger.addHandler(handler_file)
 
 try: # colorize log entries.
     import coloredlogs
@@ -73,6 +71,7 @@ try: # colorize log entries.
                         logger=logger,
                         fmt=logging_format,
                         milliseconds=True)
+    logger.addHandler(handler_storage)
 except: pass
 
 # Test

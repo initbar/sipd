@@ -29,7 +29,7 @@ import json
 import re
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('__main__')
 
 # pre-compiled regex
 #-------------------------------------------------------------------------------

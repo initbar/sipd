@@ -52,7 +52,7 @@ import sys
 import threading
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('__main__')
 
 # each worker should not instantiate a new garbage collector since a subsequent
 # related requests can not guarantee to hit the same worker. Therefore, the

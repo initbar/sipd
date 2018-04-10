@@ -61,7 +61,7 @@ import threading
 import time
 
 import logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('__main__')
 
 # SIP worker implementation
 #-------------------------------------------------------------------------------
