@@ -177,12 +177,9 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             SynchronousSIPWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
             for i in range(self.__worker_size)
         ]
-        worker_threads = []
-        for worker in self.__workers:
-            thread = threading.Thread(name=worker.name, target=worker.handle)
-            thread.daemon = True
-            worker_threads.append(thread)
-        map(lambda thread:thread.start(), worker_threads)
+
+        # remove main thread + garbage collector count from active thread count.
+        self.__thread_cnt = threading.active_count() - 2
         logger.info('<sip>:successfully initialized SIP router.')
 
     def handle_read(self):
@@ -197,8 +194,14 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         # to reflect round robin distribution closely as possible - yet have
         # enough chance to delegate two short tasks to the same worker.
         while not locals().get('work_delegated', False): # temporary.
+
+            # randomly pick available workers.
             p_index = int(self._random() * self.__worker_size)
             worker = self.__workers[p_index]
-            if worker.is_ready():
-                worker.assign(sip_endpoint, sip_message)
+
+            # assign work to worker if the worker is free.
+            if self.__thread_cnt < self.__worker_size and worker.is_ready():
+                thread = threading.Thread(name=worker.name, target=worker.handle)
+                thread.daemon = True
+                thread.start()
                 work_delegated = True # break loop.
