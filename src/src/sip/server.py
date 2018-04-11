@@ -134,16 +134,9 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         self.collector = None
 
         try:
-            pool_size = SERVER_SETTINGS['sip']['worker']['count']
+            self.__pool_size = SERVER_SETTINGS['sip']['worker']['count']
         except KeyError:
-            pool_size = cpu_count()
-
-        # workers
-        self.__pool_size = min(pool_size, cpu_count())
-        self.worker_pool = [
-            LazySIPWorker(SERVER_SETTINGS, GARBAGE_COLLECTOR)
-            for i in range(self.__pool_size)
-        ]
+            self.__pool_size = cpu_count()
 
     def initialize_demultiplexer(self):
         '''
@@ -168,7 +161,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         def collect():
             while True:
                 if self.__demux.empty():
-                    time.sleep(0.1)
+                    time.sleep(0.01)
 
                 session = []
                 for worker in range(self.__pool_size):
