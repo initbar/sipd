@@ -23,7 +23,6 @@
 import asyncore
 import errno
 import logging
-import os
 import sys
 import threading
 import time
@@ -78,15 +77,14 @@ class AsynchronousSIPServer(object):
     ''' Asynchronous SIP server that initializes SIP router and SIP workers.
     '''
     def __init__(self, setting):
-        if not setting:
+        if setting:
+            global SERVER_SETTINGS
+            global GARBAGE_COLLECTOR
+            SERVER_SETTINGS = setting
+            GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
+        else:
             logger.critical('<sip>:failed to initialize SIP server.')
             sys.exit(errno.EINVAL)
-
-        # globalize parameters.
-        global SERVER_SETTINGS
-        global GARBAGE_COLLECTOR
-        SERVER_SETTINGS = setting
-        GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
         logger.info('<sip>:successfully initialized SIP server.')
 
     @classmethod
@@ -109,8 +107,9 @@ class AsynchronousSIPServer(object):
 # router
 #-------------------------------------------------------------------------------
 
-def async_worker_function(*a, **kw):
-    logger.critical(a)
+def async_worker_function(endpoint, message):
+    worker = LazySIPWorker(SERVER_SETTINGS, GARBAGE_COLLECTOR)
+    worker.handle(sip_endpoint=endpoint, sip_message=message)
 
 class AsynchronousSIPRouter(asyncore.dispatcher):
     ''' Asynchronous SIP routing component prototype.
@@ -175,7 +174,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                 for worker in range(self.__pool_size):
                     endpoint, message = self.__demux.get()
                     process = Process(target=async_worker_function,
-                                      args=(endpoint, message,))
+                                      args=(endpoint, message))
                     session.append(process)
                 for process in session:
                     process.start()
