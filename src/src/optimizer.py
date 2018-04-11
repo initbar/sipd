@@ -23,9 +23,9 @@
 from functools import wraps
 
 try:
-   import cPickle as pickle
-except:
-   import pickle
+    import cPickle as pickle
+except ImportError:
+    import pickle
 
 # memoization technique
 #-------------------------------------------------------------------------------
@@ -47,7 +47,7 @@ def memcache(size=64):
                 # priority of that object by moving it to the top of cache.
                 queue.insert(0, (queue.pop(queue.index(key))))
                 return cache[key]
-            except:
+            except ValueError:
                 # if cache is missed, then calculate the result and consider
                 # the object to have extremely high priority.
                 result = function(*entry)
@@ -55,7 +55,8 @@ def memcache(size=64):
                 queue.insert(0, key)
 
                 # enforce size constraint and evict least-used objects.
-                while len(queue) > size: del cache[queue.pop()]
+                while len(queue) > size:
+                    del cache[queue.pop()]
             return cache[key]
         return wrapper
     return memcache_impl
