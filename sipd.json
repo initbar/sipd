@@ -94,7 +94,7 @@
             "path": "./logs",
             "total_days": 30
         },
-        "coloredlogs": true,
+        "coloredlogs": false,
         "level": "DEBUG"
     }
 }

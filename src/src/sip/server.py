@@ -100,7 +100,7 @@ class AsynchronousSIPServer(object):
         with safe_allocate_sip_socket(sip_port) as sip_socket:
             cls.router = AsynchronousSIPRouter(sip_socket)
             cls.router.initialize_demultiplexer()
-            cls.router.initialize_collector()
+            cls.router.initialize_consumer()
             logger.info('<sip>:successfully initialized SIP router.')
             asyncore.loop() # push new events to the event loop.
 
@@ -131,7 +131,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
 
         # demultiplxer and collector.
         self.__demux = None # must be a FIFO queue
-        self.collector = None
+        self.consumer = None
 
         try:
             self.__pool_size = SERVER_SETTINGS['sip']['worker']['count']
@@ -151,7 +151,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         self.__demux = Queue()
         return bool(self.__demux)
 
-    def initialize_collector(self):
+    def initialize_consumer(self):
         '''
         '''
         if not self.__demux:
@@ -173,9 +173,9 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                     process.start()
                     process.join()
 
-        self.collector = threading.Thread(name='collector', target=collect)
-        self.collector.daemon = True
-        self.collector.start()
+        self.consumer = threading.Thread(name='consumer', target=collect)
+        self.consumer.daemon = True
+        self.consumer.start()
 
     def handle_read(self):
         # the purpose of router is to only receive data ("work") and delegate
