@@ -24,7 +24,7 @@ from src.parser import parse_json
 from src.sockets import get_server_address
 
 import logging
-logger = logging.getLogger('__main__')
+logger = logging.getLogger()
 
 def parse_config(config={}):
     ''' parse `sipd.json` and load/initialize with runtime environment.

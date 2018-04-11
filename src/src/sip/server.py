@@ -33,7 +33,7 @@ from src.sip.garbage import SynchronousSIPGarbageCollector
 from src.sip.worker import LazySIPWorker
 from src.sockets import unsafe_allocate_udp_socket
 
-logger = logging.getLogger('__main__')
+logger = logging.getLogger()
 
 SERVER_SETTINGS = None # `sipd.json`
 

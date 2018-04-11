@@ -32,7 +32,7 @@ from src.db.errors import (
 import datetime
 
 import logging
-logger = logging.getLogger('__main__')
+logger = logging.getLogger()
 
 # MySQL client
 #-------------------------------------------------------------------------------

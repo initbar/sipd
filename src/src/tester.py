@@ -28,7 +28,7 @@ from tests.test_errors import TestErrors
 from tests.test_parser import TestParser
 from tests.test_sockets import TestSockets
 
-LOGGER = logging.getLogger('__main__')
+LOGGER = logging.getLogger()
 
 def run_test_suite():
     LOGGER.info('initializing self-tests..')

@@ -72,7 +72,7 @@ def initialize_logger(configuration):
             handlers=[fs_handler]
         )
 
-    logger = logging.getLogger('__main__')
+    logger = logging.getLogger()
 
     # coloredlogs
     if log_clr:

@@ -29,7 +29,7 @@ try:
 except ImportError: raise
 
 import logging
-logger = logging.getLogger('__main__')
+logger = logging.getLogger()
 
 #-------------------------------------------------------------------------------
 # gc.py -- synchronous SIP garbage collection module.

@@ -29,7 +29,7 @@ from src.sockets import safe_allocate_random_udp_socket
 import random
 
 import logging
-logger = logging.getLogger('__main__')
+logger = logging.getLogger()
 
 # RTP router
 #-------------------------------------------------------------------------------

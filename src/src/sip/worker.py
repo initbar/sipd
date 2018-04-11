@@ -41,7 +41,7 @@ from src.sip.static.terminated import SIP_TERMINATE
 from src.sip.static.trying import SIP_TRYING
 from src.sockets import unsafe_allocate_random_udp_socket
 
-logger = logging.getLogger('__main__')
+logger = logging.getLogger()
 
 # SIP worker implementation
 #-------------------------------------------------------------------------------
