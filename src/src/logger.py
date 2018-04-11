@@ -20,9 +20,12 @@
 # logger.py
 #-------------------------------------------------------------------------------
 
+import errno
 import logging
 import os
 import sys
+
+from logging.handlers import TimedRotatingFileHandler
 
 def initialize_logger(configuration):
     '''
@@ -51,11 +54,11 @@ def initialize_logger(configuration):
         if not log_path.endswith('/'):
             log_path += '/'
         log_path += log_file
-        fs_handler = logging.handlers.TimedRotatingFileHandler(
-            log_path,
-            'midnight',
-            1,
-            log_days)
+        fs_handler = TimedRotatingFileHandler(
+            log_path,   # log path
+            'midnight', # log rotation time
+            1,          # interval
+            log_days)   # total logs
         fs_handler.setFormatter(logging_formatter)
         fs_handler.suffix = '%Y%m%d'
     else:
@@ -77,7 +80,7 @@ def initialize_logger(configuration):
             import coloredlogs
         except ImportError:
             logger.critical("module `coloredlogs` does not exist.")
-            sys.exit()
+            sys.exit(errno.ENOENT)
         coloredlogs.install(level=configuration['log']['level'],
                             logger=logger,
                             fmt=logging_format,
