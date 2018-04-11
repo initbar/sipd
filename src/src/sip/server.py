@@ -120,24 +120,23 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         # traffic from the remote endpoint.
         asyncore.dispatcher.__init__(self, sip_socket)
 
-        # override socket read state to read-only.
+        # override to read-only.
         self.is_readable = True
         self.readable = lambda: self.is_readable
 
-        # override socket read state to disable writes.
+        # override to disable write.
         self.is_writable = False
         self.writable = lambda: self.is_writable
         self.handle_write = lambda: None
 
-        # demultiplxer and collector.
-        self.__demux = None # must be a FIFO queue
-        self.__consumer = None
-
-        # calculate worker pool size.
-        try:
+        try: # calculate worker pool size.
             self.__pool_size = SERVER_SETTINGS['sip']['worker']['count']
         except KeyError:
             self.__pool_size = cpu_count()
+
+        # demultiplxer and collector.
+        self.__demux = None # FOFO
+        self.__consumer = None
 
     def initialize_demultiplexer(self):
         '''
@@ -163,15 +162,15 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             while True:
                 if self.__demux.empty():
                     time.sleep(1e-2)
-                session = []
-                for worker in range(self.__pool_size):
+                worker_pool = []
+                for _ in range(self.__pool_size):
                     endpoint, message = self.__demux.get()
-                    process = Process(target=async_worker_function,
-                                      args=(endpoint, message))
-                    session.append(process)
-                for process in session:
-                    process.start()
-                    process.join()
+                    worker = Process(target=async_worker_function,
+                                     args=(endpoint, message))
+                    worker_pool.append(worker)
+                for worker in worker_pool:
+                    worker.start()
+                    worker.join()
         self.__consumer = threading.Thread(name='consumer', target=consume)
         self.__consumer.daemon = True
         self.__consumer.start()
