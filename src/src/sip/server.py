@@ -131,8 +131,9 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
 
         # demultiplxer and collector.
         self.__demux = None # must be a FIFO queue
-        self.consumer = None
+        self.__consumer = None
 
+        # calculate worker pool size.
         try:
             self.__pool_size = SERVER_SETTINGS['sip']['worker']['count']
         except KeyError:
@@ -158,11 +159,10 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             logger.critical("failed to initialize router properties.")
             sys.exit(errno.EAGAIN)
 
-        def collect():
+        def consume():
             while True:
                 if self.__demux.empty():
-                    time.sleep(0.01)
-
+                    time.sleep(1e-2)
                 session = []
                 for worker in range(self.__pool_size):
                     endpoint, message = self.__demux.get()
@@ -172,14 +172,13 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                 for process in session:
                     process.start()
                     process.join()
-
-        self.consumer = threading.Thread(name='consumer', target=collect)
-        self.consumer.daemon = True
-        self.consumer.start()
+        self.__consumer = threading.Thread(name='consumer', target=consume)
+        self.__consumer.daemon = True
+        self.__consumer.start()
 
     def handle_read(self):
         # the purpose of router is to only receive data ("work") and delegate
         # them to its' workers. A worker holds the logic implementation.
         payload = self.recvfrom(0xffff) # max receive bytes.
         endpoint, message = tuple(payload[1]), str(payload[0])
-        self.__demux.put((endpoint, message)) # push new jobs.
+        self.__demux.put((endpoint, message)) # push to events.
