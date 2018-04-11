@@ -66,11 +66,7 @@ def initialize_logger(configuration):
 
     # console
     if log_cli.get('enabled'):
-        logging.basicConfig(
-            level=configuration['log']['level'],
-            format=logging_format,
-            handlers=[fs_handler]
-        )
+        logging.basicConfig(level=configuration['log']['level'], format=logging_format)
 
     logger = logging.getLogger()
 
@@ -85,7 +81,7 @@ def initialize_logger(configuration):
                             logger=logger,
                             fmt=logging_format,
                             milliseconds=True)
-        logger.addHandler(fs_handler)
 
+    logger.addHandler(fs_handler)
     logger.info("<main>:successfully initialized logging.")
     return logger
