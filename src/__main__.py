@@ -83,7 +83,7 @@ def main():
     if args.test:
         return run_test_suite()
 
-    server = AsynchronousSIPServer(locals().get('config'))
+    server = AsynchronousSIPServer(config)
     return server.serve()
 
 if __name__ == '__main__':
