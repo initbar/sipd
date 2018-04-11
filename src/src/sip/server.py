@@ -162,15 +162,16 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             while True:
                 if self.__demux.empty():
                     time.sleep(1e-2)
-                worker_pool = []
-                for _ in range(self.__pool_size):
-                    endpoint, message = self.__demux.get()
-                    worker = Process(target=async_worker_function,
-                                     args=(endpoint, message))
-                    worker_pool.append(worker)
-                for worker in worker_pool:
-                    worker.start()
-                    worker.join()
+                else:
+                    worker_pool = []
+                    for _ in range(self.__pool_size):
+                        endpoint, message = self.__demux.get()
+                        worker = Process(target=async_worker_function,
+                                         args=(endpoint, message))
+                        worker_pool.append(worker)
+                    for worker in worker_pool:
+                        worker.start()
+                        worker.join()
         self.__consumer = threading.Thread(name='consumer', target=consume)
         self.__consumer.daemon = True
         self.__consumer.start()
