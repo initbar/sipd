@@ -21,7 +21,6 @@
 #-------------------------------------------------------------------------------
 
 import logging
-import threading
 import time
 
 # from src.db.mysql import MySQLClient
@@ -58,24 +57,6 @@ class LazySIPWorker(object):
         self.__settings = settings
         self.__garbage  = gc
 
-        # a worker is considered to be "working" if its' threading event is set.
-        self.__event  = threading.Event()
-        self.is_ready = lambda: not self.__event.isSet()
-        self.is_busy  = lambda: not self.is_ready()
-
-        # a worker has its own handling socket and a RTP handler.
-        self.__socket = unsafe_allocate_random_udp_socket(is_reused=True)
-        self.__rtp_handler = SynchronousRTPRouter(settings)
-
-        # database
-        # self.__mysql = MySQLClient(
-        #     host='127.0.0.1',
-        #     port=0,
-        #     username='',
-        #     password='',
-        #     database
-        # )
-
         try: # load any SIP headers from setting.
             self.sip_headers = settings['sip']['worker']['headers']
         except:
@@ -95,69 +76,45 @@ class LazySIPWorker(object):
             'INVITE':  self.handler_invite
         }
 
+        # a worker has its own handling socket and a RTP handler.
+        self.__socket = unsafe_allocate_random_udp_socket()
+        self.__rtp_handler = SynchronousRTPRouter(settings)
+
         self.__sip_endpoint = self.__sip_message = None # "work"
         logger.info("<sip>:successfully initialized worker.")
-
-    @property
-    def sip_endpoint(self):
-        return self.__sip_endpoint
-
-    @sip_endpoint.setter
-    def sip_endpoint(self, endpoint):
-        self.__sip_endpoint = endpoint
-
-    @property
-    def sip_message(self):
-        return self.__sip_message
-
-    @sip_message.setter
-    def sip_message(self, message):
-        self.__sip_message = message
-
-    def cleanup(self):
-        ''' relinquish a worker from "work".
-        '''
-        self.sip_endpoint = self.sip_message = None
-        self.__event.clear()
-
-    #
-    # handler interface
-    #
 
     def handle(self, sip_endpoint, sip_message):
         if not (sip_endpoint and sip_message):
             return
+        else:
+            self.sip_endpoint = sip_endpoint
+            self.sip_message = sip_message
 
-        self.__tag = create_random_uuid() # call context.
-        self.__event.set() # worker is now assigned.
-        self.sip_endpoint = sip_endpoint
-        self.sip_message  = sip_message
+        self.__tag = create_random_uuid() # context.
 
         try: # check that worker has valid work assignment.
             if not validate_sip_signature(self.sip_message):
                 raise SIPBrokenProtocol
-            self.__sip_datagram = parse_sip_packet(self.sip_message)
         except SIPBrokenProtocol:
             logger.error("<sip>:<<%s>> PARSE FAILED: '%s'", self.__tag, self.sip_message)
             logger.warning('<sip>:<<%s>> prematurely relinquishing work.', self.__tag)
-            return self.cleanup()
-        except:
-            return self.cleanup()
+            return
+
+        self.__sip_datagram = parse_sip_packet(self.sip_message)
 
         try: # override parsed SIP headers with default headers.
-            self.__call_id = self.__sip_datagram['sip'].get('Call-ID')
-            self.__method  = self.__sip_datagram['sip'].get('Method')
+            self.__call_id = self.__sip_datagram['sip']['Call-ID']
+            self.__method  = self.__sip_datagram['sip']['Method']
         except:
             logger.error('<sip>:<<%s>> malformed SIP packet: %s', self.__tag, self.__sip_datagram)
             logger.warning('<sip>:<<%s>> prematurely relinquishing work.', self.__tag)
-            return self.cleanup()
+            return
 
         for (field, value) in self.sip_headers.items():
             self.__sip_datagram['sip'][field] = value
 
         logger.debug('\033[1m\33[35m>>>\033[00m <sip>:<<%s>> <\033[1m\033[31m%s\033[00m>', self.__tag, self.__method)
         self.handlers.get(self.__method, 'DEFAULT')()
-        self.cleanup()
 
     #
     # handler implementation
