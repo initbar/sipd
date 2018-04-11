@@ -134,7 +134,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         except KeyError:
             self.__pool_size = cpu_count()
 
-        # demultiplxer and collector.
+        # demultiplexer and collector.
         self.__demux = None # FOFO
         self.__consumer = None
 
@@ -181,4 +181,4 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         # them to its' workers. A worker holds the logic implementation.
         payload = self.recvfrom(0xffff) # max receive bytes.
         endpoint, message = tuple(payload[1]), str(payload[0])
-        self.__demux.put((endpoint, message)) # push to events.
+        self.__demux.put((endpoint, message)) # demultiplex.
