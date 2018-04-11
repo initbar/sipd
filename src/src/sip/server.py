@@ -17,42 +17,24 @@
 # https://github.com/initbar/sipd
 
 #-------------------------------------------------------------------------------
-# server.py -- asynchronous SIP server module.
+# server.py
 #-------------------------------------------------------------------------------
-
-# ARCHITECTURE
-#-------------------------------------------------------------------------------
-#
-#                                            | | | receive SIP
-#                                            | | | messages.
-#                                            V V V
-# +--------+  create asynchronous router   +--------+  dispatch to workers
-# | server | ----------------------------> | router | --+----------+-------
-# +--------+                               +--------+   |          |
-#                                                       |          |
-#                                                       V          V
-#                                                  +--------+  +--------+
-#                                              ..  | worker |  | worker |  ..
-#                                                  +--------+  +--------+
-#                                                       ^          ^
-#                       +-------------+                 |          |
-#                       | RTP decoder | <---------------+----------+-------
-#                       +-------------+   delegate RTP to RTP decoder
-#                                         using SDP headers.
-#-------------------------------------------------------------------------------
-
-from multiprocessing import cpu_count
-from src.sip.garbage import SynchronousSIPGarbageCollector
-from src.sip.worker  import SynchronousSIPWorker
-from src.sockets     import unsafe_allocate_udp_socket
 
 import asyncore
+import errno
+import logging
 import random
 import sys
 import threading
 
-import logging
+from multiprocessing import cpu_count
+from src.sip.garbage import SynchronousSIPGarbageCollector
+from src.sip.worker import SynchronousSIPWorker
+from src.sockets import unsafe_allocate_udp_socket
+
 logger = logging.getLogger('__main__')
+
+SERVER_SETTINGS = None # `sipd.json`
 
 # each worker should not instantiate a new garbage collector since a subsequent
 # related requests can not guarantee to hit the same worker. Therefore, the
@@ -60,16 +42,12 @@ logger = logging.getLogger('__main__')
 # collection tasks to the collector queue.
 GARBAGE_COLLECTOR = None
 
-SERVER_SETTINGS = {} # `sipd.json`
-
-# SIP socket
-#-------------------------------------------------------------------------------
-
 class safe_allocate_sip_socket(object):
     ''' allocate exception-safe listening SIP socket.
     '''
     def __init__(self, port=5060):
         self.__port = int(port)
+        self.__socket = None
 
     @property
     def port(self):
@@ -77,27 +55,25 @@ class safe_allocate_sip_socket(object):
 
     @port.setter
     def port(self, number):
-        try: assert 1025 < port < 65535
-        except: raise ValueError(port)
+        number = int(number)
+        if not 1024 < number < 65535:
+            logger.critical("<sip>:cannot use privileged ports: '%i'", number)
+            sys.exit(errno.EPERM)
         self.__port = number
 
     def __enter__(self):
-        self.__socket = unsafe_allocate_udp_socket(host='0.0.0.0', port=self.port, is_reused=True)
+        self.__socket = unsafe_allocate_udp_socket('0.0.0.0', self.port, is_reused=True)
         return self.__socket
 
-    def __exit__(self, type, value, traceback):
-        try: self.__socket.close()
-        except:
-            del self.__socket
+    def __exit__(self, *a, **kw):
+        self.__socket.close()
+        del self.__socket
 
-# SIP server
-#-------------------------------------------------------------------------------
-
-class SIPServerPrototype(object):
-    ''' Asynchronous SIP server prototype.
+class AsynchronousSIPServer(object):
+    ''' Asynchronous SIP server that initializes SIP router and SIP workers.
     '''
-    def __init__(self, setting={}):
-        if setting and isinstance(setting, dict):
+    def __init__(self, setting):
+        if setting:
             global SERVER_SETTINGS
             global GARBAGE_COLLECTOR
             SERVER_SETTINGS = setting
@@ -105,24 +81,21 @@ class SIPServerPrototype(object):
             logger.info('<sip>:successfully initialized SIP server.')
         else:
             logger.critical('<sip>:failed to initialize SIP server.')
-            sys.exit()
+            sys.exit(errno.EINVAL)
 
-class AsynchronousSIPServer(SIPServerPrototype):
-    ''' Asynchronous SIP server implementation.
-    '''
-    def serve(self):
+    @classmethod
+    def serve(cls):
         # assign asynchronous handler to the receiving SIP port. Currently,
         # `asyncore` module was chosen in order to provide backward
         # compatibility with Python 2 (where there's no `asyncio`). All
         # incoming traffic is routed and initially handled by the router.
-        try: sip_port = SERVER_SETTINGS['sip']['router']['port']
-        except: sip_port = 5060 # udp
-        with safe_allocate_sip_socket(port=sip_port) as sip_socket:
+        try:
+            sip_port = SERVER_SETTINGS['sip']['router']['port']
+        except KeyError:
+            sip_port = 5060 # udp
+        with safe_allocate_sip_socket(sip_port) as sip_socket:
             sip_router = AsynchronousSIPRouter(sip_socket)
             asyncore.loop() # push new events to the event loop.
-
-# SIP router
-#-------------------------------------------------------------------------------
 
 class AsynchronousSIPRouter(asyncore.dispatcher):
     ''' Asynchronous SIP routing component prototype.
@@ -135,11 +108,11 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
 
         # override socket read state to read-only.
         self.is_readable = True
-        self.readable    = lambda: self.is_readable
+        self.readable = lambda: self.is_readable
 
         # override socket read state to disable writes.
-        self.is_writable  = False
-        self.writable     = lambda: self.is_writable
+        self.is_writable = False
+        self.writable = lambda: self.is_writable
         self.handle_write = lambda: None
 
         self._random = random.random # cache random number generator.
@@ -168,7 +141,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             worker_size = SERVER_SETTINGS['sip']['worker']['count']
             assert worker_size > 0 # check for dynamic allocation.
             self.__worker_size = min(worker_size, cpu_count())
-        except:
+        except KeyError:
             self.__worker_size = 1 + int(0.32 * cpu_count())
 
         # workers should never cause conflict with main server thread.
@@ -186,8 +159,9 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         try:
             message = self.recvfrom(0xffff) # max receive bytes.
             sip_endpoint = tuple(message[1])
-            sip_message  = str(message[0])
-        except: return
+            sip_message = str(message[0])
+        except:
+            return
         # we want a balanced distribution to our workers. For example, we want
         # to reflect round robin distribution closely as possible - yet have
         # enough chance to delegate two short tasks to the same worker.
