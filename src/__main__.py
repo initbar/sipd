@@ -84,7 +84,10 @@ def main():
         return run_test_suite()
 
     server = AsynchronousSIPServer(config)
-    return server.serve()
+    try:
+        return server.serve()
+    except KeyboardInterrupt:
+        pass
 
 if __name__ == '__main__':
 
@@ -93,7 +96,4 @@ if __name__ == '__main__':
         sys.path.insert(0, os.path.dirname(os.path.dirname(
             os.path.realpath(os.path.abspath(__file__)))))
 
-    try:
-        sys.exit(main())
-    except KeyboardInterrupt:
-        pass
+    sys.exit(main())

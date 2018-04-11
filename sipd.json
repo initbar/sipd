@@ -11,7 +11,7 @@
             "nodes": []
         },
         "worker": {
-            "count": 2,
+            "count": 4,
             "headers": {
                 "Allow": "ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE",
                 "Max-Forwards": 70,

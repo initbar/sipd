@@ -23,13 +23,15 @@
 import asyncore
 import errno
 import logging
-import random
+import os
 import sys
 import threading
+import time
 
+from multiprocessing import Process
 from multiprocessing import cpu_count
 from src.sip.garbage import SynchronousSIPGarbageCollector
-from src.sip.worker import SynchronousSIPWorker
+from src.sip.worker import LazySIPWorker
 from src.sockets import unsafe_allocate_udp_socket
 
 logger = logging.getLogger('__main__')
@@ -69,33 +71,46 @@ class safe_allocate_sip_socket(object):
         self.__socket.close()
         del self.__socket
 
+# server
+#-------------------------------------------------------------------------------
+
 class AsynchronousSIPServer(object):
     ''' Asynchronous SIP server that initializes SIP router and SIP workers.
     '''
     def __init__(self, setting):
-        if setting:
-            global SERVER_SETTINGS
-            global GARBAGE_COLLECTOR
-            SERVER_SETTINGS = setting
-            GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
-            logger.info('<sip>:successfully initialized SIP server.')
-        else:
+        if not setting:
             logger.critical('<sip>:failed to initialize SIP server.')
             sys.exit(errno.EINVAL)
 
+        # globalize parameters.
+        global SERVER_SETTINGS
+        global GARBAGE_COLLECTOR
+        SERVER_SETTINGS = setting
+        GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
+        logger.info('<sip>:successfully initialized SIP server.')
+
     @classmethod
     def serve(cls):
-        # assign asynchronous handler to the receiving SIP port. Currently,
-        # `asyncore` module was chosen in order to provide backward
-        # compatibility with Python 2 (where there's no `asyncio`). All
-        # incoming traffic is routed and initially handled by the router.
         try:
             sip_port = SERVER_SETTINGS['sip']['router']['port']
         except KeyError:
             sip_port = 5060 # udp
+        # assign asynchronous handler to the receiving SIP port. Currently,
+        # `asyncore` module was chosen in order to provide backward
+        # compatibility with Python 2 (where there's no `asyncio`). All
+        # incoming traffic is routed and initially handled by the router.
         with safe_allocate_sip_socket(sip_port) as sip_socket:
-            sip_router = AsynchronousSIPRouter(sip_socket)
+            cls.router = AsynchronousSIPRouter(sip_socket)
+            cls.router.initialize_demultiplexer()
+            cls.router.initialize_collector()
+            logger.info('<sip>:successfully initialized SIP router.')
             asyncore.loop() # push new events to the event loop.
+
+# router
+#-------------------------------------------------------------------------------
+
+def async_worker_function(*a, **kw):
+    logger.critical(a)
 
 class AsynchronousSIPRouter(asyncore.dispatcher):
     ''' Asynchronous SIP routing component prototype.
@@ -103,7 +118,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
     def __init__(self, sip_socket):
         # in order to prevent double creation of a router socket, inherit
         # SIP port from SIP server. A router should only be used to receive
-        # traffic.
+        # traffic from the remote endpoint.
         asyncore.dispatcher.__init__(self, sip_socket)
 
         # override socket read state to read-only.
@@ -115,75 +130,64 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         self.writable = lambda: self.is_writable
         self.handle_write = lambda: None
 
-        self._random = random.random # cache random number generator.
+        # demultiplxer and collector.
+        self.__demux = None # must be a FIFO queue
+        self.collector = None
 
-        # since it's possible that SIP server is running on a server with
-        # multiple cores/threads, workers are dynamically allocated based
-        # on server specification. Unless given, the following formula is
-        # used for dynamic allocation of workers:
-        #
-        #   total_workers = [ 1 + floor(total_cores * 0.32) ]
-        #
-        # Which has the following distribution:
-        #
-        #  6 |                                                    x
-        #  5 |                                        x   x   x   x
-        #  4 |                            x   x   x   x   x   x   x
-        #  3 |                   x  x  x  x   x   x   x   x   x   x
-        #  2 |          x  x  x  x  x  x  x   x   x   x   x   x   x
-        #  1 | x  x  x  x  x  x  x  x  x  x   x   x   x   x   x   x
-        #    +-----------------------------------------------------------
-        #      1  2  3  4  5  6  7  8  9  10  11  12  13  14  15  16
         try:
-            # if worker size is given, then normalize the count to not
-            # exceed the available resources. After all, GIL only
-            # permits only one active thread at a given time.
-            worker_size = SERVER_SETTINGS['sip']['worker']['count']
-            assert worker_size > 0 # check for dynamic allocation.
-            self.__worker_size = min(worker_size, cpu_count())
+            pool_size = SERVER_SETTINGS['sip']['worker']['count']
         except KeyError:
-            self.__worker_size = 1 + int(0.32 * cpu_count())
+            pool_size = cpu_count()
 
-        # workers should never cause conflict with main server thread.
-        # For that reason, each worker must exist in their own thread.
-        self.__workers = [
-            SynchronousSIPWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
-            for i in range(self.__worker_size)
+        # workers
+        self.__pool_size = min(pool_size, cpu_count())
+        self.worker_pool = [
+            LazySIPWorker(SERVER_SETTINGS, GARBAGE_COLLECTOR)
+            for i in range(self.__pool_size)
         ]
 
-        logger.info('<sip>:successfully initialized SIP router.')
+    def initialize_demultiplexer(self):
+        '''
+        '''
+        try:
+            from multiprocessing import Queue # best
+        except ImportError:
+            try:
+                from Queue import Queue
+            except ImportError:
+                from queue import Queue as Queue
+        self.__demux = Queue()
+        return bool(self.__demux)
+
+    def initialize_collector(self):
+        '''
+        '''
+        if not self.__demux:
+            logger.critical("failed to initialize router properties.")
+            sys.exit(errno.EAGAIN)
+
+        def collect():
+            while True:
+                if self.__demux.empty():
+                    time.sleep(0.1)
+
+                session = []
+                for worker in range(self.__pool_size):
+                    endpoint, message = self.__demux.get()
+                    process = Process(target=async_worker_function,
+                                      args=(endpoint, message,))
+                    session.append(process)
+                for process in session:
+                    process.start()
+                    process.join()
+
+        self.collector = threading.Thread(name='collector', target=collect)
+        self.collector.daemon = True
+        self.collector.start()
 
     def handle_read(self):
         # the purpose of router is to only receive data ("work") and delegate
         # them to its' workers. A worker holds the logic implementation.
-        try:
-            message = self.recvfrom(0xffff) # max receive bytes.
-            sip_endpoint = tuple(message[1])
-            sip_message = str(message[0])
-        except:
-            return
-        # we want a balanced distribution to our workers. For example, we want
-        # to reflect round robin distribution closely as possible - yet have
-        # enough chance to delegate two short tasks to the same worker.
-        while not locals().get('work_delegated', False): # temporary.
-
-            # randomly pick available workers.
-            p_index = int(self._random() * self.__worker_size)
-            worker = self.__workers[p_index]
-
-            # remove main and garbage collector from active thread count.
-            thread_cnt = threading.active_count() - 2
-
-            # assign work to worker if the worker is free.
-            if worker.is_ready() and thread_cnt < self.__worker_size:
-                work_delegated = True # break loop.
-                worker_thread = threading.Thread(
-                    name=worker.name,
-                    target=worker.handle,
-                    kwargs={
-                        'sip_endpoint': sip_endpoint,
-                        'sip_message': sip_message
-                    }
-                )
-                worker_thread.daemon = True
-                worker_thread.start()
+        payload = self.recvfrom(0xffff) # max receive bytes.
+        endpoint, message = tuple(payload[1]), str(payload[0])
+        self.__demux.put((endpoint, message)) # push new jobs.

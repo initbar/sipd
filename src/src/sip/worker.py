@@ -17,65 +17,42 @@
 # https://github.com/initbar/sipd
 
 #-------------------------------------------------------------------------------
-# worker.py -- asynchronous SIP worker module.
+# worker.py
 #-------------------------------------------------------------------------------
 
-# ARCHITECTURE
-#-------------------------------------------------------------------------------
-#
-#                                            | | | receive SIP
-#                                            | | | messages.
-#                                            V V V
-# +--------+  create asynchronous router   +--------+  dispatch to workers
-# | server | ----------------------------> | router | --+----------+-------
-# +--------+                               +--------+   |          |
-#                                                       |          |
-#                                                       V          V
-#                                                  +--------+  +--------+
-#                                              ..  | worker |  | worker |  ..
-#                                                  +--------+  +--------+
-#                                                       ^          ^
-#                       +-------------+                 |          |
-#                       | RTP decoder | <---------------+----------+-------
-#                       +-------------+   delegate RTP to RTP decoder
-#                                         using SDP headers.
-#-------------------------------------------------------------------------------
-
-# from src.db.mysql              import MySQLClient
-from src.debug                 import create_random_uuid
-from src.errors                import SIPBrokenProtocol
-from src.parser                import convert_to_sip_packet
-from src.parser                import parse_sip_packet
-from src.parser                import validate_sip_signature
-from src.rtp.server            import SynchronousRTPRouter
-from src.sip.static.busy       import SIP_BUSY
-from src.sip.static.bye        import SIP_BYE
-from src.sip.static.ok         import SIP_OK
-from src.sip.static.ok         import SIP_OK_NO_SDP
-from src.sip.static.options    import SIP_OPTIONS
-from src.sip.static.ringing    import SIP_RINGING
-from src.sip.static.terminated import SIP_TERMINATE
-from src.sip.static.trying     import SIP_TRYING
-from src.sockets               import unsafe_allocate_random_udp_socket
-
+import logging
 import threading
 import time
 
-import logging
+# from src.db.mysql import MySQLClient
+from src.debug import create_random_uuid
+from src.errors import SIPBrokenProtocol
+from src.parser import convert_to_sip_packet
+from src.parser import parse_sip_packet
+from src.parser import validate_sip_signature
+from src.rtp.server import SynchronousRTPRouter
+from src.sip.static.busy import SIP_BUSY
+from src.sip.static.bye import SIP_BYE
+from src.sip.static.ok import SIP_OK
+from src.sip.static.ok import SIP_OK_NO_SDP
+from src.sip.static.options import SIP_OPTIONS
+from src.sip.static.ringing import SIP_RINGING
+from src.sip.static.terminated import SIP_TERMINATE
+from src.sip.static.trying import SIP_TRYING
+from src.sockets import unsafe_allocate_random_udp_socket
+
 logger = logging.getLogger('__main__')
 
 # SIP worker implementation
 #-------------------------------------------------------------------------------
 
-class SynchronousSIPWorker(object):
-    ''' Asynchronous SIP worker component implementation.
+class LazySIPWorker(object):
+    '''
     '''
     def __init__(self,
-                 worker_id,
                  settings={},
                  gc=None,
                  verbose=False):
-        self.name = 'worker-' + str(worker_id)
         self.verbose = verbose
 
         self.__settings = settings
@@ -119,7 +96,7 @@ class SynchronousSIPWorker(object):
         }
 
         self.__sip_endpoint = self.__sip_message = None # "work"
-        logger.info("<sip>:successfully initialized '%s'." % self.name)
+        logger.info("<sip>:successfully initialized worker.")
 
     @property
     def sip_endpoint(self):
