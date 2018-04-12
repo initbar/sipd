@@ -133,7 +133,7 @@ def parse_sip_packet(sip_buffer):
     try: method = (SIP_METHODS & set(header.split())).pop()
     except:
         logger.error(SIPBrokenProtocol(header))
-        raise
+        return
     datagram['sip']['Method'] = [method]
 
     # for the remaining headers, split by the first occurance of header and

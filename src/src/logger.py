@@ -40,15 +40,16 @@ def initialize_logger(configuration):
         ]
     ); logging_formatter = logging.Formatter(logging_format)
 
-    log_cli = configuration['log']['console']
-    log_clr = configuration['log']['coloredlogs']
-    log_fs = configuration['log']['filesystem']
+    log = configuration['log']
+    log_console = log['console']
+    log_color = log['color']
+    log_filesystem = log['filesystem']
 
     # filesystem
-    if log_fs.get('enabled'):
-        log_days = log_fs['total_days']
-        log_file = log_fs['name']
-        log_path = log_fs['path']
+    if log_filesystem.get('enabled'):
+        log_days = log_filesystem['total_days']
+        log_file = log_filesystem['name']
+        log_path = log_filesystem['path']
         if not os.path.exists(log_path):
             os.makedirs(log_path)
         if not log_path.endswith('/'):
@@ -65,22 +66,23 @@ def initialize_logger(configuration):
         fs_handler = None
 
     # console
-    if log_cli.get('enabled'):
+    if log_console.get('enabled'):
         logging.basicConfig(level=configuration['log']['level'], format=logging_format)
 
     logger = logging.getLogger()
 
-    # coloredlogs
-    if log_clr:
-        try:
-            import coloredlogs
-        except ImportError:
-            logger.critical("module `coloredlogs` does not exist.")
-            sys.exit(errno.ENOENT)
-        coloredlogs.install(level=configuration['log']['level'],
-                            logger=logger,
-                            fmt=logging_format,
-                            milliseconds=True)
+    # colors
+    if log_color.get('enabled'):
+        if log_color['coloredlogs']:
+            try:
+                import coloredlogs
+            except ImportError:
+                logger.critical("module `coloredlogs` does not exist.")
+                sys.exit(errno.ENOENT)
+            coloredlogs.install(level=configuration['log']['level'],
+                                logger=logger,
+                                fmt=logging_format,
+                                milliseconds=True)
 
     logger.addHandler(fs_handler)
     logger.info("<main>:successfully initialized logging.")

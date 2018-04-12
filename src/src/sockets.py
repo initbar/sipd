@@ -73,19 +73,20 @@ def unsafe_allocate_udp_socket(host='127.0.0.1', port=None, timeout=1.0,
     if is_client:
         return udp_socket
 
+    try: # bind listening sockets.
+        logger.debug("<socket>:trying to bind udp socket port '%i'", port)
+        udp_socket.settimeout(timeout)
+        udp_socket.bind((host, port))
+    except socket.error:
+        logger.error("<socket>:failed to bind udp socket port '%i'", port)
+        return
+
     # reuse listening sockets.
     if is_reused:
         udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
         udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, True)
 
-    try: # bind listening sockets.
-        logger.debug("<socket>:trying to bind udp socket port '%i'", port)
-        udp_socket.settimeout(timeout)
-        udp_socket.bind((host, port))
-        logger.debug("<socket>:successfully binded udp socket port '%i'", port)
-    except:
-        logger.error("<socket>:failed to bind udp socket port '%i'", port)
-        return
+    logger.debug("<socket>:successfully binded udp socket port '%i'", port)
     return udp_socket
 
 # UDP clients

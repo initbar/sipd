@@ -135,10 +135,6 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         except KeyError:
             self.__pool_size = cpu_count()
 
-        # demultiplexer and collector.
-        self.__consumer = None
-        self.__demux = None # FIFO
-
     def initialize_demultiplexer(self):
         '''
         '''
@@ -166,14 +162,13 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                     worker_pool = []
                     for _ in range(self.__pool_size):
                         endpoint, message = self.__demux.get()
-                        worker = Process(name='worker',
-                                         target=async_worker_function,
+                        worker = Process(target=async_worker_function,
                                          args=(endpoint, message))
-                        # worker.daemon = True # push to background.
+                        worker.daemon = True # push to background.
                         worker_pool.append(worker)
                     for worker in worker_pool:
                         worker.start()
-                        worker.join()
+                        # worker.join()
         self.__consumer = threading.Thread(name='consumer', target=consume)
         self.__consumer.daemon = True
         self.__consumer.start()

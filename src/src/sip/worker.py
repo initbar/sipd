@@ -103,6 +103,7 @@ class LazySIPWorker(object):
         self.__sip_datagram = parse_sip_packet(self.sip_message)
 
         try: # override parsed SIP headers with default headers.
+            assert self.__sip_datagram
             self.__call_id = self.__sip_datagram['sip']['Call-ID']
             self.__method  = self.__sip_datagram['sip']['Method']
         except:
