@@ -123,6 +123,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         # override to read-only.
         self.is_readable = True
         self.readable = lambda: self.is_readable
+        # self.handle_read = lambda: None
 
         # override to disable write.
         self.is_writable = False
@@ -135,8 +136,8 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             self.__pool_size = cpu_count()
 
         # demultiplexer and collector.
-        self.__demux = None # FOFO
         self.__consumer = None
+        self.__demux = None # FIFO
 
     def initialize_demultiplexer(self):
         '''
@@ -157,7 +158,6 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         if not self.__demux:
             logger.critical("failed to initialize router properties.")
             sys.exit(errno.EAGAIN)
-
         def consume():
             while True:
                 if self.__demux.empty():
