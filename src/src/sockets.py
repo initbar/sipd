@@ -95,10 +95,10 @@ def unsafe_allocate_udp_client(timeout=1.0):
     ''' allocate a random UDP client that must be manually cleaned up.
     '''
     logger.debug('<socket>:trying to create udp client.')
-    try:
-        return unsafe_allocate_udp_socket(is_client=True, timeout=timeout)
-    finally:
-        logger.debug('successfully created udp client.')
+    while not locals().get('client'):
+        client = unsafe_allocate_udp_socket(is_client=True, timeout=timeout)
+    logger.debug('successfully created udp client.')
+    return client
 
 class safe_allocate_udp_client(object):
     ''' allocate exception-safe random UDP client.

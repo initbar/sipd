@@ -166,8 +166,10 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                     worker_pool = []
                     for _ in range(self.__pool_size):
                         endpoint, message = self.__demux.get()
-                        worker = Process(target=async_worker_function,
+                        worker = Process(name='worker',
+                                         target=async_worker_function,
                                          args=(endpoint, message))
+                        # worker.daemon = True # push to background.
                         worker_pool.append(worker)
                     for worker in worker_pool:
                         worker.start()
