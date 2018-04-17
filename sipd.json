@@ -4,7 +4,7 @@
     "docs": "https://github.com/initbar/sipd/blob/master/docs/CONFIG.md",
     "sip": {
         "server": {
-            "address": "<overridden>"
+            "address": ""
         },
         "router": {
             "port": 5060,
@@ -14,6 +14,8 @@
             "count": 1,
             "headers": {
                 "Allow": "ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE",
+                "Accept": "application/sdp",
+                "Accept-Language": "en",
                 "Max-Forwards": 70,
                 "Require": "timer",
                 "Server": "sipd",

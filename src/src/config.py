@@ -23,8 +23,7 @@
 from src.parser import parse_json
 from src.sockets import get_server_address
 
-import logging
-logger = logging.getLogger()
+import sys # no logger setup yet
 
 def parse_config(config={}):
     ''' parse `sipd.json` and load/initialize with runtime environment.
@@ -34,10 +33,13 @@ def parse_config(config={}):
         assert parsed_config
 
         # save server address information to the configuration.
-        server_address = get_server_address()
-        parsed_config['sip']['server']['address'] = server_address
-        logger.debug("<config>:server address set to '%s'" % server_address)
+        server_address = parsed_config['sip']['server']['address']
+        if not server_address:
+            public_address = get_server_address()
+            server_address = public_address
+        sys.stderr.write('%s\n' % server_address)
 
         return parsed_config
-    except:
+    except AssertionError:
+        sys.stderr.write("<config>:unable to parse config: %s\n" % config)
         return {}
