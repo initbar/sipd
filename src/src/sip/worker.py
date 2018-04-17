@@ -115,6 +115,7 @@ class LazySIPWorker(object):
             self.__sip_datagram['sip'][field] = value
 
         logger.debug('\033[1m\33[35m>>>\033[00m <sip>:<<%s>> <\033[1m\033[31m%s\033[00m>', self.__tag, self.__method)
+        self.__sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % self.__settings['sip']['server']['address']
         try:
             self.handlers[self.__method]()
         except KeyError:
@@ -150,9 +151,6 @@ class LazySIPWorker(object):
         self.__send_sip_term()
 
     def handler_invite(self):
-        # set future SIP conversation to the router.
-        self.__sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % self.__settings['sip']['server']['address']
-
         # if there is duplicate SIP INVITE packet, then consider as HOLD.
         if self.__call_id in self.__garbage.calls_history:
             logger.warning('<sip>:<<%s>> received duplicate Call-ID: %s', self.__tag, self.__call_id)

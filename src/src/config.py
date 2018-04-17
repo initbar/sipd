@@ -33,13 +33,10 @@ def parse_config(config={}):
         assert parsed_config
 
         # save server address information to the configuration.
-        server_address = parsed_config['sip']['server']['address']
-        if not server_address:
+        if not parsed_config['sip']['server']['address']:
             public_address = get_server_address()
-            server_address = public_address
-        sys.stderr.write('%s\n' % server_address)
+            parsed_config['sip']['server']['address'] = public_address
 
         return parsed_config
     except AssertionError:
-        sys.stderr.write("<config>:unable to parse config: %s\n" % config)
         return {}
