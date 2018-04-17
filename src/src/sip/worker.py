@@ -115,7 +115,10 @@ class LazySIPWorker(object):
             self.__sip_datagram['sip'][field] = value
 
         logger.debug('\033[1m\33[35m>>>\033[00m <sip>:<<%s>> <\033[1m\033[31m%s\033[00m>', self.__tag, self.__method)
-        self.handlers.get(self.__method, 'DEFAULT')()
+        try:
+            self.handlers[self.__method]()
+        except KeyError:
+            self.handlers['DEFAULT']()
 
     #
     # handler implementation
