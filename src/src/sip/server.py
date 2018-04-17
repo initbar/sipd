@@ -67,7 +67,9 @@ class safe_allocate_sip_socket(object):
         return self.__socket
 
     def __exit__(self, *a, **kw):
-        self.__socket.close()
+        try: self.__socket.close()
+        except AttributeError:
+            pass # already closed
         del self.__socket
 
 # server

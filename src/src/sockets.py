@@ -113,7 +113,9 @@ class safe_allocate_udp_client(object):
         return self.__socket
 
     def __exit__(self, *a, **kw):
-        self.__socket.close()
+        try: self.__socket.close()
+        except AttributeError:
+            pass # already closed
         del self.__socket
 
 # UDP server
@@ -142,5 +144,7 @@ class safe_allocate_random_udp_socket(object):
         return self.__socket
 
     def __exit__(self, *a, **kw):
-        self.__socket.close()
+        try: self.__socket.close()
+        except AttributeError:
+            pass # already closed
         del self.__socket
