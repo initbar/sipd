@@ -10,8 +10,8 @@ RUN apt-get update -y &&\
 
 RUN git clone https://github.com/initbar/sipd /tmp/sipd &&\
     cd /tmp/sipd &&\
-    make
+    make && mv sipd $HOME
 
 WORKDIR /root
 
-CMD ["/tmp/sipd/sipd"]
+CMD ["./sipd"]
