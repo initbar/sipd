@@ -1,7 +1,7 @@
 FROM ubuntu:17.10
 
 RUN apt-get update -y &&\
-    apt-get install -y &&\
+    apt-get install -y \
             git \
             make \
             python \

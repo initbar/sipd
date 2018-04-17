@@ -14,7 +14,7 @@ all:
 	chmod u+x -v $(BINARY)
 
 docker:
-	docker build https://github.com/initbar/sipd \
+	docker build . \
 	       --compress \
 	       --label='sipd' \
 	       --tag=sipd
