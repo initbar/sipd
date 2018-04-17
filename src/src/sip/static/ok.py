@@ -53,6 +53,9 @@ SIP_OK = {
         'Session-Expires',
         'Min-SE',
         'Server',
+        'Accept',
+        'Accept-Language',
+        'Require',
         'Allow'
     ]
 }
@@ -71,6 +74,9 @@ SIP_OK_NO_SDP = {
         'Session-Expires',
         'Min-SE',
         'Server',
+        'Accept',
+        'Accept-Language',
+        'Require',
         'Allow'
     ]
 }
