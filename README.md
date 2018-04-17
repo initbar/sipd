@@ -58,5 +58,17 @@ You can either use `make` to build and deploy to a remote server or `pip` to dow
 
 By default, **sipd** only supports MySQL database. For more, please feel free to fork the project and PR.
 
+## Docker
+
+To use docker:
+
+```bash
+~$ git clone https://github.com/initbar/sipd
+~$ cd sipd
+~$ make docker
+~$ docker run --rm --dns='8.8.8.8' --hostname='sipd' -p 5060:5060 "sipd"
+```
+
 ## License
+
 **sipd** is licensed under [GNU GPLv3](./LICENSE.md).

@@ -6,12 +6,18 @@ BINARY  = $(PROJECT)/sipd
 LOGS    = $(PROJECT)/logs
 
 all:
-	cd $(SOURCE) && \
-	   zip -rv $(BINARY).zip * && \
-	   echo "#!/usr/bin/python" > $(BINARY) && \
+	cd $(SOURCE) &&\
+	   zip -rv $(BINARY).zip * &&\
+	   echo "#!/usr/bin/python" > $(BINARY) &&\
 	   cat $(BINARY).zip >> $(BINARY)
 	rm -fv $(BINARY).zip
 	chmod u+x -v $(BINARY)
+
+docker:
+	docker build https://github.com/initbar/sipd \
+	       --compress \
+	       --label='sipd' \
+	       --tag=sipd
 
 run:
 	python $(SOURCE)
