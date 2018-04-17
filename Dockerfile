@@ -8,10 +8,10 @@ RUN apt-get update -y &&\
             python-pip \
             zip
 
-RUN git clone https://github.com/initbar/sipd /srv &&\
-    cd /srv/sipd &&\
+RUN git clone https://github.com/initbar/sipd /tmp/sipd &&\
+    cd /tmp/sipd &&\
     make
 
 WORKDIR /root
 
-CMD ["/srv/sipd/sipd"]
+CMD ["/tmp/sipd/sipd"]
