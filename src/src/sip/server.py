@@ -162,7 +162,8 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                     time.sleep(1e-2)
                 else:
                     worker_pool = []
-                    for _ in range(self.__pool_size):
+                    worker_size = min(self.__demux.qsize(), self.__pool_size)
+                    for _ in range(worker_size):
                         endpoint, message = self.__demux.get()
                         worker = Process(target=async_worker_function,
                                          args=(endpoint, message))
