@@ -178,6 +178,9 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
     def handle_read(self):
         # the purpose of router is to only receive data ("work") and delegate
         # them to its' workers. A worker holds the logic implementation.
-        payload = self.recvfrom(0xffff) # max receive bytes.
-        endpoint, message = tuple(payload[1]), str(payload[0])
-        self.__demux.put((endpoint, message)) # demultiplex.
+        try:
+            payload = self.recvfrom(0xffff) # max receive bytes.
+            endpoint, message = tuple(payload[1]), str(payload[0])
+            self.__demux.put((endpoint, message)) # demultiplex.
+        except EOFError:
+            pass
