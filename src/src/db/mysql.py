@@ -30,8 +30,8 @@ from src.db.errors import (
 )
 
 import datetime
-
 import logging
+
 logger = logging.getLogger()
 
 # MySQL client
@@ -68,7 +68,7 @@ class MySQLClient(object):
                    port=3306,
                    username='root',
                    password='',
-                   database):
+                   database=None):
         ''' connect to database.
         @host<str> -- MySQL database address.
         @port<int> -- MySQL database port.
@@ -85,9 +85,9 @@ class MySQLClient(object):
             self.password = password
             self.database = database
 
-        self._session = self._cursor = None
+        self.__session = self.__cursor = None
         try: # connecting to database.
-            self._session = mysql.connect(host=host,
+            self.__session = mysql.connect(host=host,
                                           port=port,
                                           user=username,
                                           passwd=password,
@@ -96,12 +96,12 @@ class MySQLClient(object):
             raise DBConnectionError(message)
 
         try: # cache database cursor.
-            assert self._session and self._session.open
-            self._cursor = self._session.cursor()
-            assert self._cursor
+            assert self.__session and self.__session.open
+            self.__cursor = self.__session.cursor()
+            assert self.__cursor
         except Exception as message:
             raise DBConnectionError(message)
-        return bool(self._cursor)
+        return bool(self.__cursor)
 
     @memcache(size=128)
     def db_execute(self, statement):
@@ -110,7 +110,7 @@ class MySQLClient(object):
         '''
         if not statement:
             return []
-        elif not self._cursor: # retry
+        elif not self.__cursor: # retry
             self.db_connect(
                 host=self.host,
                 port=self.port,
@@ -125,7 +125,7 @@ class MySQLClient(object):
         @statement<str> -- SQL statement.
         '''
         try:
-            self._cursor.execute(statement)
+            self.__cursor.execute(statement)
         except Exception as message:
             raise DBExecutionError(message)
-        yield self._cursor.fetchall()
+        yield self.__cursor.fetchall()
