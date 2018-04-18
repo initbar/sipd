@@ -104,9 +104,7 @@ class LazySIPWorker(object):
             'INVITE': self.handle_invite
         }
 
-        self.rtp_handler = None # initialize only when handle is called.
-
-        # worker state
+        self.rtp_handler = SynchronousRTPRouter(self.settings)
         logger.info("<worker>:successfully initialized worker.")
 
     def handle(self, sip_endpoint, sip_message):
@@ -149,9 +147,6 @@ class LazySIPWorker(object):
         # set 'Contact' header for future SIP requests.
         server_address = self.settings['sip']['server']['address']
         self.__sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % server_address
-
-        if not self.rtp_handler: # lazy initialize RTP handler.
-            self.rtp_handler = SynchronousRTPRouter(self.settings)
         try:
             self.handlers[self.__method]()
         except KeyError:
