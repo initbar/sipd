@@ -54,8 +54,8 @@ class MySQLClient(object):
         @database<str> -- MySQL database name.
 
         : lazy-loaded:
-        @_session<mysql> -- authenticated database session.
-        @_cursor<mysql> -- authenticated database cursor.
+        @__session<mysql> -- authenticated database session.
+        @__cursor<mysql> -- authenticated database cursor.
         '''
         self.host = host
         self.port = port
