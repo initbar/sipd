@@ -25,14 +25,14 @@ import time
 
 from src.db.mysql import MySQLClient
 from src.debug import create_random_uuid
-from src.errors import SIPBrokenProtocol
+# from src.errors import SIPBrokenProtocol
 from src.optimizer import memcache
 from src.parser import convert_to_sip_packet
 from src.parser import parse_sip_packet
 from src.parser import validate_sip_signature
 from src.rtp.server import SynchronousRTPRouter
-from src.sip.static.busy import SIP_BUSY
-from src.sip.static.bye import SIP_BYE
+# from src.sip.static.busy import SIP_BUSY
+# from src.sip.static.bye import SIP_BYE
 from src.sip.static.ok import SIP_OK
 from src.sip.static.ok import SIP_OK_NO_SDP
 from src.sip.static.options import SIP_OPTIONS
@@ -104,12 +104,6 @@ class LazySIPWorker(object):
             'INVITE':  self.handle_invite
         }
 
-        try:
-            self.lifetime = settings['gc']['call_lifetime']
-            assert self.lifetime > 0
-        except AssertionError:
-            self.lifetime = 60 * 60 # seconds
-
         self.rtp_handler = None # initialize only when handle is called.
         logger.info("<sip>:successfully initialized worker.")
 
@@ -133,14 +127,14 @@ class LazySIPWorker(object):
         self.__sip_datagram = parse_sip_packet(sip_message)
         try: # override parsed SIP headers with default headers.
             self.__call_id = self.__sip_datagram['sip']['Call-ID']
-            self.__method  = self.__sip_datagram['sip']['Method']
+            self.__method = self.__sip_datagram['sip']['Method']
         except KeyError:
             logger.error('<sip>:<<%s>> MALFORMED SIP: %s', self.__tag, self.__sip_datagram)
             logger.warning('<sip>:<<%s>> unassigning worker.', self.__tag)
             return
 
         # add eligible SIP headers from `sipd.json`.
-        sip_headers = settings['sip']['worker']['headers']
+        sip_headers = self.settings['sip']['worker']['headers']
         for (field, value) in sip_headers.items():
             self.__sip_datagram['sip'][field] = value
 
@@ -155,7 +149,7 @@ class LazySIPWorker(object):
         self.__sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % server_address
 
         if not self.rtp_handler: # lazy initialize RTP handler.
-            self.rtp_handler = SynchronousRTPRouter(settings)
+            self.rtp_handler = SynchronousRTPRouter(self.settings)
         try:
             self.handlers[self.__method]()
         except KeyError:
@@ -166,7 +160,7 @@ class LazySIPWorker(object):
     #
 
     def handle_default(self):
-        send_sip_response(self.__sip_datagram, 'OK_NO_SDP')
+        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'OK_NO_SDP')
 
     def handle_ack(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.2
@@ -176,25 +170,25 @@ class LazySIPWorker(object):
     def handle_bye(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.4
         '''
-        send_sip_response(self.__sip_datagram, 'OK_NO_SDP')
+        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'OK_NO_SDP')
         if self.rtp_handler:
             self.__garbage.register_new_task(
                 lambda: self.__garbage.consume_membership(
                     call_tag=self.__tag,
                     call_id=self.__call_id,
                     forced=True))
-        send_sip_response(self.__sip_datagram, 'TERMINATE')
+        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'TERMINATE')
 
     def handle_cancel(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.5
         '''
-        send_sip_response(self.__sip_datagram, 'OK_NO_SDP')
+        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'OK_NO_SDP')
         if self.rtp_handler:
             self.rtp_handler.handle(
                 sip_tag=self.__tag,
                 sip_datagram=self.__sip_datagram,
                 rtp_state='stop')
-        send_sip_response(self.__sip_datagram, 'TERMINATE')
+        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'TERMINATE')
 
     def handle_invite(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.1
@@ -202,30 +196,30 @@ class LazySIPWorker(object):
         # duplicate SIP INVITE is considered as HOLD.
         if self.__call_id in self.__garbage.calls_history:
             logger.warning('<sip>:<<%s>> received duplicate Call-ID: %s', self.__tag, self.__call_id)
-            return send_sip_response(self.__sip_datagram, 'OK_NO_SDP')
+            return send_sip_response(self.sip_endpoint, self.__sip_datagram, 'OK_NO_SDP')
 
         elif not self.rtp_handler:
             logger.error('<sip>:<<%s>> RTP handler is not configured.', self.__tag)
-            return send_sip_response(self.__sip_datagram, 'OK_NO_SDP')
+            return send_sip_response(self.sip_endpoint, self.__sip_datagram, 'OK_NO_SDP')
 
-        send_sip_response(self.__sip_datagram, 'TRYING')
+        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'TRYING')
 
         # RTP handler must reply with two ports to receive TX/RX RTP traffic.
         chances = max(1, self.settings['rtp'].get('max_retry', 1))
         while chances:
-            send_sip_response(self.__sip_datagram, 'RINGING')
+            send_sip_response(self.sip_endpoint, self.__sip_datagram, 'RINGING')
             chances -= 1
             # if external RTP handler replies with one or more ports, rewrite
             # and update the SIP datagram with new SDP information to respond.
             sip_datagram = self.rtp_handler.handle(self.__tag, self.__sip_datagram)
             if sip_datagram:
-                send_sip_response(sip_datagram, 'OK_SDP')
+                send_sip_response(self.sip_endpoint, sip_datagram, 'OK_SDP')
                 self.__sip_datagram = sip_datagram
                 self.__index_callid()
                 break
             else:
                 logger.warning('<sip>:RTP handler did not send RX/TX information.')
-                send_sip_response(sip_datagram, 'OK_NO_SDP')
+                send_sip_response(self.sip_endpoint, sip_datagram, 'OK_NO_SDP')
 
     #
     # deferred tasks
@@ -234,12 +228,17 @@ class LazySIPWorker(object):
     def __index_callid(self):
         ''' index new/existing Call-ID to garbage collector.
         '''
+        try:
+            lifetime = self.settings['gc']['call_lifetime']
+            assert lifetime > 0
+        except AssertionError:
+            lifetime = 60 * 60 # seconds
         def deferred_index_callid():
             # register session to the garbage collection queue.
             self.__garbage._garbage.append({
                 'Call-ID': self.__call_id,
                 'tag': self.__tag,
-                'ttl': self.lifetime + int(time.time())
+                'ttl': lifetime + int(time.time())
             })
             # register the first unique Call-ID membership.
             if not self.__garbage.membership.get(self.__call_id):
@@ -253,4 +252,4 @@ class LazySIPWorker(object):
             else: # register session only for existing Call-ID membership.
                 self.__garbage.membership[self.__call_id]['tags'].append(self.__tag)
                 self.__garbage.membership[self.__call_id]['tags_cnt'] += 1
-        self.__garbage.register_new_task(lambda: deferred_index_callid())
+        self.__garbage.register_new_task(deferred_index_callid())
