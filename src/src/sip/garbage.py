@@ -85,8 +85,10 @@ class SynchronousSIPGarbageCollector(object):
         '''
         # instead of directly manipulating garbage, demultiplex garbage tasks
         # into a single thread-safe queue and consume in order later.
-        try: self._futures.put(item=function)
-        except: raise
+        try:
+            self._futures.put(item=function)
+        except:
+            raise
 
     def consume_garbage(self):
         ''' consume garbage.
