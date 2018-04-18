@@ -159,17 +159,16 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         if not self.__demux:
             logger.critical("<router>:failed to initialize router properties.")
             sys.exit(errno.EAGAIN)
+
         def consume():
             worker = LazySIPWorker(SERVER_SETTINGS, GARBAGE_COLLECTOR)
             logger.info("<router>:pre-generated worker prototype: %s", worker)
-
             queue = deque()
             while True:
                 # if queue is overflowing with processes, then wait until we
                 # escape the pool size limitation set by the configuration.
                 if self.__demux.empty() or len(queue) >= self.__pool_size:
                     time.sleep(1e-2)
-
                 # ensure no more workers are generated than the available work.
                 else:
                     worker_size = min(self.__demux.qsize(), self.__pool_size)
@@ -178,13 +177,11 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                         queue.append(async_worker_function(worker,
                                                            endpoint,
                                                            message))
-
                     # throttle if the worker processes are leaking over limit.
                     while 0 < len(queue) >= self.__pool_size:
                         process = queue.popleft()
                         if process.is_alive():
                             queue.append(process)
-
         self.__consumer = threading.Thread(name='consumer', target=consume)
         self.__consumer.daemon = True
         self.__consumer.start()
