@@ -110,7 +110,7 @@ class AsynchronousSIPServer(object):
 # router
 #-------------------------------------------------------------------------------
 
-def async_worker_function(worker, endpoint, message):
+def deploy_worker(worker, endpoint, message):
     worker_process = Process(target=worker.handle, args=(endpoint, message))
     worker_process.daemon = True
     worker_process.start()
@@ -169,14 +169,12 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                 # escape the pool size limitation set by the configuration.
                 if self.__demux.empty() or len(queue) >= self.__pool_size:
                     time.sleep(1e-2)
-                # ensure no more workers are generated than the available work.
                 else:
+                    # ensure no workers are generated more than available work.
                     worker_size = min(self.__demux.qsize(), self.__pool_size)
                     for _ in range(worker_size):
                         endpoint, message = self.__demux.get()
-                        queue.append(async_worker_function(worker,
-                                                           endpoint,
-                                                           message))
+                        queue.append(deploy_worker(worker, endpoint, message))
                     # throttle if the worker processes are leaking over limit.
                     while 0 < len(queue) >= self.__pool_size:
                         process = queue.popleft()
