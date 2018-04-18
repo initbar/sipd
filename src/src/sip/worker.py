@@ -107,18 +107,7 @@ class LazySIPWorker(object):
         self.rtp_handler = None # initialize only when handle is called.
 
         # worker state
-        self.is_ready = True
         logger.info("<worker>:successfully initialized worker.")
-
-    def reset(self):
-        ''' reset worker back to its initial state.
-        '''
-        self.__sip_endpoint =\
-        self.__sip_datagram =\
-        self.__call_id =\
-        self.__method =\
-        self.__tag = None
-        self.is_ready = True
 
     def handle(self, sip_endpoint, sip_message):
         ''' worker handler.
@@ -128,16 +117,13 @@ class LazySIPWorker(object):
         if sip_endpoint and sip_message:
             self.__sip_endpoint = sip_endpoint
             # self.sip_message = sip_message
-            self.is_ready = False
         else:
-            self.reset()
             return
 
         self.__tag = create_random_uuid() # call context.
         if not validate_sip_signature(sip_message):
             logger.error("<worker>:<<%s>> INVALID SIP: '%s'", self.__tag, sip_message)
             logger.warning('<worker>:<<%s>> unassigning worker.', self.__tag)
-            self.reset()
             return
 
         self.__sip_datagram = parse_sip_packet(sip_message)
@@ -147,7 +133,6 @@ class LazySIPWorker(object):
         except KeyError:
             logger.error('<worker>:<<%s>> MALFORMED SIP: %s', self.__tag, sip_message)
             logger.warning('<worker>:<<%s>> unassigning worker.', self.__tag)
-            self.reset()
             return
 
         # add eligible SIP headers from `sipd.json`.
@@ -171,8 +156,6 @@ class LazySIPWorker(object):
             self.handlers[self.__method]()
         except KeyError:
             self.handlers['DEFAULT']()
-        finally:
-            self.reset()
 
     #
     # custom handlers

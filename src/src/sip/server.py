@@ -27,6 +27,7 @@ import sys
 import threading
 import time
 
+from collections import deque
 from multiprocessing import Process
 from multiprocessing import cpu_count
 from src.sip.garbage import SynchronousSIPGarbageCollector
@@ -109,22 +110,11 @@ class AsynchronousSIPServer(object):
 # router
 #-------------------------------------------------------------------------------
 
-def async_worker_function(worker_pool, endpoint, message):
-    for worker in worker_pool:
-        if worker.is_ready: # create instance of the worker.
-            logger.debug("<router>:recycled existing worker: %s", worker)
-            worker.is_ready = False
-
-    # if none of the workers is ready, create a temporary worker.
-    if not locals().get('worker'):
-        worker = LazySIPWorker(SERVER_SETTINGS, GARBAGE_COLLECTOR)
-        logger.debug("<router>:created a temporary worker.")
-
-    # deploy worker as a process.
+def async_worker_function(worker, endpoint, message):
     worker_process = Process(target=worker.handle, args=(endpoint, message))
     worker_process.daemon = True
     worker_process.start()
-    return (worker_process, worker) # override worker state from parent.
+    return worker_process
 
 class AsynchronousSIPRouter(asyncore.dispatcher):
     ''' Asynchronous SIP routing component prototype.
@@ -170,26 +160,30 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             logger.critical("<router>:failed to initialize router properties.")
             sys.exit(errno.EAGAIN)
         def consume():
-            worker_pool = [ # pre-generate workers for recycle.
-                LazySIPWorker(SERVER_SETTINGS, GARBAGE_COLLECTOR)
-                for _ in range(self.__pool_size)
-            ]
-            logger.info("<router>:pre-generated worker pool: %s", worker_pool)
+            worker = LazySIPWorker(SERVER_SETTINGS, GARBAGE_COLLECTOR)
+            logger.info("<router>:pre-generated worker prototype: %s", worker)
 
+            queue = deque()
             while True:
-                if self.__demux.empty():
+                # if queue is overflowing with processes, then wait until we
+                # escape the pool size limitation set by the configuration.
+                if self.__demux.empty() or len(queue) >= self.__pool_size:
                     time.sleep(1e-2)
+
+                # ensure no more workers are generated than the available work.
                 else:
-                    queue = []
                     worker_size = min(self.__demux.qsize(), self.__pool_size)
                     for _ in range(worker_size):
                         endpoint, message = self.__demux.get()
-                        queue.append(async_worker_function(worker_pool,
+                        queue.append(async_worker_function(worker,
                                                            endpoint,
                                                            message))
-                    for (process, worker) in queue:
-                        process.join()
-                        worker.is_ready = True
+
+                    # throttle if the worker processes are leaking over limit.
+                    while 0 < len(queue) >= self.__pool_size:
+                        process = queue.popleft()
+                        if process.is_alive():
+                            queue.append(process)
 
         self.__consumer = threading.Thread(name='consumer', target=consume)
         self.__consumer.daemon = True
