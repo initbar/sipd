@@ -36,7 +36,7 @@ from src.sip.server import AsynchronousSIPServer
 from src.tester import run_test_suite
 
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.2.14'
+__version__ = '1.2.15'
 __license__ = 'GNU GPLv3'
 
 def main():
