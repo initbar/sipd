@@ -85,9 +85,9 @@ class AsynchronousSIPServer(object):
             SERVER_SETTINGS = setting
             GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
         else:
-            logger.critical('<sip>:failed to initialize SIP server.')
+            logger.critical('<server>:failed to initialize SIP server.')
             sys.exit(errno.EINVAL)
-        logger.info('<sip>:successfully initialized SIP server.')
+        logger.info('<server>:successfully initialized SIP server.')
 
     @classmethod
     def serve(cls):
@@ -103,15 +103,28 @@ class AsynchronousSIPServer(object):
             cls.router = AsynchronousSIPRouter(sip_socket)
             cls.router.initialize_demultiplexer()
             cls.router.initialize_consumer()
-            logger.info('<sip>:successfully initialized SIP router.')
+            logger.info('<server>:successfully initialized SIP router.')
             asyncore.loop() # push new events to the event loop.
 
 # router
 #-------------------------------------------------------------------------------
 
-def async_worker_function(endpoint, message):
-    worker = LazySIPWorker(SERVER_SETTINGS, GARBAGE_COLLECTOR)
-    worker.handle(sip_endpoint=endpoint, sip_message=message)
+def async_worker_function(worker_pool, endpoint, message):
+    for worker in worker_pool:
+        if worker.is_ready: # create instance of the worker.
+            logger.debug("<router>:recycled existing worker: %s", worker)
+            worker.is_ready = False
+
+    # if none of the workers is ready, create a temporary worker.
+    if not locals().get('worker'):
+        worker = LazySIPWorker(SERVER_SETTINGS, GARBAGE_COLLECTOR)
+        logger.debug("<router>:created a temporary worker.")
+
+    # deploy worker as a process.
+    worker_process = Process(target=worker.handle, args=(endpoint, message))
+    worker_process.daemon = True
+    worker_process.start()
+    return (worker_process, worker) # override worker state from parent.
 
 class AsynchronousSIPRouter(asyncore.dispatcher):
     ''' Asynchronous SIP routing component prototype.
@@ -154,24 +167,30 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         '''
         '''
         if not self.__demux:
-            logger.critical("failed to initialize router properties.")
+            logger.critical("<router>:failed to initialize router properties.")
             sys.exit(errno.EAGAIN)
         def consume():
+            worker_pool = [ # pre-generate workers for recycle.
+                LazySIPWorker(SERVER_SETTINGS, GARBAGE_COLLECTOR)
+                for _ in range(self.__pool_size)
+            ]
+            logger.info("<router>:pre-generated worker pool: %s", worker_pool)
+
             while True:
                 if self.__demux.empty():
                     time.sleep(1e-2)
                 else:
-                    worker_pool = []
+                    queue = []
                     worker_size = min(self.__demux.qsize(), self.__pool_size)
                     for _ in range(worker_size):
                         endpoint, message = self.__demux.get()
-                        worker = Process(target=async_worker_function,
-                                         args=(endpoint, message))
-                        worker.daemon = True # push to background.
-                        worker_pool.append(worker)
-                    for worker in worker_pool:
-                        worker.start()
-                        # worker.join()
+                        queue.append(async_worker_function(worker_pool,
+                                                           endpoint,
+                                                           message))
+                    for (process, worker) in queue:
+                        process.join()
+                        worker.is_ready = True
+
         self.__consumer = threading.Thread(name='consumer', target=consume)
         self.__consumer.daemon = True
         self.__consumer.start()

@@ -74,7 +74,7 @@ def send_sip_response(endpoint, sip_datagram, sip_method, tag=''):
     '''
     logger.debug(' '.join([
         '\033[93m\033[01m<<<\033[00m',
-        '<sip>:<<%s>>',
+        '<worker>:<<%s>>',
         '<\033[1m\033[31m%s\033[00m>'
     ]), tag, sip_method)
 
@@ -97,15 +97,28 @@ class LazySIPWorker(object):
         self.__garbage = gc
 
         self.handlers = {
-            'ACK':     self.handle_ack,
-            'BYE':     self.handle_cancel,
-            'CANCEL':  self.handle_bye,
+            'ACK': self.handle_ack,
+            'BYE': self.handle_cancel,
+            'CANCEL': self.handle_bye,
             'DEFAULT': self.handle_default,
-            'INVITE':  self.handle_invite
+            'INVITE': self.handle_invite
         }
 
         self.rtp_handler = None # initialize only when handle is called.
-        logger.info("<sip>:successfully initialized worker.")
+
+        # worker state
+        self.is_ready = True
+        logger.info("<worker>:successfully initialized worker.")
+
+    def reset(self):
+        ''' reset worker back to its initial state.
+        '''
+        self.__sip_endpoint =\
+        self.__sip_datagram =\
+        self.__call_id =\
+        self.__method =\
+        self.__tag = None
+        self.is_ready = True
 
     def handle(self, sip_endpoint, sip_message):
         ''' worker handler.
@@ -113,15 +126,18 @@ class LazySIPWorker(object):
         @sip_message<str> -- SIP server socket buffer.
         '''
         if sip_endpoint and sip_message:
-            self.sip_endpoint = sip_endpoint
+            self.__sip_endpoint = sip_endpoint
             # self.sip_message = sip_message
+            self.is_ready = False
         else:
+            self.reset()
             return
 
         self.__tag = create_random_uuid() # call context.
         if not validate_sip_signature(sip_message):
-            logger.error("<sip>:<<%s>> INVALID SIP: '%s'", self.__tag, sip_message)
-            logger.warning('<sip>:<<%s>> unassigning worker.', self.__tag)
+            logger.error("<worker>:<<%s>> INVALID SIP: '%s'", self.__tag, sip_message)
+            logger.warning('<worker>:<<%s>> unassigning worker.', self.__tag)
+            self.reset()
             return
 
         self.__sip_datagram = parse_sip_packet(sip_message)
@@ -129,8 +145,9 @@ class LazySIPWorker(object):
             self.__call_id = self.__sip_datagram['sip']['Call-ID']
             self.__method = self.__sip_datagram['sip']['Method']
         except KeyError:
-            logger.error('<sip>:<<%s>> MALFORMED SIP: %s', self.__tag, sip_message)
-            logger.warning('<sip>:<<%s>> unassigning worker.', self.__tag)
+            logger.error('<worker>:<<%s>> MALFORMED SIP: %s', self.__tag, sip_message)
+            logger.warning('<worker>:<<%s>> unassigning worker.', self.__tag)
+            self.reset()
             return
 
         # add eligible SIP headers from `sipd.json`.
@@ -140,7 +157,7 @@ class LazySIPWorker(object):
 
         logger.debug(' '.join([ # print incoming SIP method.
             '\033[1m\33[35m>>>\033[00m',
-            '<sip>:<<%s>>',
+            '<worker>:<<%s>>',
             '<\033[1m\033[31m%s\033[00m>'
         ]), self.__tag, self.__method)
 
@@ -154,13 +171,15 @@ class LazySIPWorker(object):
             self.handlers[self.__method]()
         except KeyError:
             self.handlers['DEFAULT']()
+        finally:
+            self.reset()
 
     #
     # custom handlers
     #
 
     def handle_default(self):
-        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'OK -SDP', self.__tag)
+        send_sip_response(self.__sip_endpoint, self.__sip_datagram, 'OK -SDP', self.__tag)
 
     def handle_ack(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.2
@@ -170,56 +189,56 @@ class LazySIPWorker(object):
     def handle_bye(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.4
         '''
-        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'OK -SDP', self.__tag)
+        send_sip_response(self.__sip_endpoint, self.__sip_datagram, 'OK -SDP', self.__tag)
         if self.rtp_handler:
             self.__garbage.register_new_task(
                 lambda: self.__garbage.consume_membership(
                     call_tag=self.__tag,
                     call_id=self.__call_id,
                     forced=True))
-        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'TERMINATE', self.__tag)
+        send_sip_response(self.__sip_endpoint, self.__sip_datagram, 'TERMINATE', self.__tag)
 
     def handle_cancel(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.5
         '''
-        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'OK -SDP', self.__tag)
+        send_sip_response(self.__sip_endpoint, self.__sip_datagram, 'OK -SDP', self.__tag)
         if self.rtp_handler:
             self.rtp_handler.handle(
                 sip_tag=self.__tag,
                 sip_datagram=self.__sip_datagram,
                 rtp_state='stop')
-        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'TERMINATE', self.__tag)
+        send_sip_response(self.__sip_endpoint, self.__sip_datagram, 'TERMINATE', self.__tag)
 
     def handle_invite(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.1
         '''
         # duplicate SIP INVITE is considered as HOLD.
         if self.__call_id in self.__garbage.calls_history:
-            logger.warning('<sip>:<<%s>> received duplicate Call-ID: %s', self.__tag, self.__call_id)
-            return send_sip_response(self.sip_endpoint, self.__sip_datagram, 'OK -SDP', self.__tag)
+            logger.warning('<worker>:<<%s>> received duplicate Call-ID: %s', self.__tag, self.__call_id)
+            return send_sip_response(self.__sip_endpoint, self.__sip_datagram, 'OK -SDP', self.__tag)
 
         elif not self.rtp_handler:
-            logger.error('<sip>:<<%s>> RTP handler is not configured.', self.__tag)
-            return send_sip_response(self.sip_endpoint, self.__sip_datagram, 'OK -SDP', self.__tag)
+            logger.error('<worker>:<<%s>> RTP handler is not configured.', self.__tag)
+            return send_sip_response(self.__sip_endpoint, self.__sip_datagram, 'OK -SDP', self.__tag)
 
-        send_sip_response(self.sip_endpoint, self.__sip_datagram, 'TRYING', self.__tag)
+        send_sip_response(self.__sip_endpoint, self.__sip_datagram, 'TRYING', self.__tag)
 
         # RTP handler must reply with two ports to receive TX/RX RTP traffic.
         chances = max(1, self.settings['rtp'].get('max_retry', 1))
         while chances:
-            send_sip_response(self.sip_endpoint, self.__sip_datagram, 'RINGING', self.__tag)
+            send_sip_response(self.__sip_endpoint, self.__sip_datagram, 'RINGING', self.__tag)
             chances -= 1
             # if external RTP handler replies with one or more ports, rewrite
             # and update the SIP datagram with new SDP information to respond.
             sip_datagram = self.rtp_handler.handle(self.__tag, self.__sip_datagram)
             if sip_datagram:
-                send_sip_response(self.sip_endpoint, sip_datagram, 'OK +SDP', self.__tag)
+                send_sip_response(self.__sip_endpoint, sip_datagram, 'OK +SDP', self.__tag)
                 self.__sip_datagram = sip_datagram
                 self.__index_callid()
                 break
             else:
-                logger.warning('<sip>:RTP handler did not send RX/TX information.')
-                send_sip_response(self.sip_endpoint, sip_datagram, 'OK -SDP', self.__tag)
+                logger.warning('<worker>:RTP handler did not send RX/TX information.')
+                send_sip_response(self.__sip_endpoint, sip_datagram, 'OK -SDP', self.__tag)
 
     #
     # deferred tasks
