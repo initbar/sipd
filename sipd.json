@@ -11,7 +11,7 @@
             "nodes": []
         },
         "worker": {
-            "count": 1,
+            "count": 2,
             "headers": {
                 "Allow": "ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE",
                 "Accept": "application/sdp",
