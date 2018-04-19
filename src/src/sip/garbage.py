@@ -99,7 +99,10 @@ class SynchronousSIPGarbageCollector(object):
         # catch up on delinquent deferred tasks inside polled queue.
         while not self._futures.empty():
             run_task = self._futures.get()
-            run_task() # deferred execute.
+            try:
+                run_task() # deferred execute.
+            except TypeError:
+                logger.error('<gc>:failed to execute empty task.')
             logger.debug('<gc>:executed deferred task: %s', run_task)
 
         # since the garbage is a FIFO, technically, the oldest call is pushed

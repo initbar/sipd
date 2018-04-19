@@ -119,8 +119,7 @@ def deploy_worker(worker_pool, endpoint, message):
             target=worker.handle,
             args=(endpoint, message)
         )
-    # if no workers are ready, create a temporary worker.
-    else:
+    else: # if no workers are ready, create a temporary worker.
         worker = LazySIPWorker(
             create_random_uuid(), # temporary worker tag.
             SERVER_SETTINGS,
@@ -179,12 +178,12 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             sys.exit(errno.EAGAIN)
 
         def consume():
-            worker_queue = deque()
             worker_pool = [
                 LazySIPWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
                 for i in range(self.__pool_size)
             ]
             logger.info("<router>:pre-generated worker pool: %s", worker_pool)
+            worker_queue = deque()
             while True:
                 # if queue is overflowing with processes, then wait until we
                 # escape the pool size limitation set by the configuration.
