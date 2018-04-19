@@ -85,12 +85,14 @@ class LazySIPWorker(object):
     ''' SIP worker implementation.
     '''
     def __init__(self,
+                 name='',
                  settings=None,
                  gc=None):
         '''
         @settings<dict> -- `sipd.json`
         @gc<SynchronousSIPGarbageCollector> -- shared garbage collector.
         '''
+        self.name = 'worker-' + str(name)
         self.settings = settings
         self.gc = gc
         self.handlers = {
@@ -101,6 +103,7 @@ class LazySIPWorker(object):
             'INVITE': self.handle_invite
         }
         self.rtp = SynchronousRTPRouter(self.settings)
+        self.is_ready = True # recycle worker
         logger.info('<worker>:successfully initialized worker.')
 
     #
@@ -135,6 +138,20 @@ class LazySIPWorker(object):
                 self.gc.membership[self.call_id]['tags'].append(self.tag)
                 self.gc.membership[self.call_id]['tags_cnt'] += 1
         self.gc.register_new_task(deferred_index_callid())
+
+    #
+    # worker state
+    #
+
+    def reset(self):
+        ''' reset worker back to its initial state.
+        '''
+        self.__sip_endpoint =\
+        self.__sip_datagram =\
+        self.__call_id =\
+        self.__method =\
+        self.__tag = None
+        self.is_ready = True
 
     #
     # custom handlers
@@ -258,6 +275,7 @@ class LazySIPWorker(object):
             self.sip_endpoint = sip_endpoint
             # self.sip_message = sip_message
         else:
+            self.reset()
             return
 
         self.tag = create_random_uuid() # call session.
@@ -266,6 +284,7 @@ class LazySIPWorker(object):
                 '<worker>:<<%s>>',
                 "INVALID SIP: '%s'"
             ]), self.tag, sip_message)
+            self.reset()
             return
 
         self.sip_datagram = parse_sip_packet(sip_message)
@@ -277,6 +296,7 @@ class LazySIPWorker(object):
                 '<worker>:<<%s>>',
                 'MALFORMED SIP: %s'
             ]), self.tag, sip_message)
+            self.reset()
             return
 
         # load eligible SIP headers from the configuration.
@@ -297,3 +317,5 @@ class LazySIPWorker(object):
             self.handlers[self.method]()
         except KeyError:
             self.handlers['DEFAULT']()
+        finally:
+            self.reset()
