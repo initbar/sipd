@@ -49,15 +49,23 @@ class safe_allocate_sip_socket(object):
     ''' allocate exception-safe listening SIP socket.
     '''
     def __init__(self, port=5060):
-        self.__port = int(port)
+        ''' SIP socket allocator implementation.
+        @port<int> -- SIP receiving port number.
+        '''
+        self.__port = port
         self.__socket = None
 
     @property
     def port(self):
+        ''' port getter.
+        '''
         return self.__port
 
     @port.setter
     def port(self, number):
+        ''' port setter.
+        @number<int> -- SIP receiving port number.
+        '''
         number = int(number)
         if not 1024 < number < 65535:
             logger.critical("<sip>:cannot use privileged ports: '%i'", number)
@@ -78,7 +86,7 @@ class safe_allocate_sip_socket(object):
 #-------------------------------------------------------------------------------
 
 class AsynchronousSIPServer(object):
-    ''' Asynchronous SIP server that initializes SIP router and SIP workers.
+    ''' Asynchronous SIP server to initialize router and globalize settings.
     '''
     def __init__(self, setting):
         if setting:
@@ -92,7 +100,7 @@ class AsynchronousSIPServer(object):
         logger.info('<server>:successfully initialized SIP server.')
 
     @classmethod
-    def serve(cls):
+    def serve(_class):
         try:
             sip_port = SERVER_SETTINGS['sip']['router']['port']
         except KeyError:
@@ -102,16 +110,21 @@ class AsynchronousSIPServer(object):
         # compatibility with Python 2 (where there's no `asyncio`). All
         # incoming traffic is routed and initially handled by the router.
         with safe_allocate_sip_socket(sip_port) as sip_socket:
-            cls.router = AsynchronousSIPRouter(sip_socket)
-            cls.router.initialize_demultiplexer()
-            cls.router.initialize_consumer()
+            _class.router = AsynchronousSIPRouter(sip_socket)
+            _class.router.initialize_demultiplexer()
+            _class.router.initialize_consumer()
             logger.info('<server>:successfully initialized SIP router.')
             asyncore.loop() # push new events to the event loop.
 
 # router
 #-------------------------------------------------------------------------------
 
-def deploy_worker(worker_pool, endpoint, message):
+def deploy_worker_thread(worker_pool, endpoint, message):
+    ''' deploy a worker thread to handle work.
+    @worker_pool<list> -- a pool of worker instances.
+    @endpoint<tuple> -- SIP endpoint.
+    @message<str> -- SIP message.
+    '''
     worker = random.choice(worker_pool)
     if worker.is_ready:
         worker_thread = Thread(
@@ -134,7 +147,7 @@ def deploy_worker(worker_pool, endpoint, message):
     return worker_thread
 
 class AsynchronousSIPRouter(asyncore.dispatcher):
-    ''' Asynchronous SIP routing component prototype.
+    ''' Asynchronous SIP router to demultiplex and delegate work to workers.
     '''
     def __init__(self, sip_socket):
         # in order to prevent double creation of a router socket, inherit
@@ -157,32 +170,19 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             if self.__pool_size <= 0:
                 self.__pool_size = cpu_count()
         except KeyError:
-            self.__pool_size = cpu_count()
-
-    def initialize_demultiplexer(self):
-        '''
-        '''
-        try:
-            from multiprocessing import Queue # best
-        except ImportError:
-            try:
-                from Queue import Queue
-            except ImportError:
-                from queue import Queue as Queue
-        self.__demux = Queue()
-        return bool(self.__demux)
+            self.__pool_size = 1
 
     def initialize_consumer(self):
-        '''
+        ''' initialize consumer thread.
         '''
         if not self.__demux:
-            logger.critical("<router>:failed to initialize router properties.")
+            logger.critical("<router>:failed to initialize router demultiplexer.")
             sys.exit(errno.EAGAIN)
 
         def consume():
             worker_pool = [
-                LazySIPWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
-                for i in range(self.__pool_size)
+                LazySIPWorker(worker_name, SERVER_SETTINGS, GARBAGE_COLLECTOR)
+                for worker_name in range(self.__pool_size)
             ]
             logger.info("<router>:pre-generated worker pool: %s", worker_pool)
             worker_queue = deque()
@@ -196,9 +196,9 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                     worker_size = min(self.__demux.qsize(), self.__pool_size)
                     for _ in range(worker_size):
                         endpoint, message = self.__demux.get()
-                        worker_queue.append(deploy_worker(worker_pool, endpoint, message))
+                        worker_queue.append(deploy_worker_thread(worker_pool, endpoint, message))
                     # throttle if the worker processes are leaking over limit.
-                    while 0 < len(worker_queue) >= self.__pool_size:
+                    while len(worker_queue) >= self.__pool_size:
                         thread = worker_queue.popleft()
                         if thread.is_alive():
                             worker_queue.append(thread)
@@ -206,12 +206,24 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         self.__consumer.daemon = True
         self.__consumer.start()
 
-    def handle_read(self):
-        # the purpose of router is to only receive data ("work") and delegate
-        # them to its' workers. A worker holds the logic implementation.
+    def initialize_demultiplexer(self):
+        ''' initialize demultiplexer.
+        '''
         try:
-            payload = self.recvfrom(0xffff) # max receive bytes.
-            endpoint, message = tuple(payload[1]), str(payload[0])
+            from multiprocessing import Queue # best
+        except ImportError:
+            try:
+                from Queue import Queue
+            except ImportError:
+                from queue import Queue as Queue
+        self.__demux = Queue()
+        return bool(self.__demux)
+
+    def handle_read(self):
+        # router only receives data ("work") and delegate them to worker(s).
+        try:
+            packet = self.recvfrom(0xffff) # max receive bytes.
+            endpoint, message = tuple(packet[1]), str(packet[0])
             self.__demux.put((endpoint, message)) # demultiplex.
         except EOFError:
             pass
