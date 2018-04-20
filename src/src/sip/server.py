@@ -154,6 +154,8 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
 
         try: # calculate worker pool size.
             self.__pool_size = SERVER_SETTINGS['sip']['worker']['count']
+            if self.__pool_size <= 0:
+                self.__pool_size = cpu_count()
         except KeyError:
             self.__pool_size = cpu_count()
 
