@@ -39,7 +39,7 @@ from src.sip.static.options import SIP_OPTIONS
 from src.sip.static.ringing import SIP_RINGING
 from src.sip.static.terminated import SIP_TERMINATE
 from src.sip.static.trying import SIP_TRYING
-from src.sockets import safe_allocate_udp_client
+from src.sockets import unsafe_allocate_random_udp_socket
 
 logger = logging.getLogger()
 
@@ -64,7 +64,7 @@ def generate_sip_response(sip_datagram, sip_method):
         template = SIPTemplates['OK -SDP'] # default
     return convert_to_sip_packet(template, sip_datagram)
 
-def send_sip_response(endpoint, sip_datagram, sip_method, tag=''):
+def send_sip_response(socket, endpoint, sip_datagram, sip_method, tag=''):
     ''' generate and send SIP message payload.
     @endpoint<tuple> -- SIP server endpoint address.
     @sip_datagram<dict> -- SIP payload.
@@ -78,8 +78,7 @@ def send_sip_response(endpoint, sip_datagram, sip_method, tag=''):
     ]), tag, sip_method)
     # generate response and send to the SIP server.
     sip_packet = generate_sip_response(sip_datagram, sip_method)
-    with safe_allocate_udp_client() as client:
-        client.sendto(sip_packet, endpoint)
+    socket.sendto(sip_packet, endpoint)
 
 class LazySIPWorker(object):
     ''' SIP worker implementation.
@@ -102,6 +101,7 @@ class LazySIPWorker(object):
             'DEFAULT': self.handle_default,
             'INVITE': self.handle_invite
         }
+        self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
         self.rtp = SynchronousRTPRouter(self.settings)
         self.is_ready = True # recycle worker
         logger.info('<worker>:successfully initialized worker.')
@@ -160,7 +160,8 @@ class LazySIPWorker(object):
     def handle_default(self):
         ''' default response to non-indexed SIP methods.
         '''
-        send_sip_response(self.sip_endpoint,
+        send_sip_response(self.socket,
+                          self.sip_endpoint,
                           self.sip_datagram,
                           'OK -SDP', self.tag)
 
@@ -172,7 +173,8 @@ class LazySIPWorker(object):
     def handle_bye(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.4
         '''
-        send_sip_response(self.sip_endpoint,
+        send_sip_response(self.socket,
+                          self.sip_endpoint,
                           self.sip_datagram,
                           'OK -SDP', self.tag)
         try:
@@ -186,14 +188,16 @@ class LazySIPWorker(object):
                 '<rtp>:<<%s>>',
                 'RTP is down!'
             ]), self.tag)
-        send_sip_response(self.sip_endpoint,
+        send_sip_response(self.socket,
+                          self.sip_endpoint,
                           self.sip_datagram,
                           'TERMINATE', self.tag)
 
     def handle_cancel(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.5
         '''
-        send_sip_response(self.sip_endpoint,
+        send_sip_response(self.socket,
+                          self.sip_endpoint,
                           self.sip_datagram,
                           'OK -SDP', self.tag)
         try:
@@ -206,7 +210,8 @@ class LazySIPWorker(object):
                 '<rtp>:<<%s>>',
                 'RTP is down!'
             ]), self.tag)
-        send_sip_response(self.sip_endpoint,
+        send_sip_response(self.socket,
+                          self.sip_endpoint,
                           self.sip_datagram,
                           'TERMINATE', self.tag)
 
@@ -219,7 +224,8 @@ class LazySIPWorker(object):
                 '<worker>:<<%s>>',
                 'received duplicate Call-ID: %s'
             ]), self.tag, self.call_id)
-            send_sip_response(self.sip_endpoint,
+            send_sip_response(self.socket,
+                              self.sip_endpoint,
                               self.sip_datagram,
                               'OK -SDP', self.tag)
             return
@@ -229,27 +235,31 @@ class LazySIPWorker(object):
                 '<rtp>:<<%s>>',
                 'RTP is down!'
             ]), self.tag)
-            send_sip_response(self.sip_endpoint,
+            send_sip_response(self.socket,
+                              self.sip_endpoint,
                               self.sip_datagram,
                               'OK -SDP', self.tag)
             return
 
         # try to receive RX/TX ports.
-        send_sip_response(self.sip_endpoint,
+        send_sip_response(self.socket,
+                          self.sip_endpoint,
                           self.sip_datagram,
                           'TRYING', self.tag)
 
         # RTP handler must reply with two ports to receive TX/RX RTP traffic.
         chances = max(1, self.settings['rtp'].get('max_retry', 1))
         while chances:
-            send_sip_response(self.sip_endpoint,
+            send_sip_response(self.socket,
+                              self.sip_endpoint,
                               self.sip_datagram,
                               'RINGING', self.tag)
             # if external RTP handler replies with one or more ports, rewrite
             # and update the SIP datagram with new SDP information to respond.
             sip_datagram = self.rtp.handle(self.tag, self.sip_datagram)
             if sip_datagram:
-                send_sip_response(self.sip_endpoint,
+                send_sip_response(self.socket,
+                                  self.sip_endpoint,
                                   sip_datagram,
                                   'OK +SDP', self.tag)
                 self.sip_datagram = sip_datagram
@@ -257,7 +267,8 @@ class LazySIPWorker(object):
                 break
             else:
                 logger.warning('<worker>:RTP handler did not send RX/TX information.')
-                send_sip_response(self.sip_endpoint,
+                send_sip_response(self.socket,
+                                  self.sip_endpoint,
                                   sip_datagram,
                                   'OK -SDP', self.tag)
                 chances -= 1
