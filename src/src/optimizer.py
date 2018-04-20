@@ -20,6 +20,7 @@
 # optimizer.py -- common optimization modules.
 #-------------------------------------------------------------------------------
 
+from collections import OrderedDict
 from functools import wraps
 
 try:
@@ -60,3 +61,21 @@ def memcache(size=64):
             return cache[key]
         return wrapper
     return memcache_impl
+
+# limited dictionary
+#-------------------------------------------------------------------------------
+
+class limited_dict(OrderedDict):
+
+    def __init__(self, *a, **kw):
+        self.limit = kw.pop("limit", None)
+        OrderedDict.__init__(self, *a, **kw)
+
+    def __setitem__(self, key, value):
+        OrderedDict.__setitem__(self, key, value)
+        self.__check()
+
+    def __check(self):
+        if self.limit is not None:
+            while len(self) > self.limit:
+                self.popitem(last=False)

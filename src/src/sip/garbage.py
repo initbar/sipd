@@ -17,18 +17,18 @@
 # https://github.com/initbar/sipd
 
 from collections import deque
+from src.optimizer import limited_dict
+from src.rtp.server import SynchronousRTPRouter
 
+import logging
 import threading
 import time
 
-try: import Queue             # Python 2
-except: import queue as Queue # Python 3
-
 try:
-    from src.rtp.server import SynchronousRTPRouter
-except ImportError: raise
+    import Queue
+except:
+    import queue as Queue
 
-import logging
 logger = logging.getLogger()
 
 #-------------------------------------------------------------------------------
@@ -45,9 +45,9 @@ class SynchronousSIPGarbageCollector(object):
         # Since it's expensive to re-calculate the length at each iteration,
         # store call counts separately. A call count should only be incremented
         # by distinct SIP 'INVITE'.
-        self.calls_history = {}
+        self.membership = limited_dict(size=0xffff)
+        self.calls_history = limited_dict(size=0xffff)
         self.calls_stats = 0
-        self.membership = {}
 
         # garbage is collected under self._garbage. In order to reduce thread
         # conflict with the main thread, garbage collector uses its own
@@ -56,7 +56,7 @@ class SynchronousSIPGarbageCollector(object):
         except: self._gc_interval = 60.0 # seconds
         self._gc = self.initialize_garbage_collector()
         self._gc_locked = False # "thread lock"
-        self._garbage = deque()
+        self._garbage = deque(maxlen=0xffff)
 
         # since a locked collector should not receive new blocking tasks,
         # any new "tasks" are polled under self._futures object.
