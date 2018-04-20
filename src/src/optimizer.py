@@ -20,13 +20,13 @@
 # optimizer.py -- common optimization modules.
 #-------------------------------------------------------------------------------
 
-from collections import OrderedDict
-from functools import wraps
-
 try:
     import cPickle as pickle
 except ImportError:
     import pickle
+
+from collections import OrderedDict
+from functools import wraps
 
 # memoization technique
 #-------------------------------------------------------------------------------
