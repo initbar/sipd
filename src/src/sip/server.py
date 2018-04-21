@@ -185,7 +185,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                 for worker_name in range(self.__pool_size)
             ]
             logger.info("<router>:pre-generated worker pool: %s", worker_pool)
-            worker_queue = deque(self.__pool_size * 2) # pre-allocate static size.
+            worker_queue = deque(maxlen=(self.__pool_size * 2)) # pre-allocate static size.
             while True:
                 # if queue is overflowing with processes, then wait until we
                 # escape the pool size limitation set by the configuration.
