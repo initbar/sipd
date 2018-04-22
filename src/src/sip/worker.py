@@ -100,8 +100,8 @@ class LazySIPWorker(object):
             'DEFAULT': self.handle_default,
             'INVITE': self.handle_invite
         }
-        if settings['db']['interface']['enabled']:
-            db_config = settings['db']['interface']
+        if settings['db']['server']['enabled']:
+            db_config = settings['db']['server']
             self.db = dict(
                 host=db_config['host'],
                 port=db_config['port'],
@@ -303,8 +303,6 @@ class LazySIPWorker(object):
                     'OK -SDP',
                     self.tag)
                 chances -= 1
-
-        #
 
     #
     # deferred garbage collection

@@ -1,7 +1,6 @@
 {
     "program": "sipd -- Active recording Session Initiation Protocol daemon.",
     "source": "https://github.com/initbar/sipd",
-    "docs": "https://github.com/initbar/sipd/blob/master/docs/CONFIG.md",
     "sip": {
         "server": {
             "address": ""
@@ -58,7 +57,7 @@
         ]
     },
     "db": {
-        "interface": {
+        "server": {
             "enabled": false,
             "host": "127.0.0.1",
             "port": 1234,
@@ -80,11 +79,7 @@
             "path": "./logs",
             "total_days": 30
         },
-        "color": {
-            "enabled": true,
-            "rgb": true,
-            "coloredlogs": false
-        },
+        "coloredlogs": false,
         "level": "DEBUG"
     }
 }

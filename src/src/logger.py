@@ -42,7 +42,6 @@ def initialize_logger(configuration):
 
     log = configuration['log']
     log_console = log['console']
-    log_color = log['color']
     log_filesystem = log['filesystem']
 
     # filesystem
@@ -67,22 +66,21 @@ def initialize_logger(configuration):
 
     # console
     if log_console.get('enabled'):
-        logging.basicConfig(level=configuration['log']['level'], format=logging_format)
+        logging.basicConfig(level=log['level'], format=logging_format)
 
     logger = logging.getLogger()
 
     # colors
-    if log_color.get('enabled'):
-        if log_color['coloredlogs']:
-            try:
-                import coloredlogs
-            except ImportError:
-                logger.critical("module `coloredlogs` does not exist.")
-                sys.exit(errno.ENOENT)
-            coloredlogs.install(level=configuration['log']['level'],
-                                logger=logger,
-                                fmt=logging_format,
-                                milliseconds=True)
+    if log['coloredlogs']:
+        try:
+            import coloredlogs
+        except ImportError:
+            logger.critical("module `coloredlogs` does not exist.")
+            sys.exit(errno.ENOENT)
+        coloredlogs.install(level=log['level'],
+                            logger=logger,
+                            fmt=logging_format,
+                            milliseconds=True)
 
     logger.addHandler(fs_handler)
     logger.info("<main>:successfully initialized logging.")
