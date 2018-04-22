@@ -104,39 +104,6 @@ class LazySIPWorker(object):
         logger.info('<worker>:successfully initialized worker.')
 
     #
-    # deferred garbage collection
-    #
-
-    def index_callid(self):
-        ''' index new/existing Call-ID to garbage collector.
-        '''
-        try:
-            lifetime = self.settings['gc']['call_lifetime']
-            assert lifetime > 0
-        except AssertionError:
-            lifetime = 60 * 60 # seconds
-        def deferred_index_callid():
-            # register session to the garbage collection queue.
-            self.gc._garbage.append({
-                'Call-ID': self.call_id,
-                'tag': self.tag,
-                'ttl': lifetime + int(time.time())
-            })
-            # register the first unique Call-ID membership.
-            if not self.gc.membership.get(self.call_id):
-                self.gc.calls_history[self.call_id] = None
-                self.gc.calls_stats += (self.call_id in self.gc.calls_history)
-                self.gc.membership[self.call_id] = {
-                    'state': self.method,
-                    'tags': [self.tag],
-                    'tags_cnt': 1
-                }
-            else: # register session only for existing Call-ID membership.
-                self.gc.membership[self.call_id]['tags'].append(self.tag)
-                self.gc.membership[self.call_id]['tags_cnt'] += 1
-        self.gc.register_new_task(deferred_index_callid())
-
-    #
     # worker state
     #
 
@@ -149,114 +116,6 @@ class LazySIPWorker(object):
         self.__method =\
         self.__tag = None
         self.is_ready = True
-
-    #
-    # custom handlers
-    #
-
-    def handle_default(self):
-        ''' default response to non-indexed SIP methods.
-        '''
-        send_sip_response(self.socket,
-                          self.sip_endpoint,
-                          self.sip_datagram,
-                          'OK -SDP', self.tag)
-
-    def handle_ack(self):
-        ''' https://tools.ietf.org/html/rfc2543#section-4.2.2
-        '''
-        pass
-
-    def handle_bye(self):
-        ''' https://tools.ietf.org/html/rfc2543#section-4.2.4
-        '''
-        send_sip_response(self.socket,
-                          self.sip_endpoint,
-                          self.sip_datagram,
-                          'OK -SDP', self.tag)
-        try:
-            self.gc.register_new_task(
-                lambda: self.gc.consume_membership(
-                    call_tag=self.tag,
-                    call_id=self.call_id,
-                    forced=True))
-        except AttributeError: # RTP is down.
-            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
-        send_sip_response(self.socket,
-                          self.sip_endpoint,
-                          self.sip_datagram,
-                          'TERMINATE', self.tag)
-
-    def handle_cancel(self):
-        ''' https://tools.ietf.org/html/rfc2543#section-4.2.5
-        '''
-        send_sip_response(self.socket,
-                          self.sip_endpoint,
-                          self.sip_datagram,
-                          'OK -SDP', self.tag)
-        try:
-            self.rtp.handle(
-                sip_tag=self.tag,
-                sip_datagram=self.sip_datagram,
-                rtp_state='stop')
-        except AttributeError: # RTP is down.
-            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
-        send_sip_response(self.socket,
-                          self.sip_endpoint,
-                          self.sip_datagram,
-                          'TERMINATE', self.tag)
-
-    def handle_invite(self):
-        ''' https://tools.ietf.org/html/rfc2543#section-4.2.1
-        '''
-        # duplicate SIP INVITE is considered as HOLD.
-        if self.call_id in self.gc.calls_history:
-            logger.warning('<worker>:<<%s>> received duplicate Call-ID: %s',  self.tag, self.call_id)
-            send_sip_response(self.socket,
-                              self.sip_endpoint,
-                              self.sip_datagram,
-                              'OK -SDP', self.tag)
-            return
-
-        if not self.rtp:
-            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
-            send_sip_response(self.socket,
-                              self.sip_endpoint,
-                              self.sip_datagram,
-                              'OK -SDP', self.tag)
-            return
-
-        # try to receive RX/TX ports.
-        send_sip_response(self.socket,
-                          self.sip_endpoint,
-                          self.sip_datagram,
-                          'TRYING', self.tag)
-
-        # RTP handler must reply with two ports to receive TX/RX RTP traffic.
-        chances = max(1, self.settings['rtp'].get('max_retry', 1))
-        while chances:
-            send_sip_response(self.socket,
-                              self.sip_endpoint,
-                              self.sip_datagram,
-                              'RINGING', self.tag)
-            # if external RTP handler replies with one or more ports, rewrite
-            # and update the SIP datagram with new SDP information to respond.
-            sip_datagram = self.rtp.handle(self.tag, self.sip_datagram)
-            if sip_datagram:
-                send_sip_response(self.socket,
-                                  self.sip_endpoint,
-                                  sip_datagram,
-                                  'OK +SDP', self.tag)
-                self.sip_datagram = sip_datagram
-                self.index_callid()
-                break
-            else:
-                logger.warning('<worker>:RTP handler did not send RX/TX information.')
-                send_sip_response(self.socket,
-                                  self.sip_endpoint,
-                                  sip_datagram,
-                                  'OK -SDP', self.tag)
-                chances -= 1
 
     #
     # worker interface
@@ -305,3 +164,155 @@ class LazySIPWorker(object):
             self.handlers['DEFAULT']()
         finally:
             self.reset()
+
+    #
+    # custom handlers
+    #
+
+    def handle_default(self):
+        ''' default response to non-indexed SIP methods.
+        '''
+        send_sip_response(
+            self.socket,
+            self.sip_endpoint,
+            self.sip_datagram,
+            'OK -SDP', self.tag)
+
+    def handle_ack(self):
+        ''' https://tools.ietf.org/html/rfc2543#section-4.2.2
+        '''
+        pass
+
+    def handle_bye(self):
+        ''' https://tools.ietf.org/html/rfc2543#section-4.2.4
+        '''
+        send_sip_response(
+            self.socket,
+            self.sip_endpoint,
+            self.sip_datagram,
+            'OK -SDP', self.tag)
+        try:
+            self.gc.register_new_task(
+                lambda: self.gc.consume_membership(
+                    call_tag=self.tag,
+                    call_id=self.call_id,
+                    forced=True))
+        except AttributeError: # RTP is down.
+            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
+        send_sip_response(
+            self.socket,
+            self.sip_endpoint,
+            self.sip_datagram,
+            'TERMINATE', self.tag)
+
+    def handle_cancel(self):
+        ''' https://tools.ietf.org/html/rfc2543#section-4.2.5
+        '''
+        send_sip_response(
+            self.socket,
+            self.sip_endpoint,
+            self.sip_datagram,
+            'OK -SDP', self.tag)
+        try:
+            self.rtp.handle(
+                sip_tag=self.tag,
+                sip_datagram=self.sip_datagram,
+                rtp_state='stop')
+        except AttributeError: # RTP is down.
+            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
+        send_sip_response(
+            self.socket,
+            self.sip_endpoint,
+            self.sip_datagram,
+            'TERMINATE', self.tag)
+
+    def handle_invite(self):
+        ''' https://tools.ietf.org/html/rfc2543#section-4.2.1
+        '''
+        # duplicate SIP INVITE is considered as HOLD.
+        if self.call_id in self.gc.calls_history:
+            logger.warning('<worker>:<<%s>> received duplicate Call-ID: %s',  self.tag, self.call_id)
+            send_sip_response(
+                self.socket,
+                self.sip_endpoint,
+                self.sip_datagram,
+                'OK -SDP', self.tag)
+            return
+
+        if not self.rtp:
+            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
+            send_sip_response(
+                self.socket,
+                self.sip_endpoint,
+                self.sip_datagram,
+                'OK -SDP', self.tag)
+            return
+
+        # try to receive RX/TX ports.
+        send_sip_response(
+            self.socket,
+            self.sip_endpoint,
+            self.sip_datagram,
+            'TRYING', self.tag)
+
+        # RTP handler must reply with two ports to receive TX/RX RTP traffic.
+        chances = max(1, self.settings['rtp'].get('max_retry', 1))
+        while chances:
+            send_sip_response(
+                self.socket,
+                self.sip_endpoint,
+                self.sip_datagram,
+                'RINGING', self.tag)
+            # if external RTP handler replies with one or more ports, rewrite
+            # and update the SIP datagram with new SDP information to respond.
+            sip_datagram = self.rtp.handle(self.tag, self.sip_datagram)
+            if sip_datagram:
+                send_sip_response(
+                    self.socket,
+                    self.sip_endpoint,
+                    sip_datagram,
+                    'OK +SDP', self.tag)
+                self.sip_datagram = sip_datagram
+                self.index_callid()
+                break
+            else:
+                logger.warning('<worker>:RTP handler did not send RX/TX information.')
+                send_sip_response(
+                    self.socket,
+                    self.sip_endpoint,
+                    sip_datagram,
+                    'OK -SDP', self.tag)
+                chances -= 1
+
+    #
+    # deferred garbage collection
+    #
+
+    def index_callid(self):
+        ''' index new/existing Call-ID to garbage collector.
+        '''
+        try:
+            lifetime = self.settings['gc']['call_lifetime']
+            assert lifetime > 0
+        except AssertionError:
+            lifetime = 60 * 60 # seconds
+        def deferred_index_callid():
+            # register session to the garbage collection queue.
+            self.gc._garbage.append({
+                'Call-ID': self.call_id,
+                'tag': self.tag,
+                'ttl': lifetime + int(time.time())
+            })
+            # register the first unique Call-ID membership.
+            if not self.gc.membership.get(self.call_id):
+                self.gc.calls_history[self.call_id] = None
+                self.gc.calls_stats += (self.call_id in self.gc.calls_history)
+                self.gc.membership[self.call_id] = {
+                    'state': self.method,
+                    'tags': [self.tag],
+                    'tags_cnt': 1
+                }
+            else: # register session only for existing Call-ID membership.
+                self.gc.membership[self.call_id]['tags'].append(self.tag)
+                self.gc.membership[self.call_id]['tags_cnt'] += 1
+        self.gc.register_new_task(deferred_index_callid())
