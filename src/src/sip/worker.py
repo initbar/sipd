@@ -26,7 +26,6 @@ import time
 # from src.errors import SIPBrokenProtocol
 # from src.sip.static.busy import SIP_BUSY
 # from src.sip.static.bye import SIP_BYE
-from src.db.mysql import MySQLClient
 from src.debug import create_random_uuid
 from src.optimizer import memcache
 from src.parser import convert_to_sip_packet
@@ -94,6 +93,20 @@ class LazySIPWorker(object):
         self.name = 'worker-' + str(name)
         self.settings = settings
         self.gc = gc
+        self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
+        self.rtp = SynchronousRTPRouter(self.settings)
+        if settings['db']['mysql']['enabled']:
+            db_config = settings['db']['mysql']
+            from src.db.mysql import MySQLClient
+            self.db = MySQLClient(
+                host=db_config['host'],
+                port=db_config['port'],
+                username=db_config['username'],
+                password=db_config['password'],
+                database=db_config['database']
+            )
+        else:
+            self.db = None
         self.handlers = {
             'ACK': self.handle_ack,
             'BYE': self.handle_cancel,
@@ -101,8 +114,6 @@ class LazySIPWorker(object):
             'DEFAULT': self.handle_default,
             'INVITE': self.handle_invite
         }
-        self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
-        self.rtp = SynchronousRTPRouter(self.settings)
         self.is_ready = True # recycle worker
         logger.info('<worker>:successfully initialized worker.')
 

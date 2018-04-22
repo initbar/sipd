@@ -57,7 +57,7 @@
             }
         ]
     },
-    "database": {
+    "db": {
         "impala": {
             "enabled": false,
             "host": "127.0.0.1",
@@ -78,8 +78,7 @@
             "port": 3306,
             "username": "",
             "password": "",
-            "database": "",
-            "db_table": ""
+            "database": ""
         }
     },
     "gc": {
