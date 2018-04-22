@@ -100,7 +100,7 @@ class AsynchronousSIPServer(object):
         logger.info('<server>:successfully initialized SIP server.')
 
     @classmethod
-    def serve(_class):
+    def serve(cls):
         try:
             sip_port = SERVER_SETTINGS['sip']['router']['port']
         except KeyError:
@@ -110,9 +110,9 @@ class AsynchronousSIPServer(object):
         # compatibility with Python 2 (where there's no `asyncio`). All
         # incoming traffic is routed and initially handled by the router.
         with safe_allocate_sip_socket(sip_port) as sip_socket:
-            _class.router = AsynchronousSIPRouter(sip_socket)
-            _class.router.initialize_demultiplexer()
-            _class.router.initialize_consumer()
+            cls.router = AsynchronousSIPRouter(sip_socket)
+            cls.router.initialize_demultiplexer()
+            cls.router.initialize_consumer()
             logger.info('<server>:successfully initialized SIP router.')
             asyncore.loop() # push new events to the event loop.
 

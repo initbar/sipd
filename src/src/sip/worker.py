@@ -70,12 +70,8 @@ def send_sip_response(socket, endpoint, sip_datagram, sip_method, tag=''):
     @sip_method<str> -- SIP method.
     @tag<str> -- call context tag.
     '''
-    logger.debug(' '.join([
-        '\033[93m\033[01m<<<\033[00m',
-        '<worker>:<<%s>>',
-        '<\033[1m\033[31m%s\033[00m>'
-    ]), tag, sip_method)
     # generate response and send to the SIP server.
+    logger.debug('<<< <worker>:<<%s>> <%s>', tag, sip_method)
     sip_packet = generate_sip_response(sip_datagram, sip_method)
     socket.sendto(sip_packet, endpoint)
 
@@ -195,10 +191,7 @@ class LazySIPWorker(object):
                     call_id=self.call_id,
                     forced=True))
         except AttributeError: # RTP is down.
-            logger.error(' '.join([
-                '<rtp>:<<%s>>',
-                'RTP is down!'
-            ]), self.tag)
+            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
         send_sip_response(self.socket,
                           self.sip_endpoint,
                           self.sip_datagram,
@@ -217,10 +210,7 @@ class LazySIPWorker(object):
                 sip_datagram=self.sip_datagram,
                 rtp_state='stop')
         except AttributeError: # RTP is down.
-            logger.error(' '.join([
-                '<rtp>:<<%s>>',
-                'RTP is down!'
-            ]), self.tag)
+            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
         send_sip_response(self.socket,
                           self.sip_endpoint,
                           self.sip_datagram,
@@ -231,10 +221,7 @@ class LazySIPWorker(object):
         '''
         # duplicate SIP INVITE is considered as HOLD.
         if self.call_id in self.gc.calls_history:
-            logger.warning(' '.join([
-                '<worker>:<<%s>>',
-                'received duplicate Call-ID: %s'
-            ]), self.tag, self.call_id)
+            logger.warning('<worker>:<<%s>> received duplicate Call-ID: %s',  self.tag, self.call_id)
             send_sip_response(self.socket,
                               self.sip_endpoint,
                               self.sip_datagram,
@@ -242,10 +229,7 @@ class LazySIPWorker(object):
             return
 
         if not self.rtp:
-            logger.error(' '.join([
-                '<rtp>:<<%s>>',
-                'RTP is down!'
-            ]), self.tag)
+            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
             send_sip_response(self.socket,
                               self.sip_endpoint,
                               self.sip_datagram,
@@ -302,10 +286,7 @@ class LazySIPWorker(object):
 
         self.tag = create_random_uuid() # call session.
         if not validate_sip_signature(sip_message):
-            logger.error(' '.join([
-                '<worker>:<<%s>>',
-                "INVALID SIP: '%s'"
-            ]), self.tag, sip_message)
+            logger.error("<worker>:<<%s>> INVALID SIP: '%s'", self.tag, sip_message)
             self.reset()
             return
 
@@ -314,10 +295,7 @@ class LazySIPWorker(object):
             self.call_id = self.sip_datagram['sip']['Call-ID']
             self.method = self.sip_datagram['sip']['Method']
         except KeyError:
-            logger.error(' '.join([
-                '<worker>:<<%s>>',
-                'MALFORMED SIP: %s'
-            ]), self.tag, sip_message)
+            logger.error('<worker>:<<%s>> MALFORMED SIP: %s', self.tag, sip_message)
             self.reset()
             return
 
@@ -330,11 +308,7 @@ class LazySIPWorker(object):
         server_address = self.settings['sip']['server']['address']
         self.sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % server_address
 
-        logger.debug(' '.join([ # print incoming SIP method.
-            '\033[1m\33[35m>>>\033[00m',
-            '<worker>:<<%s>>',
-            '<\033[1m\033[31m%s\033[00m>'
-        ]), self.tag, self.method)
+        logger.debug('>>> <worker>:<<%s>> %s', self.tag, self.method)
         try: # responding to SIP requests.
             self.handlers[self.method]()
         except KeyError:

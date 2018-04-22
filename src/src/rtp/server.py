@@ -101,7 +101,7 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             if not rtp_handler: return
 
             udp_socket.sendto(dump_json(template), rtp_handler)
-            logger.debug("\033[93m\033[01m<<<\033[00m <rtp>:<<%s>> requesting external rtpd." % self.__tag)
+            logger.debug("<<< <rtp>:<<%s>> requesting external rtpd." % self.__tag)
             logger.debug("<rtp>:<<%s>> waiting response from external rtpd." % self.__tag)
             try: payload = udp_socket.recvfrom(0xff)
             except Exception as message:
@@ -110,7 +110,7 @@ class SynchronousRTPRouter(RTPRouterPrototype):
 
             logger.debug('<rtp>:<<%s>> external rtpd is UP.' % self.__tag)
             rtpd_server, rtpd_payload = tuple(payload[1]), str(payload[0])
-            logger.debug("\033[1m\33[35m>>>\033[00m <rtp>:<<%s>> [%s] received %s Bytes from external rtpd." % (
+            logger.debug(">>> <rtp>:<<%s>> [%s] received %s Bytes from external rtpd." % (
                 self.__tag, rtp_handler, hex(len(rtpd_payload))))
 
             # receive RTP ports.
@@ -171,7 +171,7 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             if not rtp_handler: return
 
             udp_socket.sendto(dump_json(template), rtp_handler)
-            logger.debug("\033[93m\033[01m<<<\033[00m <rtp>:<<%s>> sent 'stop' to external rtpd." % self.__tag)
+            logger.debug("<<< <rtp>:<<%s>> sent 'stop' to external rtpd." % self.__tag)
             logger.debug("<rtp>:<<%s>> waiting response from external rtpd." % self.__tag)
             try: payload = udp_socket.recvfrom(0xff)
             except Exception as message:
@@ -180,7 +180,7 @@ class SynchronousRTPRouter(RTPRouterPrototype):
 
             logger.debug('<rtp>:<<%s>> external rtpd is UP.' % self.__tag)
             rtpd_server, rtpd_payload = tuple(payload[1]), str(payload[0])
-            logger.debug("\033[1m\33[35m>>>\033[00m <rtp>:<<%s>> [%s] received %s Bytes from external rtpd." % (
+            logger.debug(">>> <rtp>:<<%s>> [%s] received %s Bytes from external rtpd." % (
                 self.__tag, rtp_handler, hex(len(rtpd_payload))))
 
             rtpd_json = parse_json(rtpd_payload)
