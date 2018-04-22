@@ -171,6 +171,14 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         except KeyError:
             self.__pool_size = 1
 
+    def handle_read(self):
+        try: # router only receives data ("work") and delegate to worker(s).
+            packet = self.recvfrom(0xffff) # max receive bytes.
+            endpoint, message = tuple(packet[1]), str(packet[0])
+            self.__demux.put((endpoint, message)) # demultiplex.
+        except EOFError:
+            pass
+
     def initialize_consumer(self):
         ''' initialize consumer thread.
         '''
@@ -178,29 +186,33 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
             logger.critical("<router>:failed to initialize router demultiplexer.")
             sys.exit(errno.EAGAIN)
 
+        worker_queue = deque(maxlen=(self.__pool_size * 2))
+        worker_pool = [ # pre-generated workers.
+            LazySIPWorker(worker_name, SERVER_SETTINGS, GARBAGE_COLLECTOR)
+            for worker_name in range(self.__pool_size)
+        ]
+        logger.info("<router>:pre-generated worker pool: %s", worker_pool)
+
+        # function closure to initialize workers and take demultiplexed "work".
         def consume():
-            worker_pool = [
-                LazySIPWorker(worker_name, SERVER_SETTINGS, GARBAGE_COLLECTOR)
-                for worker_name in range(self.__pool_size)
-            ]
-            logger.info("<router>:pre-generated worker pool: %s", worker_pool)
-            worker_queue = deque(maxlen=(self.__pool_size * 2)) # pre-allocate static size.
             while True:
                 # if queue is overflowing with processes, then wait until we
                 # escape the pool size limitation set by the configuration.
                 if self.__demux.empty() or len(worker_queue) >= self.__pool_size:
                     time.sleep(1e-2)
-                else:
-                    # ensure no workers are generated more than available work.
-                    worker_size = min(self.__demux.qsize(), self.__pool_size)
-                    for _ in range(worker_size):
-                        endpoint, message = self.__demux.get()
-                        worker_queue.append(deploy_worker_thread(worker_pool, endpoint, message))
-                    # throttle if the worker processes are leaking over limit.
-                    while len(worker_queue) >= self.__pool_size:
-                        thread = worker_queue.popleft()
-                        if thread.is_alive():
-                            worker_queue.append(thread)
+                    continue
+                # ensure no workers are generated more than available work.
+                worker_size = min(self.__demux.qsize(), self.__pool_size)
+                for _ in range(worker_size):
+                    endpoint, message = self.__demux.get()
+                    worker_queue.append( # remember generated threads.
+                        deploy_worker_thread(worker_pool, endpoint, message)
+                    )
+                # throttle if the worker processes are leaking over limit.
+                while len(worker_queue) >= self.__pool_size:
+                    thread = worker_queue.popleft()
+                    if thread.is_alive():
+                        worker_queue.append(thread)
         self.__consumer = Thread(name='consumer', target=consume)
         self.__consumer.daemon = True
         self.__consumer.start()
@@ -217,12 +229,3 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                 from queue import Queue as Queue
         self.__demux = Queue()
         return bool(self.__demux)
-
-    def handle_read(self):
-        # router only receives data ("work") and delegate them to worker(s).
-        try:
-            packet = self.recvfrom(0xffff) # max receive bytes.
-            endpoint, message = tuple(packet[1]), str(packet[0])
-            self.__demux.put((endpoint, message)) # demultiplex.
-        except EOFError:
-            pass
