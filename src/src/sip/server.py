@@ -133,9 +133,8 @@ def deploy_worker_thread(worker_pool, endpoint, message):
         )
     else: # if no workers are ready, create a temporary worker.
         worker = LazySIPWorker(
-            create_random_uuid(), # temporary worker tag.
-            SERVER_SETTINGS,
-            GARBAGE_COLLECTOR)
+            settings=SERVER_SETTINGS,
+            gc=GARBAGE_COLLECTOR)
         worker_thread = Thread(
             name=worker.name,
             target=worker.handle,

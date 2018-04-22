@@ -1,2 +1,1 @@
 coloredlogs==9.0
-mysqlclient==1.3.12

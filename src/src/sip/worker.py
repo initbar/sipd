@@ -79,30 +79,20 @@ class LazySIPWorker(object):
     ''' SIP worker implementation.
     '''
     def __init__(self,
-                 name='',
+                 name=None,
                  settings=None,
                  gc=None):
         '''
         @settings<dict> -- `sipd.json`
         @gc<SynchronousSIPGarbageCollector> -- shared garbage collector.
         '''
+        if not name:
+            name = create_random_uuid()
         self.name = 'worker-' + str(name)
         self.settings = settings
         self.gc = gc
         self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
         self.rtp = SynchronousRTPRouter(self.settings)
-        if settings['db']['mysql']['enabled']:
-            db_config = settings['db']['mysql']
-            from src.db.mysql import MySQLClient
-            self.db = MySQLClient(
-                host=db_config['host'],
-                port=db_config['port'],
-                username=db_config['username'],
-                password=db_config['password'],
-                database=db_config['database']
-            )
-        else:
-            self.db = None
         self.handlers = {
             'ACK': self.handle_ack,
             'BYE': self.handle_cancel,

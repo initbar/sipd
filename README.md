@@ -22,7 +22,6 @@ Some key features are:
 ## Dependencies
 
 ```bash
-~$ sudo apt install libmysqlclient-dev
 ~$ sudo pip install -r requirements.txt
 ```
 
@@ -53,10 +52,6 @@ You can either use `make` to build and deploy to a remote server or `pip` to dow
 ~$ make clean
 ~$ make
 ```
-
-## Database
-
-By default, **sipd** only supports MySQL database. For more, please feel free to fork the project and PR.
 
 ## Docker
 
