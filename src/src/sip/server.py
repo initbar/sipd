@@ -89,14 +89,13 @@ class AsynchronousSIPServer(object):
     ''' Asynchronous SIP server to initialize router and globalize settings.
     '''
     def __init__(self, setting):
-        if setting:
-            global SERVER_SETTINGS
-            global GARBAGE_COLLECTOR
-            SERVER_SETTINGS = setting
-            GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
-        else:
+        if not setting:
             logger.critical('<server>:failed to initialize SIP server.')
             sys.exit(errno.EINVAL)
+        global SERVER_SETTINGS
+        global GARBAGE_COLLECTOR
+        SERVER_SETTINGS = setting
+        GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
         logger.info('<server>:successfully initialized SIP server.')
 
     @classmethod
