@@ -92,7 +92,7 @@ class LazySIPWorker(object):
         self.settings = settings
         self.gc = gc
         self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
-        self.rtp = SynchronousRTPRouter(self.settings)
+        self.rtp = SynchronousRTPRouter(settings)
         self.handlers = {
             'ACK': self.handle_ack,
             'BYE': self.handle_cancel,
@@ -100,6 +100,16 @@ class LazySIPWorker(object):
             'DEFAULT': self.handle_default,
             'INVITE': self.handle_invite
         }
+        if settings['db']['interface']['enabled']:
+            db_config = settings['db']['interface']
+            self.db = dict(
+                host=db_config['host'],
+                port=db_config['port'],
+                username=db_config['username'],
+                password=db_config['password']
+            )
+        else:
+            self.db = None
         self.is_ready = True # recycle worker
         logger.info('<worker>:successfully initialized worker.')
 
@@ -176,7 +186,8 @@ class LazySIPWorker(object):
             self.socket,
             self.sip_endpoint,
             self.sip_datagram,
-            'OK -SDP', self.tag)
+            'OK -SDP',
+            self.tag)
 
     def handle_ack(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.2
@@ -190,7 +201,8 @@ class LazySIPWorker(object):
             self.socket,
             self.sip_endpoint,
             self.sip_datagram,
-            'OK -SDP', self.tag)
+            'OK -SDP',
+            self.tag)
         try:
             self.gc.register_new_task(
                 lambda: self.gc.consume_membership(
@@ -198,12 +210,13 @@ class LazySIPWorker(object):
                     call_id=self.call_id,
                     forced=True))
         except AttributeError: # RTP is down.
-            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
+            logger.error('<rtp>:<<%s>> RTP is down.', self.tag)
         send_sip_response(
             self.socket,
             self.sip_endpoint,
             self.sip_datagram,
-            'TERMINATE', self.tag)
+            'TERMINATE',
+            self.tag)
 
     def handle_cancel(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.5
@@ -212,19 +225,21 @@ class LazySIPWorker(object):
             self.socket,
             self.sip_endpoint,
             self.sip_datagram,
-            'OK -SDP', self.tag)
+            'OK -SDP',
+            self.tag)
         try:
             self.rtp.handle(
                 sip_tag=self.tag,
                 sip_datagram=self.sip_datagram,
                 rtp_state='stop')
         except AttributeError: # RTP is down.
-            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
+            logger.error('<rtp>:<<%s>> RTP is down.', self.tag)
         send_sip_response(
             self.socket,
             self.sip_endpoint,
             self.sip_datagram,
-            'TERMINATE', self.tag)
+            'TERMINATE',
+            self.tag)
 
     def handle_invite(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.1
@@ -236,33 +251,36 @@ class LazySIPWorker(object):
                 self.socket,
                 self.sip_endpoint,
                 self.sip_datagram,
-                'OK -SDP', self.tag)
+                'OK -SDP',
+                self.tag)
             return
 
         if not self.rtp:
-            logger.error('<rtp>:<<%s>> RTP is down!', self.tag)
+            logger.error('<rtp>:<<%s>> RTP is down.', self.tag)
             send_sip_response(
                 self.socket,
                 self.sip_endpoint,
                 self.sip_datagram,
-                'OK -SDP', self.tag)
+                'OK -SDP',
+                self.tag)
+            self.rtp = SynchronousRTPRouter(self.settings) # reinitialize.
             return
 
-        # try to receive RX/TX ports.
+        # RTP handler must reply with two ports to receive TX/RX RTP traffic.
         send_sip_response(
             self.socket,
             self.sip_endpoint,
             self.sip_datagram,
-            'TRYING', self.tag)
-
-        # RTP handler must reply with two ports to receive TX/RX RTP traffic.
+            'TRYING',
+            self.tag)
         chances = max(1, self.settings['rtp'].get('max_retry', 1))
         while chances:
             send_sip_response(
                 self.socket,
                 self.sip_endpoint,
                 self.sip_datagram,
-                'RINGING', self.tag)
+                'RINGING',
+                self.tag)
             # if external RTP handler replies with one or more ports, rewrite
             # and update the SIP datagram with new SDP information to respond.
             sip_datagram = self.rtp.handle(self.tag, self.sip_datagram)
@@ -271,9 +289,10 @@ class LazySIPWorker(object):
                     self.socket,
                     self.sip_endpoint,
                     sip_datagram,
-                    'OK +SDP', self.tag)
+                    'OK +SDP',
+                    self.tag)
                 self.sip_datagram = sip_datagram
-                self.index_callid()
+                self.update_gc_callid()
                 break
             else:
                 logger.warning('<worker>:RTP handler did not send RX/TX information.')
@@ -281,14 +300,17 @@ class LazySIPWorker(object):
                     self.socket,
                     self.sip_endpoint,
                     sip_datagram,
-                    'OK -SDP', self.tag)
+                    'OK -SDP',
+                    self.tag)
                 chances -= 1
+
+        #
 
     #
     # deferred garbage collection
     #
 
-    def index_callid(self):
+    def update_gc_callid(self):
         ''' index new/existing Call-ID to garbage collector.
         '''
         try:
@@ -296,7 +318,7 @@ class LazySIPWorker(object):
             assert lifetime > 0
         except AssertionError:
             lifetime = 60 * 60 # seconds
-        def deferred_index_callid():
+        def deferred_update():
             # register session to the garbage collection queue.
             self.gc._garbage.append({
                 'Call-ID': self.call_id,
@@ -315,4 +337,4 @@ class LazySIPWorker(object):
             else: # register session only for existing Call-ID membership.
                 self.gc.membership[self.call_id]['tags'].append(self.tag)
                 self.gc.membership[self.call_id]['tags_cnt'] += 1
-        self.gc.register_new_task(deferred_index_callid())
+        self.gc.register_new_task(deferred_update())
