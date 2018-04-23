@@ -307,13 +307,13 @@ class LazySIPWorker(object):
             # and update the SIP datagram with new SDP information to respond.
             sip_datagram = self.rtp.handle(self.tag, self.sip_datagram)
             if sip_datagram:
+                self.sip_datagram = sip_datagram
                 send_sip_response(
                     self.socket,
                     self.sip_endpoint,
-                    sip_datagram,
+                    self.sip_datagram,
                     'OK +SDP',
                     self.tag)
-                self.sip_datagram = sip_datagram
                 self.update_gc_callid()
                 break
             else:
@@ -321,7 +321,7 @@ class LazySIPWorker(object):
                 send_sip_response(
                     self.socket,
                     self.sip_endpoint,
-                    sip_datagram,
+                    self.sip_datagram,
                     'OK -SDP',
                     self.tag)
                 chances -= 1
