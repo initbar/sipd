@@ -124,14 +124,17 @@ def deploy_worker_thread(worker_pool, endpoint, message):
     @endpoint<tuple> -- SIP endpoint.
     @message<str> -- SIP message.
     '''
-    worker = random.choice(worker_pool)
-    if worker.is_ready:
-        worker_thread = Thread(
-            name=worker.name,
-            target=worker.handle,
-            args=(endpoint, message)
-        )
-    else: # if no workers are ready, create a temporary worker.
+    worker_thread = None
+    for worker in worker_pool:
+        if worker.is_ready:
+            worker_thread = Thread(
+                name=worker.name,
+                target=worker.handle,
+                args=(endpoint, message)
+            )
+
+    # if no workers are ready, create a temporary worker.
+    if not worker_thread:
         worker = LazySIPWorker(
             settings=SERVER_SETTINGS,
             gc=GARBAGE_COLLECTOR)

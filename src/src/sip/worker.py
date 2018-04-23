@@ -137,6 +137,7 @@ class LazySIPWorker(object):
         @sip_endpoint<tuple> -- SIP server endpoint address.
         @sip_message<str> -- SIP server socket buffer.
         '''
+        self.is_ready = False # woker is busy now.
         if sip_endpoint and sip_message:
             self.sip_endpoint = sip_endpoint
             # self.sip_message = sip_message
