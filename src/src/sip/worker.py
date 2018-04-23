@@ -87,7 +87,7 @@ class LazySIPWorker(object):
         @settings<dict> -- `sipd.json`
         @gc<SynchronousSIPGarbageCollector> -- shared garbage collector.
         '''
-        if not name:
+        if name == None:
             name = create_random_uuid()
         self.name = 'worker-' + str(name)
         self.settings = settings

@@ -132,7 +132,7 @@ def deploy_worker_thread(worker_pool, endpoint, message):
                 target=worker.handle,
                 args=(endpoint, message)
             )
-
+            break
     # if no workers are ready, create a temporary worker.
     if not worker_thread:
         worker = LazySIPWorker(
@@ -190,8 +190,8 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
 
         worker_queue = deque(maxlen=(self.__pool_size * 2))
         worker_pool = [ # pre-generated workers.
-            LazySIPWorker(worker_name, SERVER_SETTINGS, GARBAGE_COLLECTOR)
-            for worker_name in range(self.__pool_size)
+            LazySIPWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
+            for i in range(self.__pool_size)
         ]
         logger.info("<router>:pre-generated worker pool: %s", worker_pool)
 
