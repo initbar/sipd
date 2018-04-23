@@ -37,6 +37,14 @@ logger = logging.getLogger()
 REGX_IPV4 = re.compile('\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\:\d{1,5})*')
 REGX_SDP  = re.compile('^[a-z]{1}=.+$')
 
+# ip entities
+#-------------------------------------------------------------------------------
+
+def parse_address(plaintext):
+    ''' find all ip addresses in a string.
+    '''
+    return REGX_IPV4.findall(safe_encode(plaintext))
+
 # string entities
 #-------------------------------------------------------------------------------
 

@@ -29,6 +29,7 @@ import time
 from src.debug import create_random_uuid
 from src.optimizer import memcache
 from src.parser import convert_to_sip_packet
+from src.parser import parse_address
 from src.parser import parse_sip_packet
 from src.parser import validate_sip_signature
 from src.rtp.server import SynchronousRTPRouter
@@ -163,7 +164,27 @@ class LazySIPWorker(object):
         for (field, value) in sip_headers.items():
             self.sip_datagram['sip'][field] = value
 
-        # set 'Contact' header for future SIP requests.
+        # update endpoint with 'Via' header just in case proxy is placed in front.
+        try:
+            _via = self.sip_datagram['sip']['Via']
+            if not isinstance(_via, list):
+                _via = [_via]
+            for via in _via:
+                if 'UDP' in via: # only extract UDP endpoints
+                    endpoint = parse_address(via)[0]
+                    assert endpoint
+                    host, port = endpoint.split(':')
+                    self.sip_endpoint = (host, int(port))
+        except AssertionError:
+            logger.error('<worker>:<<%s>> address parse failed: %s', self.tag, via)
+            self.reset()
+            return
+        except KeyError:
+            logger.error('<worker>:<<%s>> MALFORMED SIP: %s', self.tag, sip_message)
+            self.reset()
+            return
+
+        # Set 'Contact' header for future SIP requests.
         server_address = self.settings['sip']['server']['address']
         self.sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % server_address
 
