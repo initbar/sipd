@@ -30,9 +30,9 @@ import time
 from collections import deque
 from multiprocessing import Process
 from multiprocessing import cpu_count
-from src.sip.garbage import SynchronousSIPGarbageCollector
+from src.sip.garbage import SynchronousGarbageCollector
 from src.sip.worker import LazySIPWorker
-from src.sockets import unsafe_allocate_udp_socket
+from src.sockets import safe_allocate_udp_socket
 from threading import Thread
 
 logger = logging.getLogger()
@@ -44,43 +44,6 @@ SERVER_SETTINGS = None # `sipd.json`
 # workers should all use the same garbage collector and just register a new
 # collection tasks to the collector queue.
 GARBAGE_COLLECTOR = None
-
-class safe_allocate_sip_socket(object):
-    ''' allocate exception-safe listening SIP socket.
-    '''
-    def __init__(self, port=5060):
-        ''' SIP socket allocator implementation.
-        @port<int> -- SIP receiving port number.
-        '''
-        self.__port = port
-        self.__socket = None
-
-    @property
-    def port(self):
-        ''' port getter.
-        '''
-        return self.__port
-
-    @port.setter
-    def port(self, number):
-        ''' port setter.
-        @number<int> -- SIP receiving port number.
-        '''
-        number = int(number)
-        if not 1024 < number < 65535:
-            logger.critical("<sip>:cannot use privileged ports: '%i'", number)
-            sys.exit(errno.EPERM)
-        self.__port = number
-
-    def __enter__(self):
-        self.__socket = unsafe_allocate_udp_socket('0.0.0.0', self.port, is_reused=True)
-        return self.__socket
-
-    def __exit__(self, *a, **kw):
-        try: self.__socket.close()
-        except AttributeError:
-            pass # already closed
-        del self.__socket
 
 # server
 #-------------------------------------------------------------------------------
@@ -95,7 +58,7 @@ class AsynchronousSIPServer(object):
         global SERVER_SETTINGS
         global GARBAGE_COLLECTOR
         SERVER_SETTINGS = setting
-        GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
+        GARBAGE_COLLECTOR = SynchronousGarbageCollector(setting)
         logger.info('<server>:successfully initialized SIP server.')
 
     @classmethod
@@ -108,7 +71,7 @@ class AsynchronousSIPServer(object):
         # `asyncore` module was chosen in order to provide backward
         # compatibility with Python 2 (where there's no `asyncio`). All
         # incoming traffic is routed and initially handled by the router.
-        with safe_allocate_sip_socket(sip_port) as sip_socket:
+        with safe_allocate_udp_socket(sip_port) as sip_socket:
             cls.router = AsynchronousSIPRouter(sip_socket)
             cls.router.initialize_demultiplexer()
             cls.router.initialize_consumer()
@@ -222,12 +185,6 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
     def initialize_demultiplexer(self):
         ''' initialize demultiplexer.
         '''
-        try:
-            from multiprocessing import Queue # best
-        except ImportError:
-            try:
-                from Queue import Queue
-            except ImportError:
-                from queue import Queue as Queue
+        from multiprocessing import Queue
         self.__demux = Queue()
         return bool(self.__demux)

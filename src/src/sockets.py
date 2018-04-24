@@ -89,6 +89,35 @@ def unsafe_allocate_udp_socket(host='127.0.0.1', port=None, timeout=1.0,
     logger.debug("<socket>:successfully binded udp socket port '%i'", port)
     return udp_socket
 
+class safe_allocate_udp_socket(object):
+    ''' allocate exception-safe listening socket.
+    '''
+    def __init__(self, port):
+        self.__socket = None
+        self.__port = port
+
+    @property
+    def port(self):
+        return self.__port
+
+    @port.setter
+    def port(self, number):
+        number = int(number)
+        if not 1024 < number < 65535:
+            logger.critical("<sip>:cannot use privileged port: '%i'", number)
+            sys.exit(errno.EPERM)
+        self.__port = number
+
+    def __enter__(self):
+        self.__socket = unsafe_allocate_udp_socket('0.0.0.0', self.port, is_reused=True)
+        return self.__socket
+
+    def __exit__(self, *a, **kw):
+        try: self.__socket.close()
+        except AttributeError:
+            pass # already closed
+        del self.__socket
+
 # UDP clients
 #-------------------------------------------------------------------------------
 

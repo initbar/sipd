@@ -20,35 +20,29 @@ import logging
 import threading
 import time
 
-try:
-    import Queue
-except:
-    import queue as Queue
-
 from collections import deque
+from multiprocessing import Queue
 from src.optimizer import restricted_dict
 from src.rtp.server import SynchronousRTPRouter
 
 logger = logging.getLogger()
 
 #-------------------------------------------------------------------------------
-# gc.py -- synchronous SIP garbage collection module.
+# gc.py -- synchronous garbage collection module.
 #-------------------------------------------------------------------------------
 
-class SynchronousSIPGarbageCollector(object):
-    ''' Asynchronous SIP garbage collection component implementation.
+class SynchronousGarbageCollector(object):
+    ''' Asynchronous garbage collection component implementation.
     '''
     def __init__(self, settings={}):
-        # to maintain historical statistics w/o degrading performance, we want
-        # to keep hashes of all incoming Call-ID and lookup time at O(1).
-        # Since it's expensive to re-calculate the length at each iteration,
-        # store call counts separately. A call count should only be incremented
-        # by distinct SIP 'INVITE'.
-        self.membership = restricted_dict(size=8192)
-        self.calls_history = restricted_dict(size=8192)
-        self.calls_stats = 0
+        self.settings = settings
 
-        self._rtp_handler = SynchronousRTPRouter(settings)
+        self.garbage = deque(maxlen=8192) # temporary call queue for eviction.
+        self._tasks = Queue() # deferred function queue for execution.
+
+        # statistics
+        self.rtp = SynchronousRTPRouter(settings)
+        self.statistic = 0
 
         # garbage is collected under self._garbage. In order to reduce thread
         # conflict with the main thread, garbage collector uses its own
@@ -57,11 +51,6 @@ class SynchronousSIPGarbageCollector(object):
             self.check_interval = float(settings['gc']['check_interval'])
         except:
             self.check_interval = 60.0 # seconds
-
-        # since a locked collector should not receive new blocking tasks,
-        # any new "tasks" are polled under self._tasks object.
-        self.garbage = deque(maxlen=8192) # temporary call queue for eviction.
-        self._tasks = Queue.Queue() # function queue for deferred execution.
 
         self.locked = False # thread management.
         self.initialize_garbage_collector()
@@ -136,7 +125,7 @@ class SynchronousSIPGarbageCollector(object):
             if any([ self.membership[call_id]['tags_cnt'] <= 0,
                      self.membership[call_id]['state'] == 'BYE',
                      forced ]): # consumption conditions.
-                self._rtp_handler.send_stop_signal(call_id)
+                self.rtp.send_stop_signal(call_id)
                 del self.membership[call_id]
                 logger.info('<gc>:safe revoke member: %s' % call_id)
         except Exception as message:
