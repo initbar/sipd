@@ -65,7 +65,7 @@ def memcache(size=64):
 # limited dictionary
 #-------------------------------------------------------------------------------
 
-class limited_dict(OrderedDict):
+class restricted_dict(OrderedDict):
 
     def __init__(self, *a, **kw):
         self.limit = kw.pop("limit", None)

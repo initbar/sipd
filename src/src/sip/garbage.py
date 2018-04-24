@@ -26,7 +26,7 @@ except:
     import queue as Queue
 
 from collections import deque
-from src.optimizer import limited_dict
+from src.optimizer import restricted_dict
 from src.rtp.server import SynchronousRTPRouter
 
 logger = logging.getLogger()
@@ -44,8 +44,8 @@ class SynchronousSIPGarbageCollector(object):
         # Since it's expensive to re-calculate the length at each iteration,
         # store call counts separately. A call count should only be incremented
         # by distinct SIP 'INVITE'.
-        self.membership = limited_dict(size=8192)
-        self.calls_history = limited_dict(size=8192)
+        self.membership = restricted_dict(size=8192)
+        self.calls_history = restricted_dict(size=8192)
         self.calls_stats = 0
 
         self._rtp_handler = SynchronousRTPRouter(settings)
