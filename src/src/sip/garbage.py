@@ -16,10 +16,6 @@
 #
 # https://github.com/initbar/sipd
 
-from collections import deque
-from src.optimizer import limited_dict
-from src.rtp.server import SynchronousRTPRouter
-
 import logging
 import threading
 import time
@@ -28,6 +24,10 @@ try:
     import Queue
 except:
     import queue as Queue
+
+from collections import deque
+from src.optimizer import limited_dict
+from src.rtp.server import SynchronousRTPRouter
 
 logger = logging.getLogger()
 
@@ -39,48 +39,47 @@ class SynchronousSIPGarbageCollector(object):
     ''' Asynchronous SIP garbage collection component implementation.
     '''
     def __init__(self, settings={}):
-
         # to maintain historical statistics w/o degrading performance, we want
         # to keep hashes of all incoming Call-ID and lookup time at O(1).
         # Since it's expensive to re-calculate the length at each iteration,
         # store call counts separately. A call count should only be incremented
         # by distinct SIP 'INVITE'.
-        self.membership = limited_dict(size=0xffff)
-        self.calls_history = limited_dict(size=0xffff)
+        self.membership = limited_dict(size=8192)
+        self.calls_history = limited_dict(size=8192)
         self.calls_stats = 0
+
+        self._rtp_handler = SynchronousRTPRouter(settings)
 
         # garbage is collected under self._garbage. In order to reduce thread
         # conflict with the main thread, garbage collector uses its own
         # thread. By default, garbage collector runs once every minute.
-        try: self._gc_interval = float(settings['gc']['check_interval'])
-        except: self._gc_interval = 60.0 # seconds
-        self._gc = self.initialize_garbage_collector()
-        self._gc_locked = False # "thread lock"
-        self._garbage = deque(maxlen=0xffff)
+        try:
+            self.check_interval = float(settings['gc']['check_interval'])
+        except:
+            self.check_interval = 60.0 # seconds
+        self.initialize_garbage_collector()
 
         # since a locked collector should not receive new blocking tasks,
-        # any new "tasks" are polled under self._futures object.
-        self._futures = Queue.Queue() # thread-safe FIFO.
+        # any new "tasks" are polled under self._tasks object.
+        self.garbage = deque(maxlen=8192) # temporary call queue for eviction.
+        self._tasks = Queue.Queue() # function queue for deferred execution.
 
-        # custom RTP handler for garbage clean up.
-        self._rtp_handler = SynchronousRTPRouter(settings)
+        self.locked = False # thread management.
         logger.info('<gc>:successfully initialized garbage collector.')
 
     def initialize_garbage_collector(self):
         ''' initialize a new thread for garbage collector.
         '''
-        if self.__dict__.get('_gc'):
-            return self._gc # error check.
         def maintain():
             while True:
-                time.sleep(self._gc_interval)
+                time.sleep(self.check_interval)
                 self.consume_garbage()
         gc = threading.Thread(
             name='maintenance',
             target=maintain)
-        gc.daemon = True
-        gc.start()
-        return gc
+        self.gc = gc
+        self.gc.daemon = True
+        self.gc.start()
 
     def register_new_task(self, deferred_task):
         ''' register a new collection task.
@@ -89,22 +88,19 @@ class SynchronousSIPGarbageCollector(object):
         # into a single thread-safe queue and consume in order later.
         if deferred_task is None:
             return
-        try:
-            self._futures.put(deferred_task)
-        except:
-            raise
+        self._tasks.put(item=deferred_task)
 
     def consume_garbage(self):
         ''' consume garbage.
         '''
-        if self.is_locked() or self._futures.empty():
+        if self.locked or self._tasks.empty():
             return
         else:
-            self._gc_locked = True # lock thread.
+            self.locked = True # lock thread.
 
         # catch up on delinquent deferred tasks inside polled queue.
-        while not self._futures.empty():
-            run_task = self._futures.get()
+        while not self._tasks.empty():
+            run_task = self._tasks.get()
             try:
                 run_task() # deferred execute.
                 logger.debug('<gc>:executed deferred task: %s', run_task)
@@ -115,19 +111,19 @@ class SynchronousSIPGarbageCollector(object):
         # first (top) and the youngest call is pushed last (bottom).
         try:
             now = int(time.time())
-            while now >= self._garbage[0]['ttl']:
+            while now >= self.garbage[0]['ttl']:
                 # `get` method in Queue is destructive. Unlike a general lookup,
                 # `get` pops the first element and returns that element. If the
                 # conditions for garbage consumption is not satisfied, the popped
                 # element must be placed back inside the garbage.
-                peek = self._garbage.popleft()
+                peek = self.garbage.popleft()
                 call_id = self.membership[peek['Call-ID']]
                 self.consume_membership(call_id=peek['Call-ID'], call_tag=peek['tag'])
         except Exception as message:
-            self._garbage.append(peek)
+            self.garbage.append(peek)
             logger.error('<gc>:unable to cleanly collect garbage: %s.' % str(message))
         finally:
-            self._gc_locked = False # release thread.
+            self.locked = False # release thread.
 
     def consume_membership(self, call_id, call_tag, forced=False):
         ''' consume a call from membership.
@@ -145,13 +141,3 @@ class SynchronousSIPGarbageCollector(object):
                 logger.info('<gc>:safe revoke member: %s' % call_id)
         except Exception as message:
             logger.error('<gc>:failed consumption: %s' % str(message))
-
-    def is_locked(self):
-        ''' check if garbage collector is locked.
-        '''
-        return self._gc_locked
-
-    def is_free(self):
-        ''' check if garbage collector is free.
-        '''
-        return not self.is_locked()

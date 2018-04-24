@@ -340,7 +340,7 @@ class LazySIPWorker(object):
             lifetime = 60 * 60 # seconds
         def deferred_update():
             # register session to the garbage collection queue.
-            self.gc._garbage.append({
+            self.gc.garbage.append({
                 'Call-ID': self.call_id,
                 'tag': self.tag,
                 'ttl': lifetime + int(time.time())
