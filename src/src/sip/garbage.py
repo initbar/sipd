@@ -71,39 +71,45 @@ class SynchronousSIPGarbageCollector(object):
         '''
         if self.__dict__.get('_gc'):
             return self._gc # error check.
-        def initialization():
-            thread_event = threading.Event()
-            while not thread_event.wait(self._gc_interval):
+        def maintain():
+            while True:
+                time.sleep(self._gc_interval)
                 self.consume_garbage()
-        gc = threading.Timer(self._gc_interval, initialization)
+        gc = threading.Thread(
+            name='maintenance',
+            target=maintain)
         gc.daemon = True
         gc.start()
         return gc
 
-    def register_new_task(self, function):
+    def register_new_task(self, deferred_task):
         ''' register a new collection task.
         '''
         # instead of directly manipulating garbage, demultiplex garbage tasks
         # into a single thread-safe queue and consume in order later.
+        if deferred_task is None:
+            return
         try:
-            self._futures.put(item=function)
+            self._futures.put(deferred_task)
         except:
             raise
 
     def consume_garbage(self):
         ''' consume garbage.
         '''
-        if self.is_locked() or self._futures.empty(): return
-        else: self._gc_locked = True # lock thread.
+        if self.is_locked() or self._futures.empty():
+            return
+        else:
+            self._gc_locked = True # lock thread.
 
         # catch up on delinquent deferred tasks inside polled queue.
         while not self._futures.empty():
             run_task = self._futures.get()
             try:
                 run_task() # deferred execute.
+                logger.debug('<gc>:executed deferred task: %s', run_task)
             except TypeError:
-                logger.error('<gc>:failed to execute empty task.')
-            logger.debug('<gc>:executed deferred task: %s', run_task)
+                logger.error("<gc>:expected task: received nothing.")
 
         # since the garbage is a FIFO, technically, the oldest call is pushed
         # first (top) and the youngest call is pushed last (bottom).
@@ -114,7 +120,7 @@ class SynchronousSIPGarbageCollector(object):
                 # `get` pops the first element and returns that element. If the
                 # conditions for garbage consumption is not satisfied, the popped
                 # element must be placed back inside the garbage.
-                peek    = self._garbage.popleft()
+                peek = self._garbage.popleft()
                 call_id = self.membership[peek['Call-ID']]
                 self.consume_membership(call_id=peek['Call-ID'], call_tag=peek['tag'])
         except Exception as message:

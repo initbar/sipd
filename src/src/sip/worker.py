@@ -314,7 +314,6 @@ class LazySIPWorker(object):
                     self.sip_datagram,
                     'OK +SDP',
                     self.tag)
-                self.update_gc_callid()
                 break
             else:
                 logger.warning('<worker>:RTP handler did not send RX/TX information.')
@@ -324,7 +323,8 @@ class LazySIPWorker(object):
                     self.sip_datagram,
                     'OK -SDP',
                     self.tag)
-                chances -= 1
+            self.update_gc_callid()
+            chances -= 1
 
     #
     # deferred garbage collection
@@ -357,4 +357,4 @@ class LazySIPWorker(object):
             else: # register session only for existing Call-ID membership.
                 self.gc.membership[self.call_id]['tags'].append(self.tag)
                 self.gc.membership[self.call_id]['tags_cnt'] += 1
-        self.gc.register_new_task(deferred_update())
+        self.gc.register_new_task(deferred_update)

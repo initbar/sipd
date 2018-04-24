@@ -67,7 +67,7 @@
     },
     "gc": {
         "call_lifetime": 3600,
-        "check_interval": 0.1
+        "check_interval": 0.01
     },
     "log": {
         "console": {
