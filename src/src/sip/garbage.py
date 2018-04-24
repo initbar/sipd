@@ -57,7 +57,6 @@ class SynchronousSIPGarbageCollector(object):
             self.check_interval = float(settings['gc']['check_interval'])
         except:
             self.check_interval = 60.0 # seconds
-        self.initialize_garbage_collector()
 
         # since a locked collector should not receive new blocking tasks,
         # any new "tasks" are polled under self._tasks object.
@@ -65,6 +64,7 @@ class SynchronousSIPGarbageCollector(object):
         self._tasks = Queue.Queue() # function queue for deferred execution.
 
         self.locked = False # thread management.
+        self.initialize_garbage_collector()
         logger.info('<gc>:successfully initialized garbage collector.')
 
     def initialize_garbage_collector(self):
