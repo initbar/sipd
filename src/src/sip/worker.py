@@ -38,6 +38,7 @@ from src.sip.static.options import SIP_OPTIONS
 from src.sip.static.ringing import SIP_RINGING
 from src.sip.static.terminated import SIP_TERMINATE
 from src.sip.static.trying import SIP_TRYING
+from src.sockets import safe_allocate_udp_client
 from src.sockets import unsafe_allocate_random_udp_socket
 
 logger = ContextLogger(logging.getLogger())
