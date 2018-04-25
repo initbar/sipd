@@ -124,6 +124,9 @@ def send_response(shared_socket, endpoint, datagram, method):
     @datagram<dict> -- parsed SIP datagram.
     @method<str> -- SIP method.
     '''
+    if not endpoint:
+        logger.error('unable to send response due to empty endpoint.')
+        return
     if shared_socket is None:
         shared_socket = unsafe_allocate_random_udp_socket(is_reused=True)
     # generate response and send to the endpoint.
