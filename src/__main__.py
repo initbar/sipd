@@ -74,7 +74,7 @@ def main():
         with open(config_file) as config_buffer:
             config = parse_config(config_buffer.read())
         logger = initialize_logger(config)
-        logger.info("<main>:successfully loaded configuration: '%s'.", config_file)
+        logger.debug("<main>:successfully loaded configuration: '%s'.", config_file)
         logger.debug(config)
     else:
         sys.stderr.write("<main>:file does not exist: '%s'.\n", config_file)

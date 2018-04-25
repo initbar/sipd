@@ -85,5 +85,5 @@ def initialize_logger(configuration):
                             milliseconds=True)
 
     logger.addHandler(fs_handler)
-    logger.info("<main>:successfully initialized logging.")
+    logger.debug("<main>:successfully initialized logging.")
     return logger

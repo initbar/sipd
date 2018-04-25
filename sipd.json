@@ -12,10 +12,11 @@
         "worker": {
             "count": 2,
             "headers": {
-                "Allow": "ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE",
                 "Accept": "application/sdp",
                 "Accept-Language": "en",
+                "Allow": "ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE",
                 "Max-Forwards": 70,
+                "Min-SE": 90,
                 "Require": "timer",
                 "Server": "sipd",
                 "Session-Expires": 1800,
@@ -80,6 +81,6 @@
             "total_days": 30
         },
         "coloredlogs": false,
-        "level": "DEBUG"
+        "level": "INFO"
     }
 }

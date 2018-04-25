@@ -53,13 +53,13 @@ class AsynchronousSIPServer(object):
     '''
     def __init__(self, setting):
         if not setting:
-            logger.critical('<server>:failed to initialize SIP server.')
+            logger.critical('<server>: failed to initialize SIP server.')
             sys.exit(errno.EINVAL)
         global SERVER_SETTINGS
         global GARBAGE_COLLECTOR
         SERVER_SETTINGS = setting
         GARBAGE_COLLECTOR = AsynchronousGarbageCollector(setting)
-        logger.info('<server>:successfully initialized SIP server.')
+        logger.debug('<server>: successfully initialized SIP server.')
 
     @classmethod
     def serve(cls):
@@ -75,7 +75,7 @@ class AsynchronousSIPServer(object):
             cls.router = AsynchronousSIPRouter(sip_socket)
             cls.router.initialize_demultiplexer()
             cls.router.initialize_consumer()
-            logger.info('<server>:successfully initialized SIP router.')
+            logger.debug('<server>: successfully initialized SIP router.')
             asyncore.loop() # push new events to the event loop.
 
 # router
@@ -146,7 +146,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         ''' initialize consumer thread.
         '''
         if not self.__demux:
-            logger.critical("<router>:failed to initialize router demultiplexer.")
+            logger.critical("<router>: failed to initialize router demultiplexer.")
             sys.exit(errno.EAGAIN)
         # function closure to initialize workers and take demultiplexed "work".
         def consume():
@@ -155,7 +155,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                 LazyWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
                 for i in range(self.__pool_size)
             ]
-            logger.info("<router>:pre-generated worker pool: %s", worker_pool)
+            logger.debug("<router>: pre-generated worker pool: %s", worker_pool)
             while True:
                 # if queue is overflowing with processes, then wait until we
                 # escape the pool size limitation set by the configuration.

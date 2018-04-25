@@ -49,8 +49,8 @@ class ContextLogger(object):
     '''
     def __init__(self, logger):
         self.log = logger
-        self.fmt = '{{%s}} %s'
-        self.context = ''
+        self.fmt = '%s %s'
+        self.context = 'none'
 
     def refresh(self):
         ''' generate random context string.
@@ -62,7 +62,8 @@ class ContextLogger(object):
             string = a[0] % a[1:]
         except:
             string = a
-        self.log.critical(self.fmt % (self.context, string))
+        fmt = '%s \033[91m%s\033[0m'
+        self.log.critical(fmt % (self.context, string))
 
     def debug(self, *a, **kw):
         try:
@@ -76,7 +77,8 @@ class ContextLogger(object):
             string = a[0] % a[1:]
         except:
             string = a
-        self.log.error(self.fmt % (self.context, string))
+        fmt = '%s \033[91m%s\033[0m'
+        self.log.error(fmt % (self.context, string))
 
     def info(self, *a, **kw):
         try:
@@ -90,7 +92,8 @@ class ContextLogger(object):
             string = a[0] % a[1:]
         except:
             string = a
-        self.log.warning(self.fmt % (self.context, string))
+        fmt = '%s \033[91m%s\033[0m'
+        self.log.warning(fmt % (self.context, string))
 
 logger = ContextLogger(logging.getLogger())
 
@@ -105,6 +108,11 @@ SIPTemplates = {
     'RINGING': SIP_RINGING,
     'TERMINATE': SIP_TERMINATE,
     'TRYING': SIP_TRYING
+}
+
+SIPColors = {
+    '>>>': '\033[01m\033[32m>>>\033[0m', # bold, green, reset
+    '<<<': '\033[01m\033[93m<<<\033[0m'  # bold, yellow, reset
 }
 
 @memcache(size=32)
@@ -125,22 +133,22 @@ def send_response(shared_socket, endpoint, datagram, method):
     @method<str> -- SIP method.
     '''
     if not endpoint:
-        logger.error('<worker>:unable to send response due to empty endpoint.')
+        logger.error('<worker>: unable to send response due to empty endpoint.')
         return
-    elif shared_socket is None:
-        shared_socket = unsafe_allocate_random_udp_socket(is_reused=True)
     # generate response and send to the endpoint.
-    logger.debug('<<< <worker>:<%s>', method)
+    logger.info('%s <worker>: [\033[01m\033[91m%s\033[0m]', SIPColors['<<<'], method)
     response = generate_response(method, datagram)
     try:
         shared_socket.sendto(response, endpoint)
-    except:
+    except Exception as message:
+        logging.error('<worker>: failed to send using shared socket: %s', message)
         try: # close shared socket and re-create another one later.
             shared_socket.close()
+            shared_socket = None # unset to re-initialize at next iteration.
         except AttributeError:
             pass
-        shared_socket = None # unset to re-initialize at next iteration.
         # temporarily allocate an udp client to send data.
+        logging.info('<worker>: using backup client-socket to send response.')
         with safe_allocate_udp_client() as client:
             client.sendto(response, endpoint)
 
@@ -157,8 +165,9 @@ class LazyWorker(object):
         @gc<SynchronousGarbageCollector> -- shared garbage collector.
         '''
         if name is None:
-            name = create_random_uuid()
-        self.name = 'worker-' + str(name)
+            self.name = 'temp-%s' % create_random_uuid()[:4]
+        else:
+            self.name = 'worker-' + str(name)
 
         self.settings = settings
         self.gc = gc
@@ -168,13 +177,13 @@ class LazyWorker(object):
         self.handlers = {
             'DEFAULT': self.handle_default,
             'ACK': self.handle_ack,
-            'BYE': self.handle_cancel,
-            'CANCEL': self.handle_bye,
+            'BYE': self.handle_bye,
+            'CANCEL': self.handle_cancel,
             'INVITE': self.handle_invite
         }
 
         self.is_ready = True # recyclable state.
-        logger.info('<worker>:successfully initialized %s.', self.name)
+        logger.debug('<worker>: successfully initialized %s.', self.name)
 
     def reset(self):
         ''' reset worker.
@@ -191,27 +200,29 @@ class LazyWorker(object):
         logger.refresh() # create new context.
 
         if not message or not endpoint:
-            logger.warning('<worker>:reset from incomplete work assignment.')
+            logger.warning('<worker>: reset from incomplete work assignment.')
             self.reset()
             return
         else: # prepare worker.
             self.endpoint = endpoint
             # self.message = message
+            if self.socket is None:
+                self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
             if self.rtp is None:
                 self.rtp = SynchronousRTPRouter(self.settings)
 
         # validate work.
         if not validate_sip_signature(message):
-            logger.warning("<worker>:reset from invalid signature: '%s'", message)
+            logger.warning("<worker>: reset from invalid signature: '%s'", message)
             self.reset()
             return
         self.datagram = parse_sip_packet(message)
         try: # override parsed headers with loaded headers.
             self.call_id = self.datagram['sip']['Call-ID']
             self.method = self.datagram['sip']['Method']
-            logger.debug('<reference>:%s', self.call_id)
+            logger.info('%s <worker>: reference %s', SIPColors['>>>'], self.call_id)
         except KeyError:
-            logger.warning("<worker>:reset from invalid format: '%s'", message)
+            logger.warning("<worker>: reset from invalid format: '%s'", message)
             self.reset()
             return
 
@@ -221,17 +232,14 @@ class LazyWorker(object):
             try:
                 self.datagram['sip'][field] = value
             except TypeError:
-                logger.error('<worker>:unable to use header: %s %s', field, value)
+                logger.error('<worker>: unable to use header: %s %s', field, value)
 
         # set 'Contact' header to delegate future messages.
         server_address = self.settings['sip']['server']['address']
         self.datagram['sip']['Contact'] = '<sip:%s:5060>' % server_address
 
-        try:
-            logger.debug('>>> <worker>:<%s>', self.method)
-            self.handlers[self.method]()
-        except KeyError:
-            self.handlers['DEFAULT']()
+        logger.info('%s <worker>: [\033[01m\033[91m%s\033[0m]', SIPColors['>>>'], self.method)
+        self.handlers.get(self.method, self.handlers['DEFAULT'])()
         self.reset()
 
     #
@@ -254,14 +262,14 @@ class LazyWorker(object):
         send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
         try:
             self.rtp.handle(datagram=self.datagram, action='stop')
-        except AttributeError:
-            logger.error('<rtp>:RTP handler is down.')
+        except AttributeError as error:
+            logger.error('<rtp>:RTP handler is down: %s', error)
             self.rtp = None # unset to re-initialize at next iteration.
         send_response(self.socket, self.endpoint, self.datagram, 'TERMINATE')
 
     def handle_invite(self):
         if self.call_id in self.gc.calls.history:
-            logger.warning('<worker>:received duplicate call: %s', self.call_id)
+            logger.warning('<worker>: received duplicate call: %s', self.call_id)
             send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
             return
         # receive TX/RX ports to delegate RTP packets.
@@ -274,14 +282,14 @@ class LazyWorker(object):
             datagram = None
             try:
                 datagram = self.rtp.handle(datagram=self.datagram, action='start')
-            except AttributeError:
-                logger.error('<rtp>:RTP handler is down.')
+            except AttributeError as error:
+                logger.error('<rtp>:RTP handler is down: %s', error)
                 self.rtp = None # unset to re-initialize at next iteration.
             if datagram:
                 send_response(self.socket, self.endpoint, datagram, 'OK +SDP')
-                self.datagram = sip_datagram
+                self.datagram = datagram
                 break
             else:
-                logger.warning('<worker>:RTP handler did not send RX/TX ports.')
+                logger.warning('<worker>: RTP handler did not send RX/TX ports.')
                 send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
-            self.gc.register(call_id=self.call_id)
+        self.gc.register(call_id=self.call_id)

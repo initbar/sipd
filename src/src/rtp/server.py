@@ -40,19 +40,14 @@ class RTPRouterPrototype(object):
     def __init__(self, setting={}):
         self.setting = setting
 
-        # load RTP handlers and filter by enabled handlers.
-        try:
-            self.rtp_handlers = filter(lambda handler: handler['enabled'],
-                                        setting['rtp']['handler'])
-            logger.info('<rtp>:successfully loaded RTP configuration.')
+        try: # load RTP handlers and filter by enabled handlers.
+            self.rtp = filter(lambda rtp: rtp['enabled'], setting['rtp']['handler'])
+            logger.debug('<rtp>: successfully loaded RTP configuration.')
         except Exception as message:
-            logger.error("<rtp>:failed to load RTP configuration: '%s'." % message)
-            logger.warning('<rtp>')
-            self.rtp_handlers = None
-        logger.info('<rtp>:successfully initialized RTP handlers.')
-
-    def get_random_rtp_handler(self):
-        return random.choice(self.rtp_handlers)
+            logger.error("<rtp>: failed to load RTP configuration: '%s'", message)
+            self.rtp = None
+        logger.debug('<rtp>: successfully initialized RTP handler.')
+        self.get_random_rtp_handler = lambda: random.choice(self.rtp)
 
     def get_random_rtp_handler_address(self):
         handler = self.get_random_rtp_handler()
@@ -60,10 +55,10 @@ class RTPRouterPrototype(object):
             address = str(handler['host'])
             port    = int(handler['port'])
             server  = (address, port)
-            logger.debug('<rtp>:balancing to available handler: %s' % str(server))
+            logger.debug('<rtp>: balancing to available handler: %s' % str(server))
             return server
         except Exception as message:
-            logger.error('<rtp>:failed to balance to handler: %s' % message)
+            logger.error('<rtp>: failed to balance to handler: %s' % message)
             return
 
     def _external_handler(self, *args, **kwargs):
@@ -99,26 +94,26 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             if not rtp_handler: return
 
             udp_socket.sendto(dump_json(template), rtp_handler)
-            logger.debug("<<< <rtp>:requesting external rtpd.")
-            logger.debug("<rtp>:waiting response from external rtpd.")
+            logger.debug("<<< <rtp>: requesting external rtpd.")
+            logger.debug("<rtp>: waiting response from external rtpd.")
             try: payload = udp_socket.recvfrom(0xff)
             except Exception as message:
-                logger.error('<rtp>:external rtpd is down: %s.' % str(message))
+                logger.error('<rtp>: external rtpd is down: %s.' % str(message))
                 return
 
-            logger.debug('<rtp>:external rtpd is UP.')
+            logger.debug('<rtp>: external rtpd is up.')
             rtpd_server, rtpd_payload = tuple(payload[1]), str(payload[0])
-            logger.debug(">>> <rtp>:[%s] received %s Bytes from external rtpd." % (
+            logger.debug(">>> <rtp>: [%s] received %s Bytes from external rtpd." % (
                 rtp_handler, hex(len(rtpd_payload))))
 
             # receive RTP ports.
             rtpd_json = parse_json(rtpd_payload)
-            logger.debug("<rtp>:parsed responses from external rtpd.")
+            logger.debug("<rtp>: parsed responses from external rtpd.")
 
             # generate static SDP data.
             tx_port, rx_port = rtpd_json.get('TxPort'), rtpd_json.get('RxPort')
-            logger.debug('<rtp>:RxPort = %s' % rx_port)
-            logger.debug('<rtp>:TxPort = %s' % tx_port)
+            logger.info('<rtp>: RxPort = %s' % rx_port)
+            logger.info('<rtp>: TxPort = %s' % tx_port)
             server_address = self.setting['sip']['server']['address']
 
             # currently only delegates: G.711, G.729 encodings.
@@ -169,24 +164,24 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             if not rtp_handler: return
 
             udp_socket.sendto(dump_json(template), rtp_handler)
-            logger.debug("<<< <rtp>:sent 'stop' to external rtpd.")
-            logger.debug("<rtp>:waiting response from external rtpd.")
+            logger.info("<<< <rtp>: sent 'stop' to external rtpd.")
+            logger.debug("<rtp>: waiting response from external rtpd.")
             try: payload = udp_socket.recvfrom(0xff)
             except Exception as message:
-                logger.error('<rtp>:external rtpd is DOWN: %s.' % str(message))
+                logger.error('<rtp>: external rtpd is down: %s.', message)
                 return False
 
-            logger.debug('<rtp>:external rtpd is UP.')
+            logger.debug('<rtp>: external rtpd is up.')
             rtpd_server, rtpd_payload = tuple(payload[1]), str(payload[0])
-            logger.debug(">>> <rtp>:[%s] received %s Bytes from external rtpd." % (
+            logger.debug(">>> <rtp>: [%s] received %s Bytes from external rtpd." % (
                 rtp_handler, hex(len(rtpd_payload))))
 
             rtpd_json = parse_json(rtpd_payload)
-            logger.debug("<rtp>:parsed responses from external rtpd.")
+            logger.debug("<rtp>: parsed responses from external rtpd.")
             status_code = rtpd_json.get('ResultCode')
             status_message = rtpd_json.get('Message')
-            logger.debug('<rtp>:ResultCode: %s' % status_code)
-            logger.debug('<rtp>:Message: %s' % status_message)
+            logger.info('<rtp>: ResultCode: %s', status_code)
+            logger.info('<rtp>: Message: %s', status_message)
 
         # return original/updated sip datagram.
         return call_id
