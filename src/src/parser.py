@@ -89,10 +89,14 @@ def convert_to_sip_packet(template, datagram):
 
     # reconstruct SIP from datagram.
     packet = '%s%s' % (template['status_line'], CRLF)
-    packet += CRLF.join([
-        '%s: %s' % (sip_field, datagram['sip'].get(sip_field))
-        for sip_field in template['sip']
-        if datagram['sip'].get(sip_field) ])
+    try:
+        packet += CRLF.join([
+            '%s: %s' % (sip_field, datagram['sip'].get(sip_field))
+            for sip_field in template['sip']
+            if datagram['sip'].get(sip_field) ])
+    except TypeError:
+        logger.error('<parser>:failed to parse using %s', datagram)
+        return CRLF
 
     # reconstruct SDP from datagram.
     if template.get('sdp'):

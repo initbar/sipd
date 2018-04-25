@@ -21,6 +21,7 @@
 #-------------------------------------------------------------------------------
 
 import logging
+import socket
 import time
 
 from src.debug import create_random_uuid
@@ -57,19 +58,39 @@ class ContextLogger(object):
         self.context = md5sum(create_random_uuid())[:8] # first 8 Bytes only.
 
     def critical(self, *a, **kw):
-        self.log.critical(self.fmt % (self.context, a))
+        try:
+            string = a[0] % a[1:]
+        except IndexError:
+            string = a
+        self.log.critical(self.fmt % (self.context, string))
 
     def debug(self, *a, **kw):
-        self.log.debug(self.fmt % (self.context, a))
+        try:
+            string = a[0] % a[1:]
+        except IndexError:
+            string = a
+        self.log.debug(self.fmt % (self.context, string))
 
     def error(self, *a, **kw):
-        self.log.error(self.fmt % (self.context, a))
+        try:
+            string = a[0] % a[1:]
+        except IndexError:
+            string = a
+        self.log.error(self.fmt % (self.context, string))
 
     def info(self, *a, **kw):
-        self.log.info(self.fmt % (self.context, a))
+        try:
+            string = a[0] % a[1:]
+        except IndexError:
+            string = a
+        self.log.info(self.fmt % (self.context, string))
 
     def warning(self, *a, **kw):
-        self.log.warning(self.fmt % (self.context, a))
+        try:
+            string = a[0] % a[1:]
+        except IndexError:
+            string = a
+        self.log.warning(self.fmt % (self.context, string))
 
 logger = ContextLogger(logging.getLogger())
 
@@ -194,7 +215,10 @@ class LazyWorker(object):
         # load eligible SIP headers from the configuration.
         sip_headers = self.settings['sip']['worker']['headers']
         for (field, value) in sip_headers.items():
-            self.datagram['sip'][field] = value
+            try:
+                self.datagram['sip'][field] = value
+            except TypeError:
+                logger.error('<worker>:unable to use header: %s %s', field, value)
 
         # set 'Contact' header to delegate future messages.
         server_address = self.settings['sip']['server']['address']
