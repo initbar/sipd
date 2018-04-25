@@ -22,11 +22,10 @@ import time
 
 from collections import deque
 from multiprocessing import Queue
-from src.logger import ContextLogger
 from src.optimizer import limited_dict
 from src.rtp.server import SynchronousRTPRouter
 
-logger = ContextLogger(logging.getLogger())
+logger = logging.getLogger()
 
 #-------------------------------------------------------------------------------
 # gc.py
@@ -100,7 +99,7 @@ class AsynchronousGarbageCollector(object):
         self.__tasks.put(item=function)
 
     def consume_tasks(self):
-        ''' consume garbage.
+        ''' consume demultiplexed garbage collector tasks.
         '''
         if not self.is_ready or self.__tasks.empty():
             return
@@ -129,14 +128,23 @@ class AsynchronousGarbageCollector(object):
                 # relieve ports allocated for Call-ID.
                 metadata = self.calls.meta.get(call_id)
                 if not metadata or now > metadata.expiration:
+                    logger.debug('<gc>:removing %s', call_id)
                     self.rtp.send_stop_signal(call_id=call_id)
                 # since the oldest call is yet to expire, that means remaining
                 # calls also don't need to be checked.
                 elif now < metadata.expiration:
                     self.calls.history.appendleft(call_id)
                     break
+        except AttributeError:
+            self.rtp = None # unset to re-initialize at next iteration.
         finally:
             self.is_ready = False # garbage collector is available.
 
     def register(self, call_id):
-        pass
+        ''' register Call-ID and its' metadata.
+        '''
+        if call_id in self.calls.history:
+            return
+        metadata = CallMetadata(expiration=time.time() + self.call_lifetime)
+        self.calls.history.append(call_id)
+        self.calls.metadata[call_id] = metadata
