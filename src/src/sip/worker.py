@@ -214,7 +214,12 @@ class LazyWorker(object):
             send_response(self.socket, self.endpoint, self.datagram, 'RINGING')
             # if external RTP handler replies with one or more ports, rewrite
             # and update the existing datagram with new information and respond.
-            datagram = self.rtp.handle(datagram=self.datagram, action='start')
+            datagram = None
+            try:
+                datagram = self.rtp.handle(datagram=self.datagram, action='start')
+            except AttributeError:
+                logger.error('<rtp>:RTP handler is down.')
+                self.rtp = None # unset to re-initialize at next iteration.
             if datagram:
                 send_response(self.socket, self.endpoint, datagram, 'OK +SDP')
                 self.datagram = sip_datagram
