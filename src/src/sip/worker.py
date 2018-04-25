@@ -108,7 +108,7 @@ SIPTemplates = {
 }
 
 @memcache(size=32)
-def generate_response(datagram, method):
+def generate_response(method, datagram):
     ''' memcached SIP message generator.
     @datagram<dict> -- SIP response datagram.
     @method<str> -- SIP response method.
@@ -124,14 +124,18 @@ def send_response(shared_socket, endpoint, datagram, method):
     @datagram<dict> -- parsed SIP datagram.
     @method<str> -- SIP method.
     '''
+    if shared_socket is None:
+        shared_socket = unsafe_allocate_random_udp_socket(is_reused=True)
     # generate response and send to the endpoint.
     logger.debug('<<< <worker>:<%s>', method)
-    response = generate_response(datagram, method)
+    response = generate_response(method, datagram)
     try:
         shared_socket.sendto(response, endpoint)
-    except TypeError:
-        logger.critical('%s:%s', response, endpoint)
-    except socket.error:
+    except:
+        try: # close shared socket and re-create another one later.
+            shared_socket.close()
+        except AttributeError:
+            pass
         shared_socket = None # unset to re-initialize at next iteration.
         # temporarily allocate an udp client to send data.
         with safe_allocate_udp_client() as client:
@@ -194,8 +198,6 @@ class LazyWorker(object):
         else: # prepare worker.
             self.endpoint = endpoint
             # self.message = message
-            if self.socket is None:
-                self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
             if self.rtp is None:
                 self.rtp = SynchronousRTPRouter(self.settings)
 
