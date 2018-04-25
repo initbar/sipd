@@ -79,6 +79,9 @@ def send_response(shared_socket, endpoint, datagram, method):
         shared_socket.sendto(response, endpoint)
     except socket.error:
         shared_socket = None # unset to re-initialize at next iteration.
+        # temporarily allocate an udp client to send data.
+        with safe_allocate_udp_client() as client:
+            client.sendto(response, endpoint)
 
 # SIP worker
 #-------------------------------------------------------------------------------
