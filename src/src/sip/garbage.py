@@ -22,79 +22,95 @@ import time
 
 from collections import deque
 from multiprocessing import Queue
-from src.optimizer import restricted_dict
+from src.logger import ContextLogger
+from src.optimizer import limited_dict
 from src.rtp.server import SynchronousRTPRouter
 
-logger = logging.getLogger()
+logger = ContextLogger(logging.getLogger())
 
 #-------------------------------------------------------------------------------
-# gc.py -- synchronous garbage collection module.
+# gc.py
 #-------------------------------------------------------------------------------
 
-class SynchronousGarbageCollector(object):
-    ''' Asynchronous garbage collection component implementation.
+class CallContainer(object):
+    ''' call information container.
+    '''
+    def __init__(self):
+        '''
+        @history<deque> -- limited record of most recently seen Call-ID.
+        @meta<dict> -- dynamically-allocated metadata for `self.history`.
+        @count<int> -- general statistics of total received calls.
+        '''
+        self.__history = deque(maxlen=4096)
+        self.meta = limited_dict(maxsize=len(self.history))
+        self.count = 0 # only increment.
+
+    def increment(self):
+        self.count += 1
+
+class AsynchronousGarbageCollector(object):
+    ''' asynchronous garbage collector implementation.
     '''
     def __init__(self, settings={}):
+        '''
+        @settings<dict> -- `sipd.json`
+        '''
         self.settings = settings
 
-        self.garbage = deque(maxlen=8192) # temporary call queue for eviction.
-        self._tasks = Queue() # deferred function queue for execution.
-
-        # statistics
-        self.rtp = SynchronousRTPRouter(settings)
-        self.statistic = 0
-
-        # garbage is collected under self._garbage. In order to reduce thread
-        # conflict with the main thread, garbage collector uses its own
-        # thread. By default, garbage collector runs once every minute.
-        try:
+        try: # load garbage collector run-interval.
             self.check_interval = float(settings['gc']['check_interval'])
         except:
-            self.check_interval = 60.0 # seconds
+            self.check_interval = 1e-2 # seconds
+        finally:
+            self.initialize_garbage_collector()
 
-        self.locked = False # thread management.
-        self.initialize_garbage_collector()
+        # call information and metadata.
+        self.calls = CallContainer()
+        self.rtp = None
+
+        # instead of directly manipulating garbage using multiple threads,
+        # demultiplex tasks into a thread-safe queue and consume later.
+        self.__tasks = Queue()
+
+        self.is_ready = True # recyclable state.
         logger.info('<gc>:successfully initialized garbage collector.')
 
     def initialize_garbage_collector(self):
-        ''' initialize a new thread for garbage collector.
+        ''' create a garbage collector thread.
         '''
-        def maintain():
+        def create_thread():
             while True:
                 time.sleep(self.check_interval)
-                self.consume_garbage()
+                self.consume_tasks()
         gc = threading.Thread(
-            name='maintenance',
-            target=maintain)
-        self.gc = gc
-        self.gc.daemon = True
-        self.gc.start()
+            name='garbage-collector',
+            target=create_thread)
+        self.__thread = gc
+        self.__thread.daemon = True
+        self.__thread.start()
 
-    def register_new_task(self, deferred_task):
-        ''' register a new collection task.
+    def queue_task(self, function):
+        ''' demultiplex a new future garbage collector task.
         '''
-        # instead of directly manipulating garbage, demultiplex garbage tasks
-        # into a single thread-safe queue and consume in order later.
-        if deferred_task is None:
+        if function is None:
             return
-        self._tasks.put(item=deferred_task)
+        self.__tasks.put(item=function)
 
-    def consume_garbage(self):
+    def consume_tasks(self):
         ''' consume garbage.
         '''
-        if self.locked or self._tasks.empty():
+        if not self.is_ready or self.__tasks.empty():
             return
-        else:
-            self.locked = True # lock thread.
+        self.is_ready = False # thread is busy.
 
-        # catch up on delinquent deferred tasks inside polled queue.
-        while not self._tasks.empty():
-            run_task = self._tasks.get()
+        # consume deferred tasks.
+        while not self.__tasks.empty():
             try:
-                run_task() # deferred execute.
-                logger.debug('<gc>:executed deferred task: %s', run_task)
+                task = self.__tasks.get()
+                task() # deferred execution.
+                logger.debug('<gc>:executed deferred task: %s', task)
             except TypeError:
-                logger.error("<gc>:expected task: received nothing.")
+                logger.error("<gc>:expected task: received %s", task)
 
         # since the garbage is a FIFO, technically, the oldest call is pushed
         # first (top) and the youngest call is pushed last (bottom).
@@ -112,7 +128,7 @@ class SynchronousGarbageCollector(object):
             self.garbage.append(peek)
             logger.error('<gc>:unable to cleanly collect garbage: %s.' % str(message))
         finally:
-            self.locked = False # release thread.
+            self.is_ready = True # release thread.
 
     def consume_membership(self, call_id, call_tag, forced=False):
         ''' consume a call from membership.
