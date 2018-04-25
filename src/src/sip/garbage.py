@@ -130,12 +130,14 @@ class AsynchronousGarbageCollector(object):
                 # Call-ID has already expired, then force the RTP handler to
                 # relieve ports allocated for Call-ID.
                 metadata = self.calls.metadata.get(call_id)
-                if not metadata or now > metadata.expiration:
-                    logger.debug('<gc>:removing %s', call_id)
+                if not metadata:
                     self.rtp.send_stop_signal(call_id=call_id)
+                    continue
+                if now > metadata.expiration:
+                    self.revoke(call_id=call_id)
                 # since the oldest call is yet to expire, that means remaining
                 # calls also don't need to be checked.
-                elif now < metadata.expiration:
+                else:
                     self.calls.history.appendleft(call_id)
                     break
         except AttributeError:
@@ -155,10 +157,9 @@ class AsynchronousGarbageCollector(object):
     def revoke(self, call_id):
         ''' force remove Call-ID and its' metadata.
         '''
-        if call_id is None or call_id not in self.calls.history:
-            print 'error', call_id
+        if call_id is None:
             return
-        metadata = self.calls.metadata.get(call_id)
-        if metadata:
+        if self.calls.metadata.get(call_id):
+            logger.debug("<gc>:removing Call-ID '%s'", call_id)
             self.rtp.send_stop_signal(call_id=call_id)
             del self.calls.metadata[call_id]
