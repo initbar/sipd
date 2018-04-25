@@ -124,7 +124,7 @@ class LazyWorker(object):
 
     def handle(self, message, endpoint):
         ''' worker logic.
-        @work<str> -- worker "work".
+        @message<str> -- worker "work".
         @endpoint<tuple> -- worker response endpoint.
         '''
         self.is_ready = False # woker is busy.
@@ -161,7 +161,7 @@ class LazyWorker(object):
         for (field, value) in sip_headers.items():
             self.datagram['sip'][field] = value
 
-        # set 'Contact' header to delegate future communication.
+        # set 'Contact' header to delegate future messages.
         server_address = self.settings['sip']['server']['address']
         self.datagram['sip']['Contact'] = '<sip:%s:5060>' % server_address
 
@@ -178,11 +178,7 @@ class LazyWorker(object):
     #
 
     def handle_default(self):
-        send_response(
-            self.socket,
-            self.endpoint,
-            self.datagram,
-            'OK -SDP')
+        send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
 
     def handle_ack(self):
         pass
