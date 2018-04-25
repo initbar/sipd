@@ -122,7 +122,7 @@ class LazyWorker(object):
         self.work = None
         self.is_ready = True
 
-    def handle(self, work, endpoint):
+    def handle(self, message, endpoint):
         ''' worker logic.
         @work<str> -- worker "work".
         @endpoint<tuple> -- worker response endpoint.
@@ -130,29 +130,29 @@ class LazyWorker(object):
         self.is_ready = False # woker is busy.
         logger.refresh() # create new context.
 
-        if not work and not endpoint:
+        if not message and not endpoint:
             logger.warning('<worker>:reset from incomplete work assignment.')
             self.reset()
             return
         else: # prepare worker.
             self.endpoint = endpoint
-            # self.work = work
+            # self.message = message
             if self.socket is None:
                 self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
             if self.rtp is None:
                 self.rtp = SynchronousRTPRouter(self.settings)
 
         # validate work.
-        if not validate_sip_signature(work):
-            logger.warning("<worker>:reset from invalid signature: '%s'", work)
+        if not validate_sip_signature(message):
+            logger.warning("<worker>:reset from invalid signature: '%s'", message)
             self.reset()
             return
-        self.datagram = parse_sip_packet(work)
+        self.datagram = parse_sip_packet(message)
         try: # override parsed headers with loaded headers.
             self.call_id = self.datagram['sip']['Call-ID']
             self.method = self.datagram['sip']['Method']
         except KeyError:
-            logger.warning("<worker>:reset from invalid format: '%s'", work)
+            logger.warning("<worker>:reset from invalid format: '%s'", message)
             self.reset()
             return
 
