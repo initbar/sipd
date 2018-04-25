@@ -38,11 +38,11 @@ class CallContainer(object):
     def __init__(self):
         '''
         @history<deque> -- record of managed Call-ID by garbage collector.
-        @meta<dict> -- dynamically-allocated metadata for `self.history`.
+        @meta<dict> -- CallMetadata objects index by Call-ID in history.
         @count<int> -- general statistics of total received calls.
         '''
-        self.history = deque()
-        self.meta = {} # contains CallMetadata objects indexed by Call-ID.
+        self.history = deque(maxlen=1e6)
+        self.meta = limited_dict(maxsize=len(deque) * 2)
         self.count = 0 # only increment.
 
     def increment(self):
