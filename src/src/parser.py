@@ -118,19 +118,19 @@ def convert_to_sip_packet(template, datagram):
     return packet
 
 @memcache(size=128)
-def parse_sip_packet(sip_buffer):
+def parse_sip_packet(message):
     ''' deconstruct a SIP packet to a list of headers.
     '''
-    if not (sip_buffer and isinstance(sip_buffer, basestring)):
-        logger.warning('sip_buffer format is incorrect: ' + str(sip_buffer))
-        return
+    if not message:
+        logger.warning('message format is incorrect: ' + str(message))
+        return {}
 
     # allocate Pythonic object to interface with SIP headers. Originally, the
     # design was to whitelist known SIP headers into a SIP datagram using
     # SIPResponse and SIPRequest datagrams. However, since headers will be
     # unknown (as well as possibly volitile), the design was changed to
     # dynamically insert any keys extracted from single SIP packet.
-    queue = deque(filter(None, sip_buffer.replace(CRLF, '\n').split('\n')))
+    queue = deque(filter(None, message.replace(CRLF, '\n').split('\n')))
     datagram = {
         'sip': {},
         'sdp': []
