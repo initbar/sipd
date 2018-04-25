@@ -38,11 +38,11 @@ class CallContainer(object):
     def __init__(self):
         '''
         @history<deque> -- record of managed Call-ID by garbage collector.
-        @meta<dict> -- CallMetadata objects index by Call-ID in history.
+        @metadata<dict> -- CallMetadata objects index by Call-ID in history.
         @count<int> -- general statistics of total received calls.
         '''
-        self.history = deque(maxlen=1e6)
-        self.meta = limited_dict(maxsize=len(deque) * 2)
+        self.history = deque(maxlen=(0xffff - 6000) / 2)
+        self.metadata = limited_dict(maxsize=len(deque) * 2)
         self.count = 0 # only increment.
 
     def increment(self):
@@ -106,6 +106,9 @@ class AsynchronousGarbageCollector(object):
             return
         self.is_ready = False # thread is busy.
 
+        if self.rtp is None:
+            self.rtp = SynchronousRTPRouter(self.settings)
+
         # consume deferred tasks.
         while not self.__tasks.empty():
             try:
@@ -115,16 +118,24 @@ class AsynchronousGarbageCollector(object):
             except TypeError:
                 logger.error("<gc>:expected task: received %s", task)
 
-        try: # remove expired calls.
-            now = int(time.time())
-            # since the call history is FIFO, the oldest call is placed on top
-            # and the youngest call is placed on the bottom of the queue.
-            for call_id in self.calls.history:
-                meta = self.calls.meta[call_id]
-
-        except Exception as message:
-            self.garbage.append(peek)
-            logger.error('<gc>:unable to cleanly collect garbage: %s.' % str(message))
+        now = int(time.time())
+        try: # remove calls from management.
+            for _ in self.calls.history:
+                # since call queue is FIFO, the oldest call is placed on top
+                # (left) and the youngest call is placed on the bottom (right).
+                call_id = self.calls.history.popleft()
+                # if there is no metadata aligned with Call-ID, then force
+                # the RTP handler to relieve its' allocated ports.
+                metadata = self.calls.meta.get(call_id)
+                if not metadata:
+                    self.rtp.send_stop_signal(call_id=call_id)
+                    continue
+                # if the Call-ID has expired, relieve its allocated ports.
+                if now > metadata.expiration:
+                    self.rtp.send_stop_signal(call_id=call_id)
+                    continue
+        except:
+            self.calls.history.append(call_id)
         finally:
             self.is_ready = True # release thread.
 
