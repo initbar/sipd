@@ -13,12 +13,6 @@ all:
 	rm -fv $(BINARY).zip
 	chmod u+x -v $(BINARY)
 
-docker:
-	docker build . \
-	       --compress \
-	       --label='sipd' \
-	       --tag=sipd
-
 run:
 	python $(SOURCE)
 
