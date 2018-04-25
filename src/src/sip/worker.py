@@ -258,4 +258,4 @@ class LazyWorker(object):
             else:
                 logger.warning('<worker>:RTP handler did not send RX/TX ports.')
                 send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
-            self.gc.queue_task(lambda: self.gc.register(call_id=self.call_id))
+            self.gc.register(call_id=self.call_id)

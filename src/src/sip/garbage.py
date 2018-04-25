@@ -21,9 +21,13 @@ import threading
 import time
 
 from collections import deque
-from multiprocessing import Queue
-from src.optimizer import limited_dict
 from src.rtp.server import SynchronousRTPRouter
+
+# from multiprocessing import Queue
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
 
 logger = logging.getLogger()
 
@@ -41,7 +45,7 @@ class CallContainer(object):
         @count<int> -- general statistics of total received calls.
         '''
         self.history = deque(maxlen=(0xffff - 6000) / 2)
-        self.metadata = limited_dict(maxsize=len(self.history) * 2)
+        self.metadata = {}
         self.count = 0 # only increment.
 
     def increment(self):
@@ -95,7 +99,7 @@ class AsynchronousGarbageCollector(object):
         ''' demultiplex a new future garbage collector task.
         '''
         if function:
-            self.__tasks.put(function)
+            self.__tasks.put(item=function)
 
     def consume_tasks(self):
         ''' consume demultiplexed garbage collector tasks.
@@ -137,12 +141,12 @@ class AsynchronousGarbageCollector(object):
         except AttributeError:
             self.rtp = None # unset to re-initialize at next iteration.
         finally:
-            self.is_ready = False # garbage collector is available.
+            self.is_ready = True # garbage collector is available.
 
     def register(self, call_id):
         ''' register Call-ID and its' metadata.
         '''
-        if call_id in self.calls.history:
+        if call_id is None or call_id in self.calls.history:
             return
         metadata = CallMetadata(expiration=time.time() + self.call_lifetime)
         self.calls.history.append(call_id)
@@ -151,7 +155,8 @@ class AsynchronousGarbageCollector(object):
     def revoke(self, call_id):
         ''' force remove Call-ID and its' metadata.
         '''
-        if call_id not in self.calls.history:
+        if call_id is None or call_id not in self.calls.history:
+            print 'error', call_id
             return
         metadata = self.calls.metadata.get(call_id)
         if metadata:
