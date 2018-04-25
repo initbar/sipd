@@ -37,16 +37,23 @@ class CallContainer(object):
     '''
     def __init__(self):
         '''
-        @history<deque> -- limited record of most recently seen Call-ID.
+        @history<deque> -- record of managed Call-ID by garbage collector.
         @meta<dict> -- dynamically-allocated metadata for `self.history`.
         @count<int> -- general statistics of total received calls.
         '''
-        self.history = deque(maxlen=4096)
-        self.meta = limited_dict(maxsize=len(self.history))
+        self.history = deque()
+        self.meta = {} # contains CallMetadata objects indexed by Call-ID.
         self.count = 0 # only increment.
 
     def increment(self):
         self.count += 1
+
+class CallMetadata(object):
+    ''' call metadata container.
+    '''
+    def __init__(self, expiration):
+        self.expiration = expiration
+        # TODO: add more.
 
 class AsynchronousGarbageCollector(object):
     ''' asynchronous garbage collector implementation.
@@ -56,13 +63,9 @@ class AsynchronousGarbageCollector(object):
         @settings<dict> -- `sipd.json`
         '''
         self.settings = settings
-
-        try: # load garbage collector run-interval.
-            self.check_interval = float(settings['gc']['check_interval'])
-        except:
-            self.check_interval = 1e-2 # seconds
-        finally:
-            self.initialize_garbage_collector()
+        self.check_interval = float(settings['gc']['check_interval'])
+        self.call_lifetime = float(settings['gc']['call_lifetime'])
+        self.initialize_garbage_collector()
 
         # call information and metadata.
         self.calls = CallContainer()
@@ -82,10 +85,10 @@ class AsynchronousGarbageCollector(object):
             while True:
                 time.sleep(self.check_interval)
                 self.consume_tasks()
-        gc = threading.Thread(
+        thread = threading.Thread(
             name='garbage-collector',
             target=create_thread)
-        self.__thread = gc
+        self.__thread = thread
         self.__thread.daemon = True
         self.__thread.start()
 
@@ -112,37 +115,18 @@ class AsynchronousGarbageCollector(object):
             except TypeError:
                 logger.error("<gc>:expected task: received %s", task)
 
-        # since the garbage is a FIFO, technically, the oldest call is pushed
-        # first (top) and the youngest call is pushed last (bottom).
-        try:
+        try: # remove expired calls.
             now = int(time.time())
-            while now >= self.garbage[0]['ttl']:
-                # `get` method in Queue is destructive. Unlike a general lookup,
-                # `get` pops the first element and returns that element. If the
-                # conditions for garbage consumption is not satisfied, the popped
-                # element must be placed back inside the garbage.
-                peek = self.garbage.popleft()
-                call_id = self.membership[peek['Call-ID']]
-                self.consume_membership(call_id=peek['Call-ID'], call_tag=peek['tag'])
+            # since the call history is FIFO, the oldest call is placed on top
+            # and the youngest call is placed on the bottom of the queue.
+            for call_id in self.calls.history:
+                meta = self.calls.meta[call_id]
+
         except Exception as message:
             self.garbage.append(peek)
             logger.error('<gc>:unable to cleanly collect garbage: %s.' % str(message))
         finally:
             self.is_ready = True # release thread.
 
-    def consume_membership(self, call_id, call_tag, forced=False):
-        ''' consume a call from membership.
-        '''
-        # since it is possible that there are multiple sessions ("tag") with
-        # same Call-ID, consume membership by tags first and then by Call-ID.
-        try:
-            if call_id not in self.membership: return
-            self.membership[call_id]['tags_cnt'] -= 1
-            if any([ self.membership[call_id]['tags_cnt'] <= 0,
-                     self.membership[call_id]['state'] == 'BYE',
-                     forced ]): # consumption conditions.
-                self.rtp.send_stop_signal(call_id)
-                del self.membership[call_id]
-                logger.info('<gc>:safe revoke member: %s' % call_id)
-        except Exception as message:
-            logger.error('<gc>:failed consumption: %s' % str(message))
+    def register(self, call_id):
+        pass
