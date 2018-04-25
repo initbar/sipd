@@ -30,7 +30,7 @@ import time
 from collections import deque
 from multiprocessing import Process
 from multiprocessing import cpu_count
-from src.sip.garbage import SynchronousGarbageCollector
+from src.sip.garbage import AsynchronousGarbageCollector
 from src.sip.worker import LazyWorker
 from src.sockets import safe_allocate_udp_socket
 from threading import Thread
@@ -58,7 +58,7 @@ class AsynchronousSIPServer(object):
         global SERVER_SETTINGS
         global GARBAGE_COLLECTOR
         SERVER_SETTINGS = setting
-        GARBAGE_COLLECTOR = SynchronousGarbageCollector(setting)
+        GARBAGE_COLLECTOR = AsynchronousGarbageCollector(setting)
         logger.info('<server>:successfully initialized SIP server.')
 
     @classmethod

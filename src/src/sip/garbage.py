@@ -95,7 +95,7 @@ class AsynchronousGarbageCollector(object):
         ''' demultiplex a new future garbage collector task.
         '''
         if function:
-            self.__tasks.put(item=function)
+            self.__tasks.put(function)
 
     def consume_tasks(self):
         ''' consume demultiplexed garbage collector tasks.
@@ -125,7 +125,7 @@ class AsynchronousGarbageCollector(object):
                 # if there is no metadata aligned with Call-ID or the current
                 # Call-ID has already expired, then force the RTP handler to
                 # relieve ports allocated for Call-ID.
-                metadata = self.calls.meta.get(call_id)
+                metadata = self.calls.metadata.get(call_id)
                 if not metadata or now > metadata.expiration:
                     logger.debug('<gc>:removing %s', call_id)
                     self.rtp.send_stop_signal(call_id=call_id)
@@ -147,3 +147,13 @@ class AsynchronousGarbageCollector(object):
         metadata = CallMetadata(expiration=time.time() + self.call_lifetime)
         self.calls.history.append(call_id)
         self.calls.metadata[call_id] = metadata
+
+    def revoke(self, call_id):
+        ''' force remove Call-ID and its' metadata.
+        '''
+        if call_id not in self.calls.history:
+            return
+        metadata = self.calls.metadata.get(call_id)
+        if metadata:
+            self.rtp.send_stop_signal(call_id=call_id)
+            del self.calls.metadata[call_id]

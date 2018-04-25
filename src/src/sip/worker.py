@@ -25,7 +25,6 @@ import time
 
 from src.debug import create_random_uuid
 from src.debug import md5sum
-from src.logger import ContextLogger
 from src.optimizer import memcache
 from src.parser import convert_to_sip_packet
 from src.parser import parse_address
@@ -40,6 +39,37 @@ from src.sip.static.terminated import SIP_TERMINATE
 from src.sip.static.trying import SIP_TRYING
 from src.sockets import safe_allocate_udp_client
 from src.sockets import unsafe_allocate_random_udp_socket
+
+# custom logger
+#-------------------------------------------------------------------------------
+
+class ContextLogger(object):
+    ''' custom logger with call context.
+    '''
+    def __init__(self, logger):
+        self.log = logger
+        self.fmt = '<<%s>> %s'
+        self.context = ''
+
+    def refresh(self):
+        ''' generate random context string.
+        '''
+        self.context = md5sum(create_random_uuid())[:8] # first 8 Bytes only.
+
+    def critical(self, *a, **kw):
+        self.log.critical(self.fmt % (self.context, a))
+
+    def debug(self, *a, **kw):
+        self.log.debug(self.fmt % (self.context, a))
+
+    def error(self, *a, **kw):
+        self.log.error(self.fmt % (self.context, a))
+
+    def info(self, *a, **kw):
+        self.log.info(self.fmt % (self.context, a))
+
+    def warning(self, *a, **kw):
+        self.log.warning(self.fmt % (self.context, a))
 
 logger = ContextLogger(logging.getLogger())
 
@@ -191,7 +221,7 @@ class LazyWorker(object):
     def handle_bye(self):
         send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
         self.gc.queue_task( # remove call from garbage collector.
-            lambda: self.gc.revoke(call_id=self.call_id, forced=True))
+            lambda: self.gc.revoke(call_id=self.call_id))
         send_response(self.socket, self.endpoint, self.datagram, 'TERMINATE')
 
     def handle_cancel(self):
