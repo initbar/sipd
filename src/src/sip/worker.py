@@ -72,7 +72,7 @@ def send_response(shared_socket, endpoint, datagram, method):
     @datagram<dict> -- parsed SIP datagram.
     @method<str> -- SIP method.
     '''
-    # generate response and send to the SIP server.
+    # generate response and send to the endpoint.
     logger.debug('<<< <worker>:<%s>', method)
     response = generate_response(datagram, method)
     try:
@@ -185,8 +185,8 @@ class LazyWorker(object):
 
     def handle_bye(self):
         send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
-        self.gc.register_new_task( # remove terminated call from garbage collector.
-            lambda: self.gc.consume_membership(call_id=self.call_id, forced=True))
+        self.gc.queue_task( # remove call from garbage collector.
+            lambda: self.gc.revoke(call_id=self.call_id, forced=True))
         send_response(self.socket, self.endpoint, self.datagram, 'TERMINATE')
 
     def handle_cancel(self):
@@ -206,12 +206,12 @@ class LazyWorker(object):
 
         # receive TX/RX ports to delegate RTP packets.
         send_response(self.socket, self.endpoint, self.datagram, 'TRYING')
-        chances = max(1, self.settings['rtp'].get('max_retry', 1))
-        while chances:
+        retry = max(1, self.settings['rtp'].get('max_retry', 1))
+        while retry:
             send_response(self.socket, self.endpoint, self.datagram, 'RINGING')
             # if external RTP handler replies with one or more ports, rewrite
             # and update the existing datagram with new information and respond.
-            datagram = self.rtp.handle(self.tag, self.datagram)
+            datagram = self.rtp.handle(datagram=self.datagram, action='start')
             if datagram:
                 send_response(self.socket, self.endpoint, datagram, 'OK +SDP')
                 self.datagram = sip_datagram
@@ -219,38 +219,5 @@ class LazyWorker(object):
             else:
                 logger.warning('<worker>:RTP handler did not send RX/TX information.')
                 send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
-            # self.update_gc_callid()
-            chances -= 1
-
-    #
-    # deferred garbage collection
-    #
-
-    # def update_gc_callid(self):
-    #     ''' index new/existing Call-ID to garbage collector.
-    #     '''
-    #     try:
-    #         lifetime = self.settings['gc']['call_lifetime']
-    #         assert lifetime > 0
-    #     except AssertionError:
-    #         lifetime = 60 * 60 # seconds
-    #     def deferred_update():
-    #         # register session to the garbage collection queue.
-    #         self.gc.garbage.append({
-    #             'Call-ID': self.call_id,
-    #             'tag': self.tag,
-    #             'ttl': lifetime + int(time.time())
-    #         })
-    #         # register the first unique Call-ID membership.
-    #         if not self.gc.membership.get(self.call_id):
-    #             self.gc.calls_history[self.call_id] = None
-    #             self.gc.calls_stats += (self.call_id in self.gc.calls_history)
-    #             self.gc.membership[self.call_id] = {
-    #                 'state': self.method,
-    #                 'tags': [self.tag],
-    #                 'tags_cnt': 1
-    #             }
-    #         else: # register session only for existing Call-ID membership.
-    #             self.gc.membership[self.call_id]['tags'].append(self.tag)
-    #             self.gc.membership[self.call_id]['tags_cnt'] += 1
-    #     self.gc.register_new_task(deferred_update)
+            self.gc.queue_task(self.gc.register(call_id=self.call_id))
+            retry -= 1
