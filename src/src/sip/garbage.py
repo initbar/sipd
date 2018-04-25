@@ -42,7 +42,7 @@ class CallContainer(object):
         @count<int> -- general statistics of total received calls.
         '''
         self.history = deque(maxlen=(0xffff - 6000) / 2)
-        self.metadata = limited_dict(maxsize=len(deque) * 2)
+        self.metadata = limited_dict(maxsize=len(self.history) * 2)
         self.count = 0 # only increment.
 
     def increment(self):
