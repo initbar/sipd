@@ -77,7 +77,7 @@ class AsynchronousGarbageCollector(object):
         # demultiplex tasks into a thread-safe queue and consume later.
         self.__tasks = Queue()
 
-        self.is_ready = True # recyclable state.
+        self.is_ready = False # recyclable state.
         self.initialize_garbage_collector()
         logger.info('<gc>:successfully initialized garbage collector.')
 
@@ -94,6 +94,7 @@ class AsynchronousGarbageCollector(object):
         self.__thread = thread
         self.__thread.daemon = True
         self.__thread.start()
+        self.is_ready = True
 
     def queue_task(self, function):
         ''' demultiplex a new future garbage collector task.
