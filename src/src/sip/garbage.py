@@ -41,7 +41,7 @@ class CallContainer(object):
         @meta<dict> -- dynamically-allocated metadata for `self.history`.
         @count<int> -- general statistics of total received calls.
         '''
-        self.__history = deque(maxlen=4096)
+        self.history = deque(maxlen=4096)
         self.meta = limited_dict(maxsize=len(self.history))
         self.count = 0 # only increment.
 
