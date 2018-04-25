@@ -200,8 +200,6 @@ class LazyWorker(object):
     #
 
     def handle_default(self):
-        ''' default response to non-indexed SIP methods.
-        '''
         send_response(
             self.socket,
             self.endpoint,
@@ -209,106 +207,44 @@ class LazyWorker(object):
             'OK -SDP')
 
     def handle_ack(self):
-        ''' https://tools.ietf.org/html/rfc2543#section-4.2.2
-        '''
         pass
 
     def handle_bye(self):
-        ''' https://tools.ietf.org/html/rfc2543#section-4.2.4
-        '''
-        send_response(
-            self.socket,
-            self.endpoint,
-            self.datagram,
-            'OK -SDP')
-        try:
-            self.gc.register_new_task(
-                lambda: self.gc.consume_membership,
-                    call_id=self.call_id,
-                    forced=True))
-        except AttributeError: # RTP is down.
-            logger.error('<rtp>:RTP is down.')
-        send_response(
-            self.socket,
-            self.endpoint,
-            self.datagram,
-            'TERMINATE')
+        send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
+        self.gc.register_new_task( # remove terminated call from garbage collector.
+            lambda: self.gc.consume_membership(call_id=self.call_id, forced=True))
+        send_response(self.socket, self.endpoint, self.datagram, 'TERMINATE')
 
     def handle_cancel(self):
-        ''' https://tools.ietf.org/html/rfc2543#section-4.2.5
-        '''
-        send_response(
-            self.socket,
-            self.endpoint,
-            self.datagram,
-            'OK -SDP')
-        # try:
-        #     self.rtp.handle(
-        #         sip_tag=self.tag,
-        #         sip_datagram=self.datagram,
-        #         rtp_state='stop')
-        # except AttributeError: # RTP is down.
-        #     logger.error('<rtp>:<<%s>> RTP is down.', self.tag)
-        send_response(
-            self.socket,
-            self.endpoint,
-            self.datagram,
-            'TERMINATE')
+        send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
+        try:
+            self.rtp.handle(datagram=self.datagram, action='stop')
+        except AttributeError:
+            logger.error('<rtp>:RTP handler is down.')
+            self.rtp = None # unset to re-initialize at next iteration.
+        send_response(self.socket, self.endpoint, self.datagram, 'TERMINATE')
 
     def handle_invite(self):
-        ''' https://tools.ietf.org/html/rfc2543#section-4.2.1
-        '''
-        # duplicate SIP INVITE is considered as HOLD.
-        if self.call_id in self.gc.calls_history:
-            logger.warning('<worker>:<<%s>> received duplicate Call-ID: %s',  self.tag, self.call_id)
-            send_response(
-                self.socket,
-                self.endpoint,
-                self.datagram,
-                'OK -SDP')
+        if self.call_id in self.gc.calls.history:
+            logger.warning('<worker>:received duplicate call: %s', self.call_id)
+            send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
             return
 
-        if not self.rtp:
-            logger.error('<rtp>:<<%s>> RTP is down.', self.tag)
-            send_response(
-                self.socket,
-                self.endpoint,
-                self.datagram,
-                'OK -SDP')
-            self.rtp = SynchronousRTPRouter(self.settings) # reinitialize.
-            return
-
-        # RTP handler must reply with two ports to receive TX/RX RTP traffic.
-        send_response(
-            self.socket,
-            self.endpoint,
-            self.datagram,
-            'TRYING')
+        # receive TX/RX ports to delegate RTP packets.
+        send_response(self.socket, self.endpoint, self.datagram, 'TRYING')
         chances = max(1, self.settings['rtp'].get('max_retry', 1))
         while chances:
-            send_response(
-                self.socket,
-                self.endpoint,
-                self.datagram,
-                'RINGING')
+            send_response(self.socket, self.endpoint, self.datagram, 'RINGING')
             # if external RTP handler replies with one or more ports, rewrite
-            # and update the SIP datagram with new SDP information to respond.
-            # sip_datagram = self.rtp.handle(self.tag, self.datagram)
-            if sip_datagram:
+            # and update the existing datagram with new information and respond.
+            datagram = self.rtp.handle(self.tag, self.datagram)
+            if datagram:
+                send_response(self.socket, self.endpoint, datagram, 'OK +SDP')
                 self.datagram = sip_datagram
-                send_response(
-                    self.socket,
-                    self.endpoint,
-                    self.datagram,
-                    'OK +SDP')
                 break
             else:
                 logger.warning('<worker>:RTP handler did not send RX/TX information.')
-                send_response(
-                    self.socket,
-                    self.endpoint,
-                    self.datagram,
-                    'OK -SDP')
+                send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
             # self.update_gc_callid()
             chances -= 1
 
