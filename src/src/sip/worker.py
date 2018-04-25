@@ -49,7 +49,7 @@ class ContextLogger(object):
     '''
     def __init__(self, logger):
         self.log = logger
-        self.fmt = '<<%s>> %s'
+        self.fmt = '{{%s}} %s'
         self.context = ''
 
     def refresh(self):
