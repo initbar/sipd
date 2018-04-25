@@ -31,7 +31,7 @@ from collections import deque
 from multiprocessing import Process
 from multiprocessing import cpu_count
 from src.sip.garbage import SynchronousGarbageCollector
-from src.sip.worker import LazySIPWorker
+from src.sip.worker import LazyWorker
 from src.sockets import safe_allocate_udp_socket
 from threading import Thread
 
@@ -93,18 +93,18 @@ def deploy_worker_thread(worker_pool, endpoint, message):
             worker_thread = Thread(
                 name=worker.name,
                 target=worker.handle,
-                args=(endpoint, message)
+                args=(message, endpoint)
             )
             break
     # if no workers are ready, create a temporary worker.
     if not worker_thread:
-        worker = LazySIPWorker(
+        worker = LazyWorker(
             settings=SERVER_SETTINGS,
             gc=GARBAGE_COLLECTOR)
         worker_thread = Thread(
             name=worker.name,
             target=worker.handle,
-            args=(endpoint, message)
+            args=(message, endpoint)
         )
     worker_thread.daemon = True
     worker_thread.start()
@@ -153,7 +153,7 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
 
         worker_queue = deque(maxlen=(self.__pool_size * 2))
         worker_pool = [ # pre-generated workers.
-            LazySIPWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
+            LazyWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
             for i in range(self.__pool_size)
         ]
         logger.info("<router>:pre-generated worker pool: %s", worker_pool)

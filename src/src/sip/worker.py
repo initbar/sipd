@@ -23,10 +23,8 @@
 import logging
 import time
 
-# from src.errors import SIPBrokenProtocol
-# from src.sip.static.busy import SIP_BUSY
-# from src.sip.static.bye import SIP_BYE
 from src.debug import create_random_uuid
+from src.debug import md5sum
 from src.optimizer import memcache
 from src.parser import convert_to_sip_packet
 from src.parser import parse_address
@@ -41,9 +39,36 @@ from src.sip.static.terminated import SIP_TERMINATE
 from src.sip.static.trying import SIP_TRYING
 from src.sockets import unsafe_allocate_random_udp_socket
 
-logger = logging.getLogger()
+# custom logger
+#-------------------------------------------------------------------------------
+
+class ContextLogger(object):
+    ''' custom logger with logging context.
+    '''
+    def __init__(self, logger):
+        self.log = logger
+        self.fmt = '<<%s>> %s'
+        self.context = None
+
+        # logging
+        self.critical = lambda s: self.log.critical(self.fmt % (self.context, s))
+        self.debug = lambda s: self.log.debug(self.fmt % (self.context, s))
+        self.error = lambda s: self.log.error(self.fmt % (self.context, s))
+        self.info = lambda s: self.log.info(self.fmt % (self.context, s))
+        self.warning = lambda s: self.log.warning(self.fmt % (self.context, s))
+
+    def refresh(self):
+        ''' generate random context string.
+        '''
+        self.context = md5sum(create_random_uuid())[:8] # first 8 Bytes only.
+
+logger = ContextLogger(logging.getLogger())
+
+# SIP responses
+#-------------------------------------------------------------------------------
 
 SIPTemplates = {
+    'DEFAULT': SIP_OK_NO_SDP,
     'OK +SDP': SIP_OK,
     'OK -SDP': SIP_OK_NO_SDP,
     'OPTIONS': SIP_OPTIONS,
@@ -52,48 +77,55 @@ SIPTemplates = {
     'TRYING': SIP_TRYING
 }
 
-@memcache(size=1024)
-def generate_sip_response(sip_datagram, sip_method):
-    ''' generate SIP message payload.
-    @sip_datagram<dict> -- SIP payload.
-    @sip_method<str> -- SIP method.
+@memcache(size=32)
+def generate_response(datagram, method):
+    ''' memcached SIP message generator.
+    @datagram<dict> -- SIP response datagram.
+    @method<str> -- SIP response method.
     '''
-    try:
-        template = SIPTemplates[sip_method]
-    except KeyError:
-        template = SIPTemplates['OK -SDP'] # default
-    return convert_to_sip_packet(template, sip_datagram)
+    if not datagram or not method:
+        logger.warning('<worker>: generated empty response.')
+        return ''
+    return convert_to_sip_packet(
+        template=SIPTemplates.get(method, SIPTemplates['DEFAULT']),
+        datagram=datagram)
 
-def send_sip_response(socket, endpoint, sip_datagram, sip_method, tag=''):
-    ''' generate and send SIP message payload.
-    @endpoint<tuple> -- SIP server endpoint address.
-    @sip_datagram<dict> -- SIP payload.
-    @sip_method<str> -- SIP method.
-    @tag<str> -- call context tag.
+def send_response(shared_socket, endpoint, datagram, method):
+    ''' SIP message response sender.
+    @shared_socket<socket> -- shared UDP socket.
+    @endpoint<tuple> -- server endpoint address.
+    @datagram<dict> -- parsed SIP datagram.
+    @method<str> -- SIP method.
     '''
     # generate response and send to the SIP server.
-    logger.debug('<<< <worker>:<<%s>> <%s>', tag, sip_method)
-    sip_packet = generate_sip_response(sip_datagram, sip_method)
-    socket.sendto(sip_packet, endpoint)
+    logger.debug('<<< <worker>:<%s>', method)
+    payload = generate_response(datagram, method)
+    try:
+        shared_socket.sendto(payload, endpoint)
+    except socket.error:
+        shared_socket = None # override.
 
-class LazySIPWorker(object):
-    ''' SIP worker implementation.
+# SIP worker
+#-------------------------------------------------------------------------------
+
+class LazyWorker(object):
+    ''' worker implementation.
     '''
-    def __init__(self,
-                 name=None,
-                 settings=None,
-                 gc=None):
+    def __init__(self, name=None, settings=None, gc=None):
         '''
+        @name<str> -- worker name.
         @settings<dict> -- `sipd.json`
-        @gc<SynchronousSIPGarbageCollector> -- shared garbage collector.
+        @gc<SynchronousGarbageCollector> -- shared garbage collector.
         '''
-        if name == None:
+        if name is None:
             name = create_random_uuid()
         self.name = 'worker-' + str(name)
+
         self.settings = settings
         self.gc = gc
-        self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
-        self.rtp = SynchronousRTPRouter(settings)
+
+        self.socket = None # lazy initialize.
+        self.rtp = None # lazy initialize.
         self.handlers = {
             'ACK': self.handle_ack,
             'BYE': self.handle_cancel,
@@ -101,96 +133,65 @@ class LazySIPWorker(object):
             'DEFAULT': self.handle_default,
             'INVITE': self.handle_invite
         }
-        if settings['db']['server']['enabled']:
-            db_config = settings['db']['server']
-            self.db = dict(
-                host=db_config['host'],
-                port=db_config['port'],
-                username=db_config['username'],
-                password=db_config['password']
-            )
-        else:
-            self.db = None
-        self.is_ready = True # recycle worker
-        logger.info('<worker>:successfully initialized worker.')
 
-    #
-    # worker state
-    #
+        self.is_ready = True # recycle worker.
+        logger.info('<worker>:successfully initialized %s', self.name)
 
     def reset(self):
-        ''' reset worker back to its initial state.
+        ''' reset worker.
         '''
-        self.__sip_endpoint =\
-        self.__sip_datagram =\
-        self.__call_id =\
-        self.__method =\
-        self.__tag = None
+        self.call_id =\
+        self.method =\
+        self.datagram =\
+        self.endpoint =\
+        self.work = None
         self.is_ready = True
 
-    #
-    # worker interface
-    #
-
-    def handle(self, sip_endpoint, sip_message):
-        ''' worker interface entrypoint.
-        @sip_endpoint<tuple> -- SIP server endpoint address.
-        @sip_message<str> -- SIP server socket buffer.
+    def handle(self, work, endpoint):
+        ''' worker logic.
+        @endpoint<tuple> -- worker response endpoint.
+        @work<str> -- worker "work".
         '''
-        self.is_ready = False # woker is busy now.
-        if sip_endpoint and sip_message:
-            self.sip_endpoint = sip_endpoint
-            # self.sip_message = sip_message
-        else:
+        self.is_ready = False # woker is busy.
+        logger.refresh() # create new context.
+
+        if not work and not endpoint:
+            logger.warning('<worker>:reset from incomplete work assignment.')
             self.reset()
             return
+        else: # prepare worker.
+            self.endpoint = endpoint
+            # self.work = work
+            if self.socket is None:
+                self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
+            if self.rtp is None:
+                self.rtp = SynchronousRTPRouter(self.settings)
 
-        self.tag = create_random_uuid() # call session.
-        if not validate_sip_signature(sip_message):
-            logger.error("<worker>:<<%s>> INVALID SIP: '%s'", self.tag, sip_message)
+        # validate work.
+        if not validate_sip_signature(work):
+            logger.warning("<worker>:reset from invalid signature: '%s'", work)
             self.reset()
             return
-
-        self.sip_datagram = parse_sip_packet(sip_message)
-        try: # override parsed SIP headers with default headers.
-            self.call_id = self.sip_datagram['sip']['Call-ID']
-            self.method = self.sip_datagram['sip']['Method']
+        self.datagram = parse_sip_packet(work)
+        try: # override parsed headers with loaded headers.
+            self.call_id = self.datagram['sip']['Call-ID']
+            self.method = self.datagram['sip']['Method']
         except KeyError:
-            logger.error('<worker>:<<%s>> MALFORMED SIP: %s', self.tag, sip_message)
+            logger.warning("<worker>:reset from invalid format: '%s'", work)
             self.reset()
             return
 
         # load eligible SIP headers from the configuration.
         sip_headers = self.settings['sip']['worker']['headers']
         for (field, value) in sip_headers.items():
-            self.sip_datagram['sip'][field] = value
+            self.datagram['sip'][field] = value
 
-        # update endpoint with 'Via' header just in case proxy is placed in front.
-        try:
-            _via = self.sip_datagram['sip']['Via']
-            if not isinstance(_via, list):
-                _via = [_via]
-            for via in _via:
-                if 'UDP' in via: # only extract UDP endpoints
-                    endpoint = parse_address(via)[0]
-                    assert endpoint
-                    host, port = endpoint.split(':')
-                    self.sip_endpoint = (host, int(port))
-        except AssertionError:
-            logger.error('<worker>:<<%s>> address parse failed: %s', self.tag, via)
-            self.reset()
-            return
-        except KeyError:
-            logger.error('<worker>:<<%s>> MALFORMED SIP: %s', self.tag, sip_message)
-            self.reset()
-            return
-
-        # Set 'Contact' header for future SIP requests.
+        # set 'Contact' header to delegate future communication.
         server_address = self.settings['sip']['server']['address']
-        self.sip_datagram['sip']['Contact'] = '<sip:%s:5060>' % server_address
+        self.datagram['sip']['Contact'] = '<sip:%s:5060>' % server_address
 
-        logger.debug('>>> <worker>:<<%s>> %s', self.tag, self.method)
-        try: # responding to SIP requests.
+        try:
+            logger.debug('>>> <worker>:<%s>', self.method)
             self.handlers[self.method]()
         except KeyError:
             self.handlers['DEFAULT']()
@@ -204,12 +205,11 @@ class LazySIPWorker(object):
     def handle_default(self):
         ''' default response to non-indexed SIP methods.
         '''
-        send_sip_response(
+        send_response(
             self.socket,
-            self.sip_endpoint,
-            self.sip_datagram,
-            'OK -SDP',
-            self.tag)
+            self.endpoint,
+            self.datagram,
+            'OK -SDP')
 
     def handle_ack(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.2
@@ -219,49 +219,44 @@ class LazySIPWorker(object):
     def handle_bye(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.4
         '''
-        send_sip_response(
+        send_response(
             self.socket,
-            self.sip_endpoint,
-            self.sip_datagram,
-            'OK -SDP',
-            self.tag)
+            self.endpoint,
+            self.datagram,
+            'OK -SDP')
         try:
             self.gc.register_new_task(
-                lambda: self.gc.consume_membership(
-                    call_tag=self.tag,
+                lambda: self.gc.consume_membership,
                     call_id=self.call_id,
                     forced=True))
         except AttributeError: # RTP is down.
-            logger.error('<rtp>:<<%s>> RTP is down.', self.tag)
-        send_sip_response(
+            logger.error('<rtp>:RTP is down.')
+        send_response(
             self.socket,
-            self.sip_endpoint,
-            self.sip_datagram,
-            'TERMINATE',
-            self.tag)
+            self.endpoint,
+            self.datagram,
+            'TERMINATE')
 
     def handle_cancel(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.5
         '''
-        send_sip_response(
+        send_response(
             self.socket,
-            self.sip_endpoint,
-            self.sip_datagram,
-            'OK -SDP',
-            self.tag)
-        try:
-            self.rtp.handle(
-                sip_tag=self.tag,
-                sip_datagram=self.sip_datagram,
-                rtp_state='stop')
-        except AttributeError: # RTP is down.
-            logger.error('<rtp>:<<%s>> RTP is down.', self.tag)
-        send_sip_response(
+            self.endpoint,
+            self.datagram,
+            'OK -SDP')
+        # try:
+        #     self.rtp.handle(
+        #         sip_tag=self.tag,
+        #         sip_datagram=self.datagram,
+        #         rtp_state='stop')
+        # except AttributeError: # RTP is down.
+        #     logger.error('<rtp>:<<%s>> RTP is down.', self.tag)
+        send_response(
             self.socket,
-            self.sip_endpoint,
-            self.sip_datagram,
-            'TERMINATE',
-            self.tag)
+            self.endpoint,
+            self.datagram,
+            'TERMINATE')
 
     def handle_invite(self):
         ''' https://tools.ietf.org/html/rfc2543#section-4.2.1
@@ -269,92 +264,86 @@ class LazySIPWorker(object):
         # duplicate SIP INVITE is considered as HOLD.
         if self.call_id in self.gc.calls_history:
             logger.warning('<worker>:<<%s>> received duplicate Call-ID: %s',  self.tag, self.call_id)
-            send_sip_response(
+            send_response(
                 self.socket,
-                self.sip_endpoint,
-                self.sip_datagram,
-                'OK -SDP',
-                self.tag)
+                self.endpoint,
+                self.datagram,
+                'OK -SDP')
             return
 
         if not self.rtp:
             logger.error('<rtp>:<<%s>> RTP is down.', self.tag)
-            send_sip_response(
+            send_response(
                 self.socket,
-                self.sip_endpoint,
-                self.sip_datagram,
-                'OK -SDP',
-                self.tag)
+                self.endpoint,
+                self.datagram,
+                'OK -SDP')
             self.rtp = SynchronousRTPRouter(self.settings) # reinitialize.
             return
 
         # RTP handler must reply with two ports to receive TX/RX RTP traffic.
-        send_sip_response(
+        send_response(
             self.socket,
-            self.sip_endpoint,
-            self.sip_datagram,
-            'TRYING',
-            self.tag)
+            self.endpoint,
+            self.datagram,
+            'TRYING')
         chances = max(1, self.settings['rtp'].get('max_retry', 1))
         while chances:
-            send_sip_response(
+            send_response(
                 self.socket,
-                self.sip_endpoint,
-                self.sip_datagram,
-                'RINGING',
-                self.tag)
+                self.endpoint,
+                self.datagram,
+                'RINGING')
             # if external RTP handler replies with one or more ports, rewrite
             # and update the SIP datagram with new SDP information to respond.
-            sip_datagram = self.rtp.handle(self.tag, self.sip_datagram)
+            # sip_datagram = self.rtp.handle(self.tag, self.datagram)
             if sip_datagram:
-                self.sip_datagram = sip_datagram
-                send_sip_response(
+                self.datagram = sip_datagram
+                send_response(
                     self.socket,
-                    self.sip_endpoint,
-                    self.sip_datagram,
-                    'OK +SDP',
-                    self.tag)
+                    self.endpoint,
+                    self.datagram,
+                    'OK +SDP')
                 break
             else:
                 logger.warning('<worker>:RTP handler did not send RX/TX information.')
-                send_sip_response(
+                send_response(
                     self.socket,
-                    self.sip_endpoint,
-                    self.sip_datagram,
-                    'OK -SDP',
-                    self.tag)
-            self.update_gc_callid()
+                    self.endpoint,
+                    self.datagram,
+                    'OK -SDP')
+            # self.update_gc_callid()
             chances -= 1
 
     #
     # deferred garbage collection
     #
 
-    def update_gc_callid(self):
-        ''' index new/existing Call-ID to garbage collector.
-        '''
-        try:
-            lifetime = self.settings['gc']['call_lifetime']
-            assert lifetime > 0
-        except AssertionError:
-            lifetime = 60 * 60 # seconds
-        def deferred_update():
-            # register session to the garbage collection queue.
-            self.gc.garbage.append({
-                'Call-ID': self.call_id,
-                'tag': self.tag,
-                'ttl': lifetime + int(time.time())
-            })
-            # register the first unique Call-ID membership.
-            if not self.gc.membership.get(self.call_id):
-                self.gc.calls_history[self.call_id] = None
-                self.gc.calls_stats += (self.call_id in self.gc.calls_history)
-                self.gc.membership[self.call_id] = {
-                    'state': self.method,
-                    'tags': [self.tag],
-                    'tags_cnt': 1
-                }
-            else: # register session only for existing Call-ID membership.
-                self.gc.membership[self.call_id]['tags'].append(self.tag)
-                self.gc.membership[self.call_id]['tags_cnt'] += 1
-        self.gc.register_new_task(deferred_update)
+    # def update_gc_callid(self):
+    #     ''' index new/existing Call-ID to garbage collector.
+    #     '''
+    #     try:
+    #         lifetime = self.settings['gc']['call_lifetime']
+    #         assert lifetime > 0
+    #     except AssertionError:
+    #         lifetime = 60 * 60 # seconds
+    #     def deferred_update():
+    #         # register session to the garbage collection queue.
+    #         self.gc.garbage.append({
+    #             'Call-ID': self.call_id,
+    #             'tag': self.tag,
+    #             'ttl': lifetime + int(time.time())
+    #         })
+    #         # register the first unique Call-ID membership.
+    #         if not self.gc.membership.get(self.call_id):
+    #             self.gc.calls_history[self.call_id] = None
+    #             self.gc.calls_stats += (self.call_id in self.gc.calls_history)
+    #             self.gc.membership[self.call_id] = {
+    #                 'state': self.method,
+    #                 'tags': [self.tag],
+    #                 'tags_cnt': 1
+    #             }
+    #         else: # register session only for existing Call-ID membership.
+    #             self.gc.membership[self.call_id]['tags'].append(self.tag)
+    #             self.gc.membership[self.call_id]['tags_cnt'] += 1
+    #     self.gc.register_new_task(deferred_update)
