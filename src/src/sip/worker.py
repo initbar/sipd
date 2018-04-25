@@ -60,35 +60,35 @@ class ContextLogger(object):
     def critical(self, *a, **kw):
         try:
             string = a[0] % a[1:]
-        except IndexError:
+        except:
             string = a
         self.log.critical(self.fmt % (self.context, string))
 
     def debug(self, *a, **kw):
         try:
             string = a[0] % a[1:]
-        except IndexError:
+        except:
             string = a
         self.log.debug(self.fmt % (self.context, string))
 
     def error(self, *a, **kw):
         try:
             string = a[0] % a[1:]
-        except IndexError:
+        except:
             string = a
         self.log.error(self.fmt % (self.context, string))
 
     def info(self, *a, **kw):
         try:
             string = a[0] % a[1:]
-        except IndexError:
+        except:
             string = a
         self.log.info(self.fmt % (self.context, string))
 
     def warning(self, *a, **kw):
         try:
             string = a[0] % a[1:]
-        except IndexError:
+        except:
             string = a
         self.log.warning(self.fmt % (self.context, string))
 
@@ -179,11 +179,7 @@ class LazyWorker(object):
     def reset(self):
         ''' reset worker.
         '''
-        self.call_id =\
-        self.method =\
-        self.datagram =\
-        self.endpoint =\
-        self.work = None
+        self.call_id = self.datagram = self.endpoint = self.method = None
         self.is_ready = True
 
     def handle(self, message, endpoint):
@@ -236,8 +232,7 @@ class LazyWorker(object):
             self.handlers[self.method]()
         except KeyError:
             self.handlers['DEFAULT']()
-        finally:
-            self.reset()
+        self.reset()
 
     #
     # custom handlers
