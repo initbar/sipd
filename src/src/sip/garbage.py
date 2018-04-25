@@ -94,9 +94,8 @@ class AsynchronousGarbageCollector(object):
     def queue_task(self, function):
         ''' demultiplex a new future garbage collector task.
         '''
-        if function is None:
-            return
-        self.__tasks.put(item=function)
+        if function:
+            self.__tasks.put(item=function)
 
     def consume_tasks(self):
         ''' consume demultiplexed garbage collector tasks.
