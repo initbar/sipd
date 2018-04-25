@@ -93,8 +93,7 @@ def deploy_worker_thread(worker_pool, endpoint, message):
             worker_thread = Thread(
                 name=worker.name,
                 target=worker.handle,
-                args=(message, endpoint)
-            )
+                args=(message, endpoint))
             break
     # if no workers are ready, create a temporary worker.
     if not worker_thread:
@@ -104,8 +103,7 @@ def deploy_worker_thread(worker_pool, endpoint, message):
         worker_thread = Thread(
             name=worker.name,
             target=worker.handle,
-            args=(message, endpoint)
-        )
+            args=(message, endpoint))
     worker_thread.daemon = True
     worker_thread.start()
     return worker_thread
@@ -150,30 +148,27 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         if not self.__demux:
             logger.critical("<router>:failed to initialize router demultiplexer.")
             sys.exit(errno.EAGAIN)
-
-        worker_queue = deque(maxlen=(self.__pool_size * 2))
-        worker_pool = [ # pre-generated workers.
-            LazyWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
-            for i in range(self.__pool_size)
-        ]
-        logger.info("<router>:pre-generated worker pool: %s", worker_pool)
-
         # function closure to initialize workers and take demultiplexed "work".
         def consume():
+            worker_queue = deque()
+            worker_pool = [ # pre-generate workers.
+                LazyWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
+                for i in range(self.__pool_size)
+            ]
+            logger.info("<router>:pre-generated worker pool: %s", worker_pool)
             while True:
                 # if queue is overflowing with processes, then wait until we
                 # escape the pool size limitation set by the configuration.
                 if self.__demux.empty() or len(worker_queue) >= self.__pool_size:
                     time.sleep(1e-2)
                     continue
-                # ensure no workers are generated more than available work.
-                worker_size = min(self.__demux.qsize(), self.__pool_size)
-                for _ in range(worker_size):
+                # ensure no workers are generated more than the available work.
+                thread_limit = min(self.__pool_size, self.__demux.qsize())
+                for _ in range(thread_limit):
                     endpoint, message = self.__demux.get()
                     worker_queue.append( # remember generated threads.
-                        deploy_worker_thread(worker_pool, endpoint, message)
-                    )
-                # throttle if the worker processes are leaking over limit.
+                        deploy_worker_thread(worker_pool, endpoint, message))
+                # throttle if the worker processes are leaking over the limit.
                 while len(worker_queue) >= self.__pool_size:
                     thread = worker_queue.popleft()
                     if thread.is_alive():
