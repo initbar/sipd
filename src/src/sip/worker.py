@@ -206,8 +206,8 @@ class LazyWorker(object):
 
         # receive TX/RX ports to delegate RTP packets.
         send_response(self.socket, self.endpoint, self.datagram, 'TRYING')
-        retry = max(1, self.settings['rtp'].get('max_retry', 1))
-        while retry:
+        max_retry = max(1, self.settings['rtp'].get('max_retry', 1))
+        for _ in range(max_retry, 0, -1):
             send_response(self.socket, self.endpoint, self.datagram, 'RINGING')
             # if external RTP handler replies with one or more ports, rewrite
             # and update the existing datagram with new information and respond.
@@ -219,5 +219,4 @@ class LazyWorker(object):
             else:
                 logger.warning('<worker>:RTP handler did not send RX/TX information.')
                 send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
-            self.gc.queue_task(self.gc.register(call_id=self.call_id))
-            retry -= 1
+            self.gc.queue_task(lambda: self.gc.register(call_id=self.call_id))
