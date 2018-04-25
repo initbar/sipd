@@ -20,124 +20,148 @@ import logging
 import threading
 import time
 
-try:
-    import Queue
-except:
-    import queue as Queue
-
 from collections import deque
-from src.optimizer import restricted_dict
 from src.rtp.server import SynchronousRTPRouter
+
+# from multiprocessing import Queue
+try:
+    from Queue import Queue
+except ImportError:
+    from queue import Queue
 
 logger = logging.getLogger()
 
 #-------------------------------------------------------------------------------
-# gc.py -- synchronous SIP garbage collection module.
+# gc.py
 #-------------------------------------------------------------------------------
 
-class SynchronousSIPGarbageCollector(object):
-    ''' Asynchronous SIP garbage collection component implementation.
+class CallContainer(object):
+    ''' call information container.
+    '''
+    def __init__(self):
+        '''
+        @history<deque> -- record of managed Call-ID by garbage collector.
+        @metadata<dict> -- CallMetadata objects index by Call-ID in history.
+        @count<int> -- general statistics of total received calls.
+        '''
+        self.history = deque(maxlen=(0xffff - 6000) / 2)
+        self.metadata = {}
+        self.count = 0 # only increment.
+
+    def increment_count(self):
+        self.count += 1
+
+class CallMetadata(object):
+    ''' call metadata container.
+    '''
+    def __init__(self, expiration):
+        self.expiration = expiration
+        # TODO: add more.
+
+class AsynchronousGarbageCollector(object):
+    ''' asynchronous garbage collector implementation.
     '''
     def __init__(self, settings={}):
-        # to maintain historical statistics w/o degrading performance, we want
-        # to keep hashes of all incoming Call-ID and lookup time at O(1).
-        # Since it's expensive to re-calculate the length at each iteration,
-        # store call counts separately. A call count should only be incremented
-        # by distinct SIP 'INVITE'.
-        self.membership = restricted_dict(size=8192)
-        self.calls_history = restricted_dict(size=8192)
-        self.calls_stats = 0
+        '''
+        @settings<dict> -- `sipd.json`
+        '''
+        self.settings = settings
+        self.check_interval = float(settings['gc']['check_interval'])
+        self.call_lifetime = float(settings['gc']['call_lifetime'])
 
-        self._rtp_handler = SynchronousRTPRouter(settings)
+        # call information and metadata.
+        self.calls = CallContainer()
+        self.rtp = None
 
-        # garbage is collected under self._garbage. In order to reduce thread
-        # conflict with the main thread, garbage collector uses its own
-        # thread. By default, garbage collector runs once every minute.
-        try:
-            self.check_interval = float(settings['gc']['check_interval'])
-        except:
-            self.check_interval = 60.0 # seconds
+        # instead of directly manipulating garbage using multiple threads,
+        # demultiplex tasks into a thread-safe queue and consume later.
+        self.__tasks = Queue()
 
-        # since a locked collector should not receive new blocking tasks,
-        # any new "tasks" are polled under self._tasks object.
-        self.garbage = deque(maxlen=8192) # temporary call queue for eviction.
-        self._tasks = Queue.Queue() # function queue for deferred execution.
-
-        self.locked = False # thread management.
+        self.is_ready = False # recyclable state.
         self.initialize_garbage_collector()
         logger.info('<gc>:successfully initialized garbage collector.')
 
     def initialize_garbage_collector(self):
-        ''' initialize a new thread for garbage collector.
+        ''' create a garbage collector thread.
         '''
-        def maintain():
+        def create_thread():
             while True:
                 time.sleep(self.check_interval)
-                self.consume_garbage()
-        gc = threading.Thread(
-            name='maintenance',
-            target=maintain)
-        self.gc = gc
-        self.gc.daemon = True
-        self.gc.start()
+                self.consume_tasks()
+        thread = threading.Thread(
+            name='garbage-collector',
+            target=create_thread)
+        self.__thread = thread
+        self.__thread.daemon = True
+        self.__thread.start()
+        self.is_ready = True
 
-    def register_new_task(self, deferred_task):
-        ''' register a new collection task.
+    def queue_task(self, function):
+        ''' demultiplex a new future garbage collector task.
         '''
-        # instead of directly manipulating garbage, demultiplex garbage tasks
-        # into a single thread-safe queue and consume in order later.
-        if deferred_task is None:
-            return
-        self._tasks.put(item=deferred_task)
+        if function:
+            self.__tasks.put(item=function)
 
-    def consume_garbage(self):
-        ''' consume garbage.
+    def consume_tasks(self):
+        ''' consume demultiplexed garbage collector tasks.
         '''
-        if self.locked or self._tasks.empty():
+        if not self.is_ready or self.__tasks.empty():
             return
-        else:
-            self.locked = True # lock thread.
+        self.is_ready = False # garbage collector is busy.
 
-        # catch up on delinquent deferred tasks inside polled queue.
-        while not self._tasks.empty():
-            run_task = self._tasks.get()
+        if self.rtp is None:
+            self.rtp = SynchronousRTPRouter(self.settings)
+
+        # consume deferred tasks.
+        while not self.__tasks.empty():
             try:
-                run_task() # deferred execute.
-                logger.debug('<gc>:executed deferred task: %s', run_task)
+                task = self.__tasks.get()
+                task() # deferred execution.
+                logger.debug('<gc>:executed deferred task: %s', task)
             except TypeError:
-                logger.error("<gc>:expected task: received nothing.")
+                logger.error("<gc>:expected task: received %s", task)
 
-        # since the garbage is a FIFO, technically, the oldest call is pushed
-        # first (top) and the youngest call is pushed last (bottom).
-        try:
-            now = int(time.time())
-            while now >= self.garbage[0]['ttl']:
-                # `get` method in Queue is destructive. Unlike a general lookup,
-                # `get` pops the first element and returns that element. If the
-                # conditions for garbage consumption is not satisfied, the popped
-                # element must be placed back inside the garbage.
-                peek = self.garbage.popleft()
-                call_id = self.membership[peek['Call-ID']]
-                self.consume_membership(call_id=peek['Call-ID'], call_tag=peek['tag'])
-        except Exception as message:
-            self.garbage.append(peek)
-            logger.error('<gc>:unable to cleanly collect garbage: %s.' % str(message))
+        now = int(time.time())
+        try: # remove calls from management.
+            for _ in self.calls.history:
+                # since call queue is FIFO, the oldest call is placed on top
+                # (left) and the youngest call is placed on the bottom (right).
+                call_id = self.calls.history.popleft()
+                # if there is no metadata aligned with Call-ID or the current
+                # Call-ID has already expired, then force the RTP handler to
+                # relieve ports allocated for Call-ID.
+                metadata = self.calls.metadata.get(call_id)
+                if not metadata:
+                    self.rtp.send_stop_signal(call_id=call_id)
+                    continue
+                if now > metadata.expiration:
+                    self.revoke(call_id=call_id)
+                # since the oldest call is yet to expire, that means remaining
+                # calls also don't need to be checked.
+                else:
+                    self.calls.history.appendleft(call_id)
+                    break
+        except AttributeError:
+            self.rtp = None # unset to re-initialize at next iteration.
         finally:
-            self.locked = False # release thread.
+            self.is_ready = True # garbage collector is available.
 
-    def consume_membership(self, call_id, call_tag, forced=False):
-        ''' consume a call from membership.
+    def register(self, call_id):
+        ''' register Call-ID and its' metadata.
         '''
-        # since it is possible that there are multiple sessions ("tag") with
-        # same Call-ID, consume membership by tags first and then by Call-ID.
-        try:
-            if call_id not in self.membership: return
-            self.membership[call_id]['tags_cnt'] -= 1
-            if any([ self.membership[call_id]['tags_cnt'] <= 0,
-                     self.membership[call_id]['state'] == 'BYE',
-                     forced ]): # consumption conditions.
-                self._rtp_handler.send_stop_signal(call_id)
-                del self.membership[call_id]
-                logger.info('<gc>:safe revoke member: %s' % call_id)
-        except Exception as message:
-            logger.error('<gc>:failed consumption: %s' % str(message))
+        if call_id is None or call_id in self.calls.history:
+            return
+        metadata = CallMetadata(expiration=time.time() + self.call_lifetime)
+        self.calls.history.append(call_id)
+        self.calls.metadata[call_id] = metadata
+        self.calls.increment_count()
+
+    def revoke(self, call_id):
+        ''' force remove Call-ID and its' metadata.
+        '''
+        if call_id is None:
+            return
+        if self.calls.metadata.get(call_id):
+            logger.debug("<gc>:removing Call-ID '%s'", call_id)
+            self.rtp.send_stop_signal(call_id=call_id)
+            del self.calls.metadata[call_id]

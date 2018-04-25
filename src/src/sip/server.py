@@ -30,9 +30,9 @@ import time
 from collections import deque
 from multiprocessing import Process
 from multiprocessing import cpu_count
-from src.sip.garbage import SynchronousSIPGarbageCollector
-from src.sip.worker import LazySIPWorker
-from src.sockets import unsafe_allocate_udp_socket
+from src.sip.garbage import AsynchronousGarbageCollector
+from src.sip.worker import LazyWorker
+from src.sockets import safe_allocate_udp_socket
 from threading import Thread
 
 logger = logging.getLogger()
@@ -44,43 +44,6 @@ SERVER_SETTINGS = None # `sipd.json`
 # workers should all use the same garbage collector and just register a new
 # collection tasks to the collector queue.
 GARBAGE_COLLECTOR = None
-
-class safe_allocate_sip_socket(object):
-    ''' allocate exception-safe listening SIP socket.
-    '''
-    def __init__(self, port=5060):
-        ''' SIP socket allocator implementation.
-        @port<int> -- SIP receiving port number.
-        '''
-        self.__port = port
-        self.__socket = None
-
-    @property
-    def port(self):
-        ''' port getter.
-        '''
-        return self.__port
-
-    @port.setter
-    def port(self, number):
-        ''' port setter.
-        @number<int> -- SIP receiving port number.
-        '''
-        number = int(number)
-        if not 1024 < number < 65535:
-            logger.critical("<sip>:cannot use privileged ports: '%i'", number)
-            sys.exit(errno.EPERM)
-        self.__port = number
-
-    def __enter__(self):
-        self.__socket = unsafe_allocate_udp_socket('0.0.0.0', self.port, is_reused=True)
-        return self.__socket
-
-    def __exit__(self, *a, **kw):
-        try: self.__socket.close()
-        except AttributeError:
-            pass # already closed
-        del self.__socket
 
 # server
 #-------------------------------------------------------------------------------
@@ -95,7 +58,7 @@ class AsynchronousSIPServer(object):
         global SERVER_SETTINGS
         global GARBAGE_COLLECTOR
         SERVER_SETTINGS = setting
-        GARBAGE_COLLECTOR = SynchronousSIPGarbageCollector(setting)
+        GARBAGE_COLLECTOR = AsynchronousGarbageCollector(setting)
         logger.info('<server>:successfully initialized SIP server.')
 
     @classmethod
@@ -108,7 +71,7 @@ class AsynchronousSIPServer(object):
         # `asyncore` module was chosen in order to provide backward
         # compatibility with Python 2 (where there's no `asyncio`). All
         # incoming traffic is routed and initially handled by the router.
-        with safe_allocate_sip_socket(sip_port) as sip_socket:
+        with safe_allocate_udp_socket(sip_port) as sip_socket:
             cls.router = AsynchronousSIPRouter(sip_socket)
             cls.router.initialize_demultiplexer()
             cls.router.initialize_consumer()
@@ -130,19 +93,17 @@ def deploy_worker_thread(worker_pool, endpoint, message):
             worker_thread = Thread(
                 name=worker.name,
                 target=worker.handle,
-                args=(endpoint, message)
-            )
+                args=(message, endpoint))
             break
     # if no workers are ready, create a temporary worker.
     if not worker_thread:
-        worker = LazySIPWorker(
+        worker = LazyWorker(
             settings=SERVER_SETTINGS,
             gc=GARBAGE_COLLECTOR)
         worker_thread = Thread(
             name=worker.name,
             target=worker.handle,
-            args=(endpoint, message)
-        )
+            args=(message, endpoint))
     worker_thread.daemon = True
     worker_thread.start()
     return worker_thread
@@ -187,30 +148,27 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         if not self.__demux:
             logger.critical("<router>:failed to initialize router demultiplexer.")
             sys.exit(errno.EAGAIN)
-
-        worker_queue = deque(maxlen=(self.__pool_size * 2))
-        worker_pool = [ # pre-generated workers.
-            LazySIPWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
-            for i in range(self.__pool_size)
-        ]
-        logger.info("<router>:pre-generated worker pool: %s", worker_pool)
-
         # function closure to initialize workers and take demultiplexed "work".
         def consume():
+            worker_queue = deque()
+            worker_pool = [ # pre-generate workers.
+                LazyWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
+                for i in range(self.__pool_size)
+            ]
+            logger.info("<router>:pre-generated worker pool: %s", worker_pool)
             while True:
                 # if queue is overflowing with processes, then wait until we
                 # escape the pool size limitation set by the configuration.
                 if self.__demux.empty() or len(worker_queue) >= self.__pool_size:
                     time.sleep(1e-2)
                     continue
-                # ensure no workers are generated more than available work.
-                worker_size = min(self.__demux.qsize(), self.__pool_size)
-                for _ in range(worker_size):
+                # ensure no workers are generated more than the available work.
+                thread_limit = min(self.__pool_size, self.__demux.qsize())
+                for _ in range(thread_limit):
                     endpoint, message = self.__demux.get()
                     worker_queue.append( # remember generated threads.
-                        deploy_worker_thread(worker_pool, endpoint, message)
-                    )
-                # throttle if the worker processes are leaking over limit.
+                        deploy_worker_thread(worker_pool, endpoint, message))
+                # throttle if the worker processes are leaking over the limit.
                 while len(worker_queue) >= self.__pool_size:
                     thread = worker_queue.popleft()
                     if thread.is_alive():
@@ -222,12 +180,6 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
     def initialize_demultiplexer(self):
         ''' initialize demultiplexer.
         '''
-        try:
-            from multiprocessing import Queue # best
-        except ImportError:
-            try:
-                from Queue import Queue
-            except ImportError:
-                from queue import Queue as Queue
+        from multiprocessing import Queue
         self.__demux = Queue()
         return bool(self.__demux)

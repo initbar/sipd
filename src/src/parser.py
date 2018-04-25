@@ -81,23 +81,27 @@ def dump_json(_json):
 # check if SIP signature exists inside SIP message.
 validate_sip_signature = lambda message: 'SIP' in str(message)
 
-def convert_to_sip_packet(sip_template, sip_datagram):
+def convert_to_sip_packet(template, datagram):
     ''' convert human-readable text into ready-only SIP packet.
     '''
-    if not sip_template:
+    if not template:
         return CRLF
 
     # reconstruct SIP from datagram.
-    packet = '%s%s' % (sip_template['status_line'], CRLF)
-    packet += CRLF.join([
-        '%s: %s' % (sip_field, sip_datagram['sip'].get(sip_field))
-        for sip_field in sip_template['sip']
-        if sip_datagram['sip'].get(sip_field) ])
+    packet = '%s%s' % (template['status_line'], CRLF)
+    try:
+        packet += CRLF.join([
+            '%s: %s' % (sip_field, datagram['sip'].get(sip_field))
+            for sip_field in template['sip']
+            if datagram['sip'].get(sip_field) ])
+    except TypeError:
+        logger.error('<parser>:failed to parse using %s', datagram)
+        return CRLF
 
     # reconstruct SDP from datagram.
-    if sip_template.get('sdp'):
+    if template.get('sdp'):
         packet += '%s%s' % (CRLF, 'Content-Type: application/sdp')
-        sdp = CRLF.join(sip_datagram.get('sdp'))
+        sdp = CRLF.join(datagram.get('sdp'))
         sdp_length = str(len(sdp))
         packet += '%s%s' % (CRLF, 'Content-Length: ' + sdp_length)
     else:
@@ -114,19 +118,19 @@ def convert_to_sip_packet(sip_template, sip_datagram):
     return packet
 
 @memcache(size=128)
-def parse_sip_packet(sip_buffer):
+def parse_sip_packet(message):
     ''' deconstruct a SIP packet to a list of headers.
     '''
-    if not (sip_buffer and isinstance(sip_buffer, basestring)):
-        logger.warning('sip_buffer format is incorrect: ' + str(sip_buffer))
-        return
+    if not message:
+        logger.warning('message format is incorrect: ' + str(message))
+        return {}
 
     # allocate Pythonic object to interface with SIP headers. Originally, the
     # design was to whitelist known SIP headers into a SIP datagram using
     # SIPResponse and SIPRequest datagrams. However, since headers will be
     # unknown (as well as possibly volitile), the design was changed to
     # dynamically insert any keys extracted from single SIP packet.
-    queue = deque(filter(None, sip_buffer.replace(CRLF, '\n').split('\n')))
+    queue = deque(filter(None, message.replace(CRLF, '\n').split('\n')))
     datagram = {
         'sip': {},
         'sdp': []
