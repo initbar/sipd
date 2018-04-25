@@ -104,7 +104,7 @@ class AsynchronousGarbageCollector(object):
         '''
         if not self.is_ready or self.__tasks.empty():
             return
-        self.is_ready = False # thread is busy.
+        self.is_ready = False # garbage collector is busy.
 
         if self.rtp is None:
             self.rtp = SynchronousRTPRouter(self.settings)
@@ -130,11 +130,13 @@ class AsynchronousGarbageCollector(object):
                 metadata = self.calls.meta.get(call_id)
                 if not metadata or now > metadata.expiration:
                     self.rtp.send_stop_signal(call_id=call_id)
-                    continue
-        except:
-            self.calls.history.append(call_id)
+                # since the oldest call is yet to expire, that means remaining
+                # calls also don't need to be checked.
+                elif now < metadata.expiration:
+                    self.calls.history.appendleft(call_id)
+                    break
         finally:
-            self.is_ready = True # release thread.
+            self.is_ready = False # garbage collector is available.
 
     def register(self, call_id):
         pass
