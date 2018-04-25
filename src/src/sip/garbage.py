@@ -48,7 +48,7 @@ class CallContainer(object):
         self.metadata = {}
         self.count = 0 # only increment.
 
-    def increment(self):
+    def increment_count(self):
         self.count += 1
 
 class CallMetadata(object):
@@ -68,7 +68,6 @@ class AsynchronousGarbageCollector(object):
         self.settings = settings
         self.check_interval = float(settings['gc']['check_interval'])
         self.call_lifetime = float(settings['gc']['call_lifetime'])
-        self.initialize_garbage_collector()
 
         # call information and metadata.
         self.calls = CallContainer()
@@ -79,6 +78,7 @@ class AsynchronousGarbageCollector(object):
         self.__tasks = Queue()
 
         self.is_ready = True # recyclable state.
+        self.initialize_garbage_collector()
         logger.info('<gc>:successfully initialized garbage collector.')
 
     def initialize_garbage_collector(self):
@@ -153,6 +153,7 @@ class AsynchronousGarbageCollector(object):
         metadata = CallMetadata(expiration=time.time() + self.call_lifetime)
         self.calls.history.append(call_id)
         self.calls.metadata[call_id] = metadata
+        self.calls.increment_count()
 
     def revoke(self, call_id):
         ''' force remove Call-ID and its' metadata.

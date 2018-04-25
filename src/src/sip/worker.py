@@ -129,6 +129,8 @@ def send_response(shared_socket, endpoint, datagram, method):
     response = generate_response(datagram, method)
     try:
         shared_socket.sendto(response, endpoint)
+    except TypeError:
+        logger.critical('%s:%s', response, endpoint)
     except socket.error:
         shared_socket = None # unset to re-initialize at next iteration.
         # temporarily allocate an udp client to send data.
@@ -185,7 +187,7 @@ class LazyWorker(object):
         self.is_ready = False # woker is busy.
         logger.refresh() # create new context.
 
-        if not message and not endpoint:
+        if not message or not endpoint:
             logger.warning('<worker>:reset from incomplete work assignment.')
             self.reset()
             return
