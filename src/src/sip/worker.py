@@ -25,6 +25,7 @@ import time
 
 from src.debug import create_random_uuid
 from src.debug import md5sum
+from src.logger import ContextLogger
 from src.optimizer import memcache
 from src.parser import convert_to_sip_packet
 from src.parser import parse_address
@@ -38,29 +39,6 @@ from src.sip.static.ringing import SIP_RINGING
 from src.sip.static.terminated import SIP_TERMINATE
 from src.sip.static.trying import SIP_TRYING
 from src.sockets import unsafe_allocate_random_udp_socket
-
-# logger
-#-------------------------------------------------------------------------------
-
-class ContextLogger(object):
-    ''' custom logger with call context.
-    '''
-    def __init__(self, logger):
-        self.log = logger
-        self.fmt = '<<%s>> %s'
-        self.context = None
-
-        # logging
-        self.critical = lambda s: self.log.critical(self.fmt % (self.context, s))
-        self.debug = lambda s: self.log.debug(self.fmt % (self.context, s))
-        self.error = lambda s: self.log.error(self.fmt % (self.context, s))
-        self.info = lambda s: self.log.info(self.fmt % (self.context, s))
-        self.warning = lambda s: self.log.warning(self.fmt % (self.context, s))
-
-    def refresh(self):
-        ''' generate random context string.
-        '''
-        self.context = md5sum(create_random_uuid())[:8] # first 8 Bytes only.
 
 logger = ContextLogger(logging.getLogger())
 
@@ -96,11 +74,11 @@ def send_response(shared_socket, endpoint, datagram, method):
     '''
     # generate response and send to the SIP server.
     logger.debug('<<< <worker>:<%s>', method)
-    payload = generate_response(datagram, method)
+    response = generate_response(datagram, method)
     try:
-        shared_socket.sendto(payload, endpoint)
+        shared_socket.sendto(response, endpoint)
     except socket.error:
-        shared_socket = None # override.
+        shared_socket = None # unset to re-initialize at next iteration.
 
 # SIP worker
 #-------------------------------------------------------------------------------
@@ -131,8 +109,8 @@ class LazyWorker(object):
             'INVITE': self.handle_invite
         }
 
-        self.is_ready = True # recycle worker.
-        logger.info('<worker>:successfully initialized %s', self.name)
+        self.is_ready = True # recyclable state.
+        logger.info('<worker>:successfully initialized %s.', self.name)
 
     def reset(self):
         ''' reset worker.
@@ -146,8 +124,8 @@ class LazyWorker(object):
 
     def handle(self, work, endpoint):
         ''' worker logic.
-        @endpoint<tuple> -- worker response endpoint.
         @work<str> -- worker "work".
+        @endpoint<tuple> -- worker response endpoint.
         '''
         self.is_ready = False # woker is busy.
         logger.refresh() # create new context.

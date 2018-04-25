@@ -85,3 +85,31 @@ def initialize_logger(configuration):
     logger.addHandler(fs_handler)
     logger.info("<main>:successfully initialized logging.")
     return logger
+
+class ContextLogger(object):
+    ''' custom logger with call context.
+    '''
+    def __init__(self, logger):
+        self.log = logger
+        self.fmt = '<<%s>> %s'
+        self.__ctx = None
+
+        # logging
+        self.critical = lambda s: self.log.critical(self.fmt % (self.ctx, s))
+        self.debug = lambda s: self.log.debug(self.fmt % (self.ctx, s))
+        self.error = lambda s: self.log.error(self.fmt % (self.ctx, s))
+        self.info = lambda s: self.log.info(self.fmt % (self.ctx, s))
+        self.warning = lambda s: self.log.warning(self.fmt % (self.ctx, s))
+
+    @property
+    def context(self):
+        return self.__ctx
+
+    @context.setter
+    def context(self, context):
+        self.__ctx = context
+
+    def refresh(self):
+        ''' generate random context string.
+        '''
+        self.ctx = md5sum(create_random_uuid())[:8] # first 8 Bytes only.
