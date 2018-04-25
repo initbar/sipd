@@ -39,11 +39,11 @@ from src.sip.static.terminated import SIP_TERMINATE
 from src.sip.static.trying import SIP_TRYING
 from src.sockets import unsafe_allocate_random_udp_socket
 
-# custom logger
+# logger
 #-------------------------------------------------------------------------------
 
 class ContextLogger(object):
-    ''' custom logger with logging context.
+    ''' custom logger with call context.
     '''
     def __init__(self, logger):
         self.log = logger
@@ -83,9 +83,6 @@ def generate_response(datagram, method):
     @datagram<dict> -- SIP response datagram.
     @method<str> -- SIP response method.
     '''
-    if not datagram or not method:
-        logger.warning('<worker>: generated empty response.')
-        return ''
     return convert_to_sip_packet(
         template=SIPTemplates.get(method, SIPTemplates['DEFAULT']),
         datagram=datagram)
@@ -127,10 +124,10 @@ class LazyWorker(object):
         self.socket = None # lazy initialize.
         self.rtp = None # lazy initialize.
         self.handlers = {
+            'DEFAULT': self.handle_default,
             'ACK': self.handle_ack,
             'BYE': self.handle_cancel,
             'CANCEL': self.handle_bye,
-            'DEFAULT': self.handle_default,
             'INVITE': self.handle_invite
         }
 
