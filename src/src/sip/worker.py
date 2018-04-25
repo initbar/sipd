@@ -154,6 +154,7 @@ class LazyWorker(object):
         try: # override parsed headers with loaded headers.
             self.call_id = self.datagram['sip']['Call-ID']
             self.method = self.datagram['sip']['Method']
+            logger.debug('<reference>:%s', self.call_id)
         except KeyError:
             logger.warning("<worker>:reset from invalid format: '%s'", message)
             self.reset()
@@ -206,7 +207,6 @@ class LazyWorker(object):
             logger.warning('<worker>:received duplicate call: %s', self.call_id)
             send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
             return
-
         # receive TX/RX ports to delegate RTP packets.
         send_response(self.socket, self.endpoint, self.datagram, 'TRYING')
         max_retry = max(1, self.settings['rtp'].get('max_retry', 1))
@@ -220,6 +220,6 @@ class LazyWorker(object):
                 self.datagram = sip_datagram
                 break
             else:
-                logger.warning('<worker>:RTP handler did not send RX/TX information.')
+                logger.warning('<worker>:RTP handler did not send RX/TX ports.')
                 send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
             self.gc.queue_task(lambda: self.gc.register(call_id=self.call_id))
