@@ -124,14 +124,11 @@ class AsynchronousGarbageCollector(object):
                 # since call queue is FIFO, the oldest call is placed on top
                 # (left) and the youngest call is placed on the bottom (right).
                 call_id = self.calls.history.popleft()
-                # if there is no metadata aligned with Call-ID, then force
-                # the RTP handler to relieve its' allocated ports.
+                # if there is no metadata aligned with Call-ID or the current
+                # Call-ID has already expired, then force the RTP handler to
+                # relieve ports allocated for Call-ID.
                 metadata = self.calls.meta.get(call_id)
-                if not metadata:
-                    self.rtp.send_stop_signal(call_id=call_id)
-                    continue
-                # if the Call-ID has expired, relieve its allocated ports.
-                if now > metadata.expiration:
+                if not metadata or now > metadata.expiration:
                     self.rtp.send_stop_signal(call_id=call_id)
                     continue
         except:
