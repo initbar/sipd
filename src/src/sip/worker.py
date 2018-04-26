@@ -138,6 +138,7 @@ def send_response(shared_socket, endpoint, datagram, method):
     # generate response and send to the endpoint.
     logger.info('%s <worker>: [\033[01m\033[91m%s\033[0m]', SIPColors['<<<'], method)
     response = generate_response(method, datagram)
+    logger.debug("%s", response)
     try:
         shared_socket.sendto(response, endpoint)
     except Exception as message:
