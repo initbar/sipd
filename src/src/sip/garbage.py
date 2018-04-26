@@ -107,7 +107,7 @@ class AsynchronousGarbageCollector(object):
     def consume_tasks(self):
         ''' consume demultiplexed garbage collector tasks.
         '''
-        if not self.is_ready or self.__tasks.empty():
+        if not self.is_ready:
             return
         self.is_ready = False # garbage collector is busy.
         logger.debug('<gc>: running garbage collection cycle.')
