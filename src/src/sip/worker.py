@@ -281,7 +281,7 @@ class LazyWorker(object):
             # and update the existing datagram with new information and respond.
             datagram = None
             try:
-                datagram = self.rtp.handle(datagram=self.datagram, action='start')
+                datagram = self.rtp.handle(datagram=self.datagram)
             except AttributeError as error:
                 logger.error('<rtp>:RTP handler is down: %s', error)
                 self.rtp = None # unset to re-initialize at next iteration.

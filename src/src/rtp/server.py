@@ -43,19 +43,21 @@ class RTPRouterPrototype(object):
         try: # load RTP handlers and filter by enabled handlers.
             self.rtp = filter(lambda rtp: rtp['enabled'], setting['rtp']['handler'])
             logger.debug('<rtp>: successfully loaded RTP configuration.')
-        except Exception as message:
-            logger.error("<rtp>: failed to load RTP configuration: '%s'", message)
+        except:
+            logger.error("<rtp>: failed to load RTP configuration: '%s'")
             self.rtp = None
         logger.debug('<rtp>: successfully initialized RTP handler.')
-        self.get_random_rtp_handler = lambda: random.choice(self.rtp)
+
+    def get_random_rtp_handler(self):
+        return random.choice(self.rtp)
 
     def get_random_rtp_handler_address(self):
         handler = self.get_random_rtp_handler()
         try:
             address = str(handler['host'])
-            port    = int(handler['port'])
-            server  = (address, port)
-            logger.debug('<rtp>: balancing to available handler: %s', server)
+            port = int(handler['port'])
+            server = (address, port)
+            logger.info('<rtp>: balancing to available handler: %s', server)
             return server
         except Exception as message:
             logger.error('<rtp>: failed to balance to handler: %s', message)
