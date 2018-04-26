@@ -8,7 +8,7 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHAN\TABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
@@ -84,10 +84,7 @@ def main():
         return run_test_suite()
 
     server = AsynchronousSIPServer(config)
-    try:
-        return server.serve()
-    except KeyboardInterrupt:
-        pass
+    return server.serve()
 
 if __name__ == '__main__':
 
@@ -96,4 +93,16 @@ if __name__ == '__main__':
         sys.path.insert(0, os.path.dirname(os.path.dirname(
             os.path.realpath(os.path.abspath(__file__)))))
 
-    sys.exit(main())
+    # ensure that only one process is running at once.
+    pid_file = './sipd.pid'
+    if not os.path.isfile(pid_file):
+        with open(pid_file, 'w') as f:
+            f.write(str(os.getpid()))
+        try:
+            # import signal
+            # signal.signal(signal.SIGTERM, lambda: os.remove(pid_file))
+            sys.exit(main())
+        except KeyboardInterrupt:
+            os.remove(pid_file)
+    else:
+        sys.stderr.write("<main>: process already running: '%s'\n" % pid_file)
