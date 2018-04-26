@@ -122,7 +122,7 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             static_sdp = [
                 'v=0',
                 's=phone-call',
-                'c=IN IP4 %s' % server_address,
+                'c=IN IP4 %s' % handler[0],
                 't=0 0',
 
                 # [caller]

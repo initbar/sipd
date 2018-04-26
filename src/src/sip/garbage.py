@@ -110,7 +110,6 @@ class AsynchronousGarbageCollector(object):
         if not self.is_ready:
             return
         self.is_ready = False # garbage collector is busy.
-        logger.debug('<gc>: running garbage collection cycle.')
 
         if self.rtp is None:
             self.rtp = SynchronousRTPRouter(self.settings)
