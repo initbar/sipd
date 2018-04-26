@@ -110,6 +110,7 @@ class AsynchronousGarbageCollector(object):
         if not self.is_ready or self.__tasks.empty():
             return
         self.is_ready = False # garbage collector is busy.
+        logger.debug('<gc>: running garbage collection cycle.')
 
         if self.rtp is None:
             self.rtp = SynchronousRTPRouter(self.settings)
@@ -134,10 +135,12 @@ class AsynchronousGarbageCollector(object):
                 # relieve ports allocated for Call-ID.
                 metadata = self.calls.metadata.get(call_id)
                 if not metadata:
+                    logger.info('<gc>: removed (empty): %s', call_id)
                     self.rtp.send_stop_signal(call_id=call_id)
                     continue
                 if now > metadata.expiration:
                     self.revoke(call_id=call_id)
+                    logger.info('<gc>: removed (expired): %s', call_id)
                 # since the oldest call is yet to expire, that means remaining
                 # calls also don't need to be checked.
                 else:

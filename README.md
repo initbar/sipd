@@ -5,6 +5,8 @@
 
 **sipd** is an [active recording](https://en.wikipedia.org/wiki/VoIP_recording) [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon. A daemon is a background process that handles incoming requests and logically responds - and a minute customization ranging from custom SIP method handling to internal/external RTP routing is possible.
 
+![](./docs/sample.png)
+
 Some key features are:
 
 - **Universal support** from Python 2.7 to Python 3+.
