@@ -235,11 +235,23 @@ class LazyWorker(object):
             except TypeError:
                 logger.error('<worker>: unable to use header: %s %s', field, value)
 
+        try: # update response endpoint with callee 'Contact' header.
+            contact = parse_address(self.datagram['sip']['Contact'])[0]
+            address, port = contact.split(':')
+            server = (address, int(port))
+            logger.info('<worker>: updated return endpoint %s -> %s', self.endpoint, server)
+            self.endpoint = server # future SIP responses will go here.
+        except IndexError:
+            pass # use default received endpoint.
+        except KeyError:
+            pass # use default received endpoint.
+
         # set 'Contact' header to delegate future messages.
-        server_address = self.settings['sip']['server']['address']
-        self.datagram['sip']['Contact'] = '<sip:%s:5060>' % server_address
+        contact = self.settings['sip']['server']['address']
+        self.datagram['sip']['Contact'] = '<sip:%s:5060>' % contact
 
         logger.info('%s <worker>: [\033[01m\033[91m%s\033[0m]', SIPColors['>>>'], self.method)
+        logger.debug('%s\n%s', self.endpoint, message)
         self.handlers.get(self.method, self.handlers['DEFAULT'])()
         self.reset()
 
