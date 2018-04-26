@@ -239,8 +239,9 @@ class LazyWorker(object):
             contact = parse_address(self.datagram['sip']['Contact'])[0]
             address, port = contact.split(':')
             server = (address, int(port))
-            logger.info('<worker>: updated return endpoint %s -> %s', self.endpoint, server)
-            self.endpoint = server # future SIP responses will go here.
+            if server != self.endpoint:
+                logger.info('<worker>: updated return endpoint %s -> %s', self.endpoint, server)
+                self.endpoint = server # future SIP responses will go here.
         except IndexError:
             pass # use default received endpoint.
         except KeyError:
