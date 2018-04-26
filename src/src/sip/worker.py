@@ -111,6 +111,7 @@ SIPTemplates = {
 }
 
 SIPColors = {
+    '+++': '\033[01m\033[35m+++\033[0m', # bold, purple, reset
     '>>>': '\033[01m\033[32m>>>\033[0m', # bold, green, reset
     '<<<': '\033[01m\033[93m<<<\033[0m'  # bold, yellow, reset
 }
@@ -138,7 +139,7 @@ def send_response(shared_socket, endpoint, datagram, method):
     # generate response and send to the endpoint.
     logger.info('%s <worker>: [\033[01m\033[91m%s\033[0m]', SIPColors['<<<'], method)
     response = generate_response(method, datagram)
-    logger.debug("%s", response)
+    logger.debug('%s\n%s', endpoint, response)
     try:
         shared_socket.sendto(response, endpoint)
     except Exception as message:
@@ -235,21 +236,26 @@ class LazyWorker(object):
             except TypeError:
                 logger.error('<worker>: unable to use header: %s %s', field, value)
 
-        try: # update response endpoint with callee 'Contact' header.
-            contact = parse_address(self.datagram['sip']['Contact'])[0]
-            address, port = contact.split(':')
-            server = (address, int(port))
-            if server != self.endpoint:
-                logger.info('<worker>: updated return endpoint %s -> %s', self.endpoint, server)
-                self.endpoint = server # future SIP responses will go here.
-        except IndexError:
-            pass # use default received endpoint.
-        except KeyError:
-            pass # use default received endpoint.
+        server_address = self.settings['sip']['server']['address'] # server address.
+        # try: # update response endpoint with callee 'Contact' header.
+        #     contact = parse_address(self.datagram['sip']['Contact'])[0]
+        #     address, port = contact.split(':')
+        #     server = (address, int(port))
+        #     logger.debug("<worker>: requester endpoint: %s", self.endpoint)
+        #     logger.debug("<worker>: parsed endpoint: %s", server)
+        #     if server != self.endpoint and address != server_address:
+        #         logger.info('%s <worker>: updated response endpoint %s -> %s',
+        #                     SIPColors['+++'],
+        #                     self.endpoint,
+        #                     server)
+        #         self.endpoint = server # future SIP responses will go here.
+        # except IndexError:
+        #     pass # use default received endpoint.
+        # except KeyError:
+        #     pass # use default received endpoint.
 
-        # set 'Contact' header to delegate future messages.
-        contact = self.settings['sip']['server']['address']
-        self.datagram['sip']['Contact'] = '<sip:%s:5060>' % contact
+        # set 'Contact' response header to delegate future messages.
+        self.datagram['sip']['Contact'] = '<sip:%s:5060;transport=udp>' % server_address
 
         logger.info('%s <worker>: [\033[01m\033[91m%s\033[0m]', SIPColors['>>>'], self.method)
         logger.debug('%s\n%s', self.endpoint, message)
@@ -283,8 +289,8 @@ class LazyWorker(object):
 
     def handle_invite(self):
         if self.call_id in self.gc.calls.history:
-            logger.warning('<worker>: received duplicate call: %s', self.call_id)
-            send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
+            logger.warning('<worker>: detected duplicate Call-ID: %s', self.call_id)
+            send_response(self.socket, self.endpoint, self.datagram, 'OK +SDP')
             return
         # receive TX/RX ports to delegate RTP packets.
         send_response(self.socket, self.endpoint, self.datagram, 'TRYING')

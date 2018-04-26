@@ -90,10 +90,16 @@ def convert_to_sip_packet(template, datagram):
     # reconstruct SIP from datagram.
     packet = '%s%s' % (template['status_line'], CRLF)
     try:
-        packet += CRLF.join([
-            '%s: %s' % (sip_field, datagram['sip'].get(sip_field))
-            for sip_field in template['sip']
-            if datagram['sip'].get(sip_field) ])
+        headers = []
+        for sip_field in template['sip']:
+            if datagram['sip'].get(sip_field):
+                if sip_field == 'Via': # 'Via' headers must be distinct Via.
+                    for via in datagram['sip'].get(sip_field).split(','):
+                        headers.append('%s: %s' % (sip_field, via))
+                else: # otherwise, they can be joined by ',' token.
+                    headers.append(
+                        '%s: %s' % (sip_field, datagram['sip'].get(sip_field)))
+        packet += CRLF.join(headers)
     except TypeError:
         logger.error('<parser>:failed to parse using %s', datagram)
         return CRLF

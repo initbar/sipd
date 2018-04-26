@@ -45,19 +45,15 @@ SIP_OK = {
         'Via',
         'From',
         'To',
-        'Max-Forwards',
         'CSeq',
         'Call-ID',
         'Contact',
-        'Supported',
         'Record-Route',
         'Session-Expires',
         'Min-SE',
-        'Server',
-        'Accept',
-        'Accept-Language',
         'Require',
-        'Allow'
+        'X-Genesys-GVP-Session-Data',
+        'X-Genesys-GVP-Session-ID'
     ]
 }
 
@@ -67,19 +63,11 @@ SIP_OK_NO_SDP = {
         'Via',
         'From',
         'To',
-        'Max-Forwards',
         'CSeq',
         'Call-ID',
-        'Contact',
-        'Supported',
-        'Record-Route',
-        'Session-Expires',
         'Min-SE',
-        'Server',
-        'Accept',
-        'Accept-Language',
-        'Require',
-        'Allow'
+        'X-Genesys-GVP-Session-Data',
+        'X-Genesys-GVP-Session-ID'
     ]
 }
 
