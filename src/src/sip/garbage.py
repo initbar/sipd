@@ -126,7 +126,7 @@ class AsynchronousGarbageCollector(object):
 
         now = int(time.time())
         try: # remove calls from management.
-            for _ in self.calls.history:
+            for _ in list(self.calls.history):
                 # since call queue is FIFO, the oldest call is placed on top
                 # (left) and the youngest call is placed on the bottom (right).
                 call_id = self.calls.history.popleft()
