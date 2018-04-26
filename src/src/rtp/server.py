@@ -54,32 +54,29 @@ class RTPRouterPrototype(object):
     def get_random_rtp_handler_address(self):
         handler = self.get_random_rtp_handler()
         try:
-            address = str(handler['host'])
-            port = int(handler['port'])
-            server = (address, port)
-            logger.info('<rtp>: balancing to available handler: %s', server)
+            server = (address, port) = str(handler['host']), int(handler['port'])
+            logger.info('<rtp>: balancing to %s', server)
             return server
-        except Exception as message:
-            logger.error('<rtp>: failed to balance to handler: %s', message)
+        except AttributeError:
+            logger.error('<rtp>: no RTP is set to load from configuration.')
             return
-
-    def _external_handler(self, *args, **kwargs):
-        raise NotImplementedError
-
-    def handle(self, *args, **kwargs):
-        return self._external_handler(*args, **kwargs)
+        except KeyError:
+            logger.error('<rtp>: failed to balance to a handler.')
+            return
 
 class SynchronousRTPRouter(RTPRouterPrototype):
     ''' RTP router implementation.
     '''
-    def _external_handler(self, datagram, action='start'):
+    def handle(self, datagram, action='start'):
         ''' `rttd` implementation.
         '''
-        if not datagram: return
+        if not datagram:
+            return
         # signal the external RTP decoder to open new ports.
-        if action == 'start': return self.send_start_signal(datagram)
+        if action == 'start':
+            return self.send_start_signal(datagram)
         else: # signal the external RTP decoder to close existing ports.
-            call_id = datagram['sip'].get('Call-ID')
+            call_id = datagram['sip']['Call-ID']
             return self.send_stop_signal(call_id)
 
     def send_start_signal(self, datagram):
@@ -93,7 +90,8 @@ class SynchronousRTPRouter(RTPRouterPrototype):
 
         with safe_allocate_random_udp_socket() as udp_socket:
             handler = self.get_random_rtp_handler_address()
-            if not handler: return
+            if not handler:
+                return
 
             udp_socket.sendto(dump_json(template), handler)
             logger.debug("<<< <rtp>: requesting ports from '%s'", handler)
@@ -122,7 +120,7 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             static_sdp = [
                 'v=0',
                 's=phone-call',
-                'c=IN IP4 %s' % handler[0],
+                'c=IN IP4 %s' % handler[0], # host address
                 't=0 0',
 
                 # [caller]
@@ -154,7 +152,8 @@ class SynchronousRTPRouter(RTPRouterPrototype):
         return datagram
 
     def send_stop_signal(self, call_id):
-        if not call_id: return
+        if not call_id:
+            return
 
         # replace payload to send to external RTP decoder.
         template = RTPD_STOP
@@ -163,7 +162,8 @@ class SynchronousRTPRouter(RTPRouterPrototype):
         # allocate a temporary socket to send the payload.
         with safe_allocate_random_udp_socket() as udp_socket:
             handler = self.get_random_rtp_handler_address()
-            if not handler: return
+            if not handler:
+                return
 
             udp_socket.sendto(dump_json(template), handler)
             logger.debug("<<< <rtp>: requesting 'stop' from '%s'", handler)
