@@ -33,8 +33,8 @@ Some key features are:
 
 ```bash
 ~$ git clone https://github.com/initbar/sipd
-~$ cd ~/sipd
-~$ # vi sipd.json
+~$ cd ./sipd
+~$ # emacs sipd.json
 ~$ make run
 ```
 
