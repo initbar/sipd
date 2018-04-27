@@ -288,10 +288,6 @@ class LazyWorker(object):
         send_response(self.socket, self.endpoint, self.datagram, 'TERMINATE')
 
     def handle_invite(self):
-        if self.call_id in self.gc.calls.history:
-            logger.warning('<worker>: detected duplicate Call-ID: %s', self.call_id)
-            send_response(self.socket, self.endpoint, self.datagram, 'OK +SDP')
-            return
         # receive TX/RX ports to delegate RTP packets.
         send_response(self.socket, self.endpoint, self.datagram, 'TRYING')
         max_retry = max(1, self.settings['rtp'].get('max_retry', 1))
@@ -306,10 +302,13 @@ class LazyWorker(object):
                 logger.error('<rtp>:RTP handler is down: %s', error)
                 self.rtp = None # unset to re-initialize at next iteration.
             if datagram:
-                send_response(self.socket, self.endpoint, datagram, 'OK +SDP')
                 self.datagram = datagram
+                send_response(self.socket, self.endpoint, self.datagram, 'OK +SDP')
                 break
             else:
                 logger.warning('<worker>: RTP handler did not send RX/TX ports.')
                 send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
-        self.gc.register(call_id=self.call_id)
+        if self.call_id in self.gc.calls.history:
+            logger.warning('<worker>: detected duplicate Call-ID: %s', self.call_id)
+        else:
+            self.gc.register(call_id=self.call_id)
