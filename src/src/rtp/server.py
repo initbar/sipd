@@ -85,7 +85,7 @@ class SynchronousRTPRouter(RTPRouter):
             return
 
         handler = self.get_random_handler()
-        handler_endpoint = (handler.get('host'), int(handler.get('port')))
+        handler_endpoint = [handler.get('host'), int(handler.get('port'))]
         if not all(handler_endpoint): # check for None.
             return
         elif handler_endpoint[0] == '127.0.0.1': # resolve localhost.
@@ -102,7 +102,7 @@ class SynchronousRTPRouter(RTPRouter):
         # request to receive RX/TX port information.
         json_template = dump_json(template)
         with safe_allocate_random_udp_socket() as udp_socket:
-            udp_socket.sendto(json_template, handler_endpoint)
+            udp_socket.sendto(json_template, tuple(handler_endpoint))
             logger.debug("<<< <rtp>: requesting ports from %s", handler_endpoint)
             logger.debug("<rtp>: waiting response from %s", handler_endpoint)
             try:
