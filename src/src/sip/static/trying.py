@@ -29,12 +29,13 @@
 SIP_TRYING = {
     'status_line': 'SIP/2.0 100 Trying',
     'sip': [
+        'CSeq',
         'From',
         'To',
         'Via',
         'Call-ID',
-        'Contact',
-        'CSeq'
+        'Allow',
+        'Contact'
     ]
 }
 

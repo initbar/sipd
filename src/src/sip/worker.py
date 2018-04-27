@@ -255,7 +255,7 @@ class LazyWorker(object):
         #     pass # use default received endpoint.
 
         # set 'Contact' response header to delegate future messages.
-        self.datagram['sip']['Contact'] = '<sip:%s:5060;transport=udp>' % server_address
+        self.datagram['sip']['Contact'] = '<sip:SIPd@%s:5060;transport=udp>' % server_address
 
         logger.info('%s <worker>: [\033[01m\033[91m%s\033[0m]', SIPColors['>>>'], self.method)
         logger.debug('%s\n%s', self.endpoint, message)

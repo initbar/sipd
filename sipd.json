@@ -16,10 +16,11 @@
                 "Accept-Language": "en",
                 "Allow": "ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE",
                 "Max-Forwards": 70,
-                "Min-SE": 90,
+                "Min-SE": 1800,
                 "Server": "SIPd",
-                "Session-Expires": 1800,
-                "Supported": "timer, uui"
+                "Session-Expires": "1800;refresher=uac",
+                "Supported": "timer",
+                "Require": "timer"
             }
         }
     },

@@ -122,6 +122,7 @@ class SynchronousRTPRouter(RTPRouter):
         logger.info('<rtp>: RxPort = %s', rx_port)
         logger.info('<rtp>: TxPort = %s', tx_port)
         static_sdp = [
+            'o=- 0 0 IN IP4 %s' % handler_address,
             'v=0',
             's=phone-call',
             'c=IN IP4 %s' % handler_address,

@@ -28,13 +28,14 @@
 SIP_RINGING = {
     'status_line': 'SIP/2.0 180 Ringing',
     'sip': [
+        'CSeq',
         'From',
         'To',
         'Via',
         'Call-ID',
-        'Contact',
-        'CSeq',
-        'Allow'
+        'Record-Route',
+        'Allow',
+        'Contact'
     ]
 }
 

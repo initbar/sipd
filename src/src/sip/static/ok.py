@@ -50,12 +50,11 @@ SIP_OK = {
         'Call-ID',
         'Contact',
         'Supported',
+        'Require',
         'Session-Expires',
         'Server',
         'Allow',
-        'Min-SE',
-        'X-Genesys-GVP-Session-Data',
-        'X-Genesys-GVP-Session-ID'
+        'Min-SE'
     ]
 }
 
@@ -70,10 +69,11 @@ SIP_OK_NO_SDP = {
         'Call-ID',
         'Contact',
         'Supported',
+        'Require',
         'Session-Expires',
         'Server',
         'Allow',
-        'X-Genesys-GVP-Session-ID'
+        'Min-SE'
     ]
 }
 
