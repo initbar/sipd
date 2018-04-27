@@ -17,7 +17,7 @@
                 "Allow": "ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE",
                 "Max-Forwards": 70,
                 "Min-SE": 90,
-                "Server": "sipd",
+                "Server": "SIPd",
                 "Session-Expires": 1800,
                 "Supported": "timer, uui"
             }
@@ -49,21 +49,15 @@
                 "enabled": true,
                 "host": "127.0.0.1",
                 "port": 5900
-            }, {
-                "enabled": false,
-                "host": "127.0.0.1",
-                "port": 5901
             }
         ]
     },
     "db": {
-        "server": {
-            "enabled": false,
-            "host": "127.0.0.1",
-            "port": 1234,
-            "username": "",
-            "password": ""
-        }
+        "enabled": false,
+        "host": "127.0.0.1",
+        "port": 3306,
+        "username": "",
+        "password": ""
     },
     "gc": {
         "call_lifetime": 3600,
@@ -74,10 +68,10 @@
             "enabled": true
         },
         "filesystem": {
-            "enabled": true,
+            "enabled": false,
+            "path": "./sipd",
             "name": "sipd.log",
-            "path": "./logs",
-            "total_days": 30
+            "total_days": 7
         },
         "coloredlogs": false,
         "level": "INFO"
