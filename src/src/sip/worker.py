@@ -274,9 +274,8 @@ class LazyWorker(object):
 
     def handle_bye(self):
         send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
-        self.gc.queue_task( # remove call from garbage collector.
-            lambda: self.gc.revoke(call_id=self.call_id))
         send_response(self.socket, self.endpoint, self.datagram, 'TERMINATE')
+        self.gc.revoke(call_id=self.call_id)
 
     def handle_cancel(self):
         send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')

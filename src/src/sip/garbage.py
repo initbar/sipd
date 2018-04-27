@@ -101,7 +101,7 @@ class AsynchronousGarbageCollector(object):
         '''
         if function:
             self.__tasks.put(item=function)
-            logger.info('<gc>: queued task %s', function)
+            logger.debug('<gc>: queued task %s', function)
             logger.debug('<gc>: queue size %s', self.__tasks.qsize())
 
     def consume_tasks(self):
@@ -119,7 +119,7 @@ class AsynchronousGarbageCollector(object):
             try:
                 task = self.__tasks.get()
                 task() # deferred execution.
-                logger.info('<gc>: executed deferred task: %s', task)
+                logger.debug('<gc>: executed deferred task: %s', task)
             except TypeError:
                 logger.error("<gc>: expected task: received %s", task)
 
@@ -134,8 +134,6 @@ class AsynchronousGarbageCollector(object):
                 # relieve ports allocated for Call-ID.
                 metadata = self.calls.metadata.get(call_id)
                 if not metadata:
-                    logger.info('<gc>: removed (empty): %s', call_id)
-                    self.rtp.send_stop_signal(call_id=call_id)
                     continue
                 if now > metadata.expiration:
                     self.revoke(call_id=call_id)
@@ -159,7 +157,7 @@ class AsynchronousGarbageCollector(object):
         self.calls.history.append(call_id)
         self.calls.metadata[call_id] = metadata
         self.calls.increment_count()
-        logger.info('<gc>: call registered: %s', call_id)
+        logger.info('<gc>: registered: %s', call_id)
         logger.debug('<gc>: calls handled: %s', self.calls.count)
 
     def revoke(self, call_id):
@@ -168,6 +166,6 @@ class AsynchronousGarbageCollector(object):
         if call_id is None:
             return
         if self.calls.metadata.get(call_id):
-            self.rtp.send_stop_signal(call_id=call_id)
             del self.calls.metadata[call_id]
-            logger.info('<gc>: call removed: %s', call_id)
+        self.rtp.send_stop_signal(call_id=call_id)
+        logger.info('<gc>: call removed: %s', call_id)
