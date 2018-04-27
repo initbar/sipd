@@ -17,8 +17,11 @@
 # https://github.com/initbar/sipd
 
 #-------------------------------------------------------------------------------
-# server.py -- synchronous external RTP routing module.
+# server.py
 #-------------------------------------------------------------------------------
+
+import logging
+import random
 
 from src.parser import dump_json
 from src.parser import parse_json
@@ -26,101 +29,97 @@ from src.rtp.start import RTPD_START
 from src.rtp.stop import RTPD_STOP
 from src.sockets import safe_allocate_random_udp_socket
 
-import random
-
-import logging
 logger = logging.getLogger()
 
-# RTP router
-#-------------------------------------------------------------------------------
-
-class RTPRouterPrototype(object):
+class RTPRouter(object):
     ''' RTP router prototype.
     '''
     def __init__(self, setting={}):
         self.setting = setting
-
-        try: # load RTP handlers and filter by enabled handlers.
-            self.rtp = filter(lambda rtp: rtp['enabled'], setting['rtp']['handler'])
-            logger.debug('<rtp>: successfully loaded RTP configuration.')
-        except:
-            logger.error("<rtp>: failed to load RTP configuration: '%s'")
-            self.rtp = None
+        self.handlers = filter(lambda handler: handler['enabled'], setting['rtp']['handler'])
+        self.handler_port_mapping = {}
+        logger.debug('<rtp>: successfully loaded RTP configuration.')
         logger.debug('<rtp>: successfully initialized RTP handler.')
 
-    def get_random_rtp_handler(self):
-        return random.choice(self.rtp)
+    def get_random_handler_endpoint(self):
+        ''' return random handler.
+        '''
+        return random.choice(self.handlers)
 
-    def get_random_rtp_handler_address(self):
-        handler = self.get_random_rtp_handler()
+    def get_random_handler_address(self):
+        ''' return random handler address.
+        '''
         try:
-            server = (address, port) = str(handler['host']), int(handler['port'])
-            logger.info('<rtp>: balancing to %s', server)
-            return server
+            handler = self.get_random_handler_endpoint()
+            server = (address, port) = handler['host'], int(handler['port'])
+            logger.info('<rtp>: balancing packets to %s', server)
+            return address
         except AttributeError:
-            logger.error('<rtp>: no RTP is set to load from configuration.')
-            return
+            logger.error('<rtp>: no handler loaded from configuration.')
         except KeyError:
             logger.error('<rtp>: failed to balance to a handler.')
-            return
+        return
 
-class SynchronousRTPRouter(RTPRouterPrototype):
+class SynchronousRTPRouter(RTPRouter):
     ''' RTP router implementation.
     '''
     def handle(self, datagram, action='start'):
-        ''' `rttd` implementation.
+        '''
+        @datagram<dict> -- SIP response datagram.
+        @action<str> -- RTP handler action.
         '''
         if not datagram:
             return
-        # signal the external RTP decoder to open new ports.
-        if action == 'start':
-            return self.send_start_signal(datagram)
-        else: # signal the external RTP decoder to close existing ports.
-            call_id = datagram['sip']['Call-ID']
-            return self.send_stop_signal(call_id)
+        if action == 'start': # request external handler to open RX/TX ports.
+            return self.send_start_signal(datagram=datagram)
+        else: # request external handler to close RX/TX ports.
+            call_id = datagram['sip'].get('Call-ID')
+            return self.send_stop_signal(call_id=call_id)
 
     def send_start_signal(self, datagram):
-        ''' request external RTP decoder to open new RTP proxy ports.
+        ''' request external handler to open RX/TX ports.
+        @datagram<dict> -- SIP response datagram.
         '''
-        if not datagram: return
+        if not datagram:
+            return
 
-        # populate external RTP template with existing data.
-        template, rtpd_param = RTPD_START, ['Call-ID', 'X-Genesys-GVP-Session-ID']
-        for key in rtpd_param: template[key] = datagram['sip'].get(key, '')
+        # populate RTP template with existing datagram data.
+        template = RTPD_START
+        params = ['Call-ID', 'X-Genesys-GVP-Session-ID']
+        for param in params:
+            template[param] = datagram['sip'].get(param, '')
 
+        # request to receive RX/TX port information.
         with safe_allocate_random_udp_socket() as udp_socket:
-            handler = self.get_random_rtp_handler_address()
-            if not handler:
+            handler = self.get_random_handler_endpoint()
+            endpoint = (handler.get('host'), int(handler.get('port')))
+            if not all(endpoint):
                 return
 
-            udp_socket.sendto(dump_json(template), handler)
-            logger.debug("<<< <rtp>: requesting ports from '%s'", handler)
-            logger.debug("<rtp>: waiting response from '%s'", handler)
+            udp_socket.sendto(dump_json(template), endpoint)
+            logger.debug("<<< <rtp>: requesting ports from %s", endpoint)
+            logger.debug("<rtp>: waiting response from %s", endpoint)
             try:
-                payload = udp_socket.recvfrom(0xff)
-            except:
-                logger.error("<rtp>: '%s' is down.", handler)
+                data = udp_socket.recvfrom(0xff)
+                logger.debug("<rtp>: %s is up.", endpoint)
+                logger.debug(">>> <rtp>: received %s from %s", data, endpoint)
+            except Exception as message:
+                logger.error("<rtp>: %s is down: %s", endpoint, message)
                 return
 
-            logger.debug("<rtp>: '%s' is up.", handler)
-            rtpd_server, rtpd_payload = tuple(payload[1]), str(payload[0])
-            logger.debug(">>> <rtp>: received %s Bytes from '%s'", hex(len(rtpd_payload)), handler)
-
-            # receive RTP ports.
-            rtpd_json = parse_json(rtpd_payload)
-            logger.debug("<rtp>: parsed responses from '%s'", handler)
+            # parse RX/TX ports.
+            data = str(data[0])
+            rxtx_ports = parse_json(data)
 
             # generate static SDP data.
-            tx_port, rx_port = rtpd_json.get('TxPort'), rtpd_json.get('RxPort')
+            server_address = self.setting['sip']['server']['address']
+            tx_port, rx_port = rxtx_ports.get('TxPort'), rxtx_ports.get('RxPort')
             logger.info('<rtp>: RxPort = %s', rx_port)
             logger.info('<rtp>: TxPort = %s', tx_port)
-            server_address = self.setting['sip']['server']['address']
-
-            # currently only delegates: G.711, G.729 encodings.
             static_sdp = [
                 'v=0',
                 's=phone-call',
-                'c=IN IP4 %s' % handler[0], # host address
+                'c=IN IP4 %s' % endpoint[0], # address
                 't=0 0',
 
                 # [caller]
@@ -148,42 +147,46 @@ class SynchronousRTPRouter(RTPRouterPrototype):
             for sdp in static_sdp:
                 datagram['sdp'].append(sdp)
 
+        # store RX/TX ports to correctly close at 'stop' event.
+        # TODO
+
         # return original/updated sip datagram.
         return datagram
 
     def send_stop_signal(self, call_id):
+        ''' request external handler to close RX/TX ports.
+        @call_id<str> -- SIP Call-ID.
+        '''
         if not call_id:
             return
 
-        # replace payload to send to external RTP decoder.
+        # populate RTP template with existing datagram data.
         template = RTPD_STOP
         template['Call-ID'] = call_id
 
-        # allocate a temporary socket to send the payload.
+        # allocate a temporary socket to send the information.
         with safe_allocate_random_udp_socket() as udp_socket:
-            handler = self.get_random_rtp_handler_address()
-            if not handler:
+            handler = self.get_random_handler_endpoint()
+            endpoint = (handler.get('host'), int(handler.get('port')))
+            if not all(endpoint):
                 return
 
-            udp_socket.sendto(dump_json(template), handler)
-            logger.debug("<<< <rtp>: requesting 'stop' from '%s'", handler)
-            logger.debug("<rtp>: waiting response from '%s'", handler)
+            udp_socket.sendto(dump_json(template), endpoint)
+            logger.debug("<<< <rtp>: requesting ports from %s", endpoint)
+            logger.debug("<rtp>: waiting response from %s", endpoint)
             try:
-                payload = udp_socket.recvfrom(0xff)
-            except:
-                logger.error("<rtp>: '%s' is down.", handler)
-                return False
+                data = udp_socket.recvfrom(0xff)
+                logger.debug("<rtp>: %s is up.", endpoint)
+                logger.debug(">>> <rtp>: received %s from %s", data, endpoint)
+            except Exception as message:
+                logger.error("<rtp>: %s is down: %s", endpoint, message)
+                return
 
-            logger.debug("<rtp>: '%s' is up.", handler)
-            rtpd_server, rtpd_payload = tuple(payload[1]), str(payload[0])
-            logger.debug(">>> <rtp>: received %s Bytes from '%s'", hex(len(rtpd_payload)), handler)
-
-            rtpd_json = parse_json(rtpd_payload)
-            logger.debug("<rtp>: parsed responses from '%s'", handler)
-            status_code = rtpd_json.get('ResultCode')
-            status_message = rtpd_json.get('Message')
+            # parse response message.
+            data = str(data[0])
+            status_message = parse_json(data)
+            status_code = status_message.get('ResultCode')
+            status_message = status_message.get('Message')
             logger.info('<rtp>: ResultCode: %s', status_code)
             logger.info('<rtp>: Message: %s', status_message)
-
-        # return original/updated sip datagram.
-        return call_id
+            return call_id
