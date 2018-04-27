@@ -37,7 +37,7 @@ class RTPRouter(object):
     def __init__(self, setting={}):
         self.setting = setting
         self.handlers = filter(lambda handler: handler['enabled'], setting['rtp']['handler'])
-        self.handler_port_mapping = {}
+        self.handler_callid_mapping = {}
         logger.debug('<rtp>: successfully loaded RTP configuration.')
         logger.debug('<rtp>: successfully initialized RTP handler.')
 
@@ -51,13 +51,13 @@ class RTPRouter(object):
         '''
         try:
             handler = self.get_random_handler_endpoint()
-            server = (address, port) = handler['host'], int(handler['port'])
             logger.info('<rtp>: balancing packets to %s', server)
+            server = (address, port) = handler['host'], int(handler['port'])
             return address
-        except AttributeError:
-            logger.error('<rtp>: no handler loaded from configuration.')
-        except KeyError:
-            logger.error('<rtp>: failed to balance to a handler.')
+        except AttributeError as error:
+            logger.error('<rtp>: no handler enabled in configuration: %s', error)
+        except KeyError aS error:
+            logger.error('<rtp>: no handler enabled in configuration: %s', error)
         return
 
 class SynchronousRTPRouter(RTPRouter):
