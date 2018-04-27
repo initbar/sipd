@@ -20,10 +20,10 @@
 # sockets.py -- synchronous and asynchronous socket handler module.
 #-------------------------------------------------------------------------------
 
-from random import randint
-
 import socket
 import logging
+
+from random import randint
 
 logger = logging.getLogger()
 

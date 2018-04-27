@@ -69,12 +69,12 @@
             "enabled": true
         },
         "filesystem": {
-            "enabled": false,
+            "enabled": true,
             "path": "./sipd",
             "name": "sipd.log",
             "total_days": 7
         },
         "coloredlogs": false,
-        "level": "INFO"
+        "level": "DEBUG"
     }
 }
