@@ -93,16 +93,6 @@ if __name__ == '__main__':
         sys.path.insert(0, os.path.dirname(os.path.dirname(
             os.path.realpath(os.path.abspath(__file__)))))
 
-    # ensure that only one process is running at once.
-    pid_file = './sipd.pid'
-    if not os.path.isfile(pid_file):
-        with open(pid_file, 'w') as f:
-            f.write(str(os.getpid()))
-        try:
-            # import signal
-            # signal.signal(signal.SIGTERM, lambda: os.remove(pid_file))
-            sys.exit(main())
-        except KeyboardInterrupt:
-            os.remove(pid_file)
-    else:
-        sys.stderr.write("<main>: process already running: '%s'\n" % pid_file)
+    try: sys.exit(main())
+    except KeyboardInterrupt:
+        pass
