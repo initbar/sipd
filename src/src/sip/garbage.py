@@ -136,8 +136,7 @@ class AsynchronousGarbageCollector(object):
                 if not metadata:
                     continue
                 if now > metadata.expiration:
-                    self.revoke(call_id=call_id)
-                    logger.info('<gc>: removed (expired): %s', call_id)
+                    self.revoke(call_id=call_id, expired=True)
                 # since the oldest call is yet to expire, that means remaining
                 # calls also don't need to be checked.
                 else:
@@ -157,10 +156,10 @@ class AsynchronousGarbageCollector(object):
         self.calls.history.append(call_id)
         self.calls.metadata[call_id] = metadata
         self.calls.increment_count()
-        logger.info('<gc>: registered: %s', call_id)
-        logger.debug('<gc>: calls handled: %s', self.calls.count)
+        logger.info('<gc>: new call registered: %s', call_id)
+        logger.debug('<gc>: total unique calls: %s', self.calls.count)
 
-    def revoke(self, call_id):
+    def revoke(self, call_id, expired=False):
         ''' force remove Call-ID and its' metadata.
         '''
         if call_id is None:
@@ -168,4 +167,7 @@ class AsynchronousGarbageCollector(object):
         if self.calls.metadata.get(call_id):
             del self.calls.metadata[call_id]
         self.rtp.send_stop_signal(call_id=call_id)
-        logger.info('<gc>: call removed: %s', call_id)
+        if expired:
+            logger.debug('<gc>: call removed (expired): %s', call_id)
+        else:
+            logger.debug('<gc>: call removed (signal): %s', call_id)
