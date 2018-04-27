@@ -167,11 +167,10 @@ class SynchronousRTPRouter(RTPRouter):
         '''
         if not call_id:
             return
-
-        # signal all handlers to remove Call-ID from recording.
+        # signal all handlers to remove Call-ID.
         template = RTPD_STOP
         template['Call-ID'] = call_id
-        for handler in self.handlers:
-            handler_endpoint = (handler['host'], int(handler['port']))
-            with safe_allocate_udp_client() as client:
+        with safe_allocate_udp_client() as client:
+            for handler in self.handlers:
+                handler_endpoint = (handler['host'], int(handler['port']))
                 client.sendto(dump_json(template), handler_endpoint)
