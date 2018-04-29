@@ -20,6 +20,7 @@
 # worker.py
 #-------------------------------------------------------------------------------
 
+import copy
 import logging
 import socket
 import time
@@ -38,6 +39,7 @@ from src.sip.static.options import SIP_OPTIONS
 from src.sip.static.ringing import SIP_RINGING
 from src.sip.static.terminated import SIP_TERMINATE
 from src.sip.static.trying import SIP_TRYING
+from src.sockets import safe_allocate_tcp_client
 from src.sockets import safe_allocate_udp_client
 from src.sockets import unsafe_allocate_random_udp_socket
 
@@ -295,3 +297,23 @@ class LazyWorker(object):
                 logger.warning('<worker>: RTP handler did not send RX/TX ports.')
                 send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
         self.gc.register(call_id=self.call_id)
+        self.send_to_db_interface()
+
+    def send_to_db_interface(self):
+        ''' send datagram to db interface.
+        '''
+        db = self.settings['db']
+        if not db.get('enabled'):
+            return
+        logger.info('<worker>: sending datagram to remove database.')
+        db_host, db_port = db['host'], int(db['port'])
+        db_username = db['username']
+        db_password = db['password']
+        with safe_allocate_tcp_client(
+                host=db_host,
+                port=db_port,
+                timeout=1.0) as client:
+            datagram = copy.deepcopy(self.datagram)
+            datagram['user'] = db_username
+            datagram['pass'] = db_password
+            client.sendall(dump_json(datagram))

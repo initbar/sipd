@@ -118,6 +118,36 @@ class safe_allocate_udp_socket(object):
             pass # already closed
         del self.__socket
 
+# UDP server
+#-------------------------------------------------------------------------------
+
+def unsafe_allocate_random_udp_socket(is_reused=False):
+    ''' allocate a random listening UDP socket that must be manually cleaned up.
+    '''
+    _socket = None
+    host = '0.0.0.0'
+    while not _socket:
+        port = get_random_unprivileged_port()
+        _socket = unsafe_allocate_udp_socket(host=host, port=port, is_reused=is_reused)
+    return _socket
+
+class safe_allocate_random_udp_socket(object):
+    ''' allocate exception-safe random listening UDP socket.
+    '''
+    def __init__(self, is_reused=False):
+        self.is_reused = is_reused
+        self.__socket = None
+
+    def __enter__(self):
+        self.__socket = unsafe_allocate_random_udp_socket(self.is_reused)
+        return self.__socket
+
+    def __exit__(self, *a, **kw):
+        try: self.__socket.close()
+        except AttributeError:
+            pass # already closed
+        del self.__socket
+
 # UDP clients
 #-------------------------------------------------------------------------------
 
@@ -147,28 +177,24 @@ class safe_allocate_udp_client(object):
             pass # already closed
         del self.__socket
 
-# UDP server
+
+# TCP cients
 #-------------------------------------------------------------------------------
 
-def unsafe_allocate_random_udp_socket(is_reused=False):
-    ''' allocate a random listening UDP socket that must be manually cleaned up.
+class safe_allocate_tcp_client(object):
+    ''' allocate exception-safe random TCP client.
     '''
-    _socket = None
-    host = '0.0.0.0'
-    while not _socket:
-        port = get_random_unprivileged_port()
-        _socket = unsafe_allocate_udp_socket(host=host, port=port, is_reused=is_reused)
-    return _socket
-
-class safe_allocate_random_udp_socket(object):
-    ''' allocate exception-safe random listening UDP socket.
-    '''
-    def __init__(self, is_reused=False):
-        self.is_reused = is_reused
+    def __init__(self, host='127.0.0.1', port=None, timeout=1.0):
+        self.host = host
+        self.port = port
+        self.timeout = timeout
         self.__socket = None
 
     def __enter__(self):
-        self.__socket = unsafe_allocate_random_udp_socket(self.is_reused)
+        try:
+            self.__socket = socket.create_connection((self.host, self.port))
+        except socket.error:
+            return
         return self.__socket
 
     def __exit__(self, *a, **kw):
