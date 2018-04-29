@@ -153,10 +153,9 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         # function closure to initialize workers and take demultiplexed "work".
         def consume():
             worker_queue = deque()
-            worker_pool = [ # pre-generate workers.
-                LazyWorker(i, SERVER_SETTINGS, GARBAGE_COLLECTOR)
-                for i in range(self.__pool_size)
-            ]
+            worker_pool = [ # pre-generate some shared workers.
+                LazyWorker('preload-' + str(i), SERVER_SETTINGS, GARBAGE_COLLECTOR)
+                for i in range(self.__pool_size) ]
             logger.debug("<router>: pre-generated worker pool: %s", worker_pool)
             while True:
                 # if queue is overflowing with processes, then wait until we
