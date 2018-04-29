@@ -14,7 +14,7 @@ all:
 	chmod u+x -v $(BINARY)
 
 run:
-	python $(SOURCE)
+	python $(SOURCE) || true
 
 test:
 	python $(SOURCE) --test
