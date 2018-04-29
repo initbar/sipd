@@ -59,7 +59,6 @@ class AsynchronousSIPServer(object):
         global GARBAGE_COLLECTOR
         SERVER_SETTINGS = setting
         GARBAGE_COLLECTOR = AsynchronousGarbageCollector(setting)
-        logger.debug('<server>: successfully initialized SIP server.')
 
     @classmethod
     def serve(cls):
@@ -75,8 +74,11 @@ class AsynchronousSIPServer(object):
             cls.router = AsynchronousSIPRouter(sip_socket)
             cls.router.initialize_demultiplexer()
             cls.router.initialize_consumer()
-            logger.debug('<server>: successfully initialized SIP router.')
+            logger.debug('<server>: successfully initialized router.')
+            logger.debug('<server>: successfully initialized server.')
             asyncore.loop() # push new events to the event loop.
+        logger.critical('<server>: server is already running.')
+        sys.exit(errno.EAGAIN)
 
 # router
 #-------------------------------------------------------------------------------
