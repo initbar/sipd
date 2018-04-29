@@ -29,6 +29,7 @@ from src.debug import create_random_uuid
 from src.debug import md5sum
 from src.optimizer import memcache
 from src.parser import convert_to_sip_packet
+from src.parser import dump_json
 from src.parser import parse_address
 from src.parser import parse_sip_packet
 from src.parser import validate_sip_signature
