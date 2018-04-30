@@ -297,8 +297,11 @@ class LazyWorker(object):
             else:
                 logger.warning('<worker>: RTP handler did not send RX/TX ports.')
                 send_response(self.socket, self.endpoint, self.datagram, 'OK -SDP')
-        self.gc.register(call_id=self.call_id)
-        self.send_to_db_interface()
+        try:
+            self.gc.register(call_id=self.call_id)
+            self.send_to_db_interface()
+        except:
+            pass
 
     def send_to_db_interface(self):
         ''' send datagram to db interface.
@@ -309,10 +312,7 @@ class LazyWorker(object):
         db_host, db_port = db['host'], int(db['port'])
         db_username = db['username']
         db_password = db['password']
-        with safe_allocate_tcp_client(
-                host=db_host,
-                port=db_port,
-                timeout=1.0) as client:
+        with safe_allocate_tcp_client(host=db_host, port=db_port) as client:
             datagram = copy.deepcopy(self.datagram)
             datagram['user'] = db_username
             datagram['pass'] = db_password
