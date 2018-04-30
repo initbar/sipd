@@ -39,6 +39,7 @@ class RTPRouter(object):
         self.setting = setting
         self.handlers = filter(lambda handler: handler['enabled'], setting['rtp']['handler'])
         self.handler_callid_mapping = {}
+        self.context = ''
         logger.debug('<rtp>: successfully loaded RTP configuration.')
         logger.debug('<rtp>: successfully initialized RTP handler.')
 
@@ -52,14 +53,13 @@ class RTPRouter(object):
         '''
         try:
             handler = self.get_random_handler()
-            logger.info('<rtp>: balancing packets to %s', server)
+            logger.info('%s <rtp>: balancing to %s', self.context, server)
             server = (address, port) = handler['host'], int(handler['port'])
             return address
         except AttributeError as error:
-            logger.error('<rtp>: no handler enabled in configuration: %s', error)
+            logger.error('%s <rtp>: no handler enabled: %s', self.context, error)
         except KeyError as error:
-            logger.error('<rtp>: no handler enabled in configuration: %s', error)
-        return
+            logger.error('%s <rtp>: no handler enabled: %s', self.context, error)
 
 class SynchronousRTPRouter(RTPRouter):
     ''' RTP router implementation.
@@ -103,14 +103,14 @@ class SynchronousRTPRouter(RTPRouter):
         json_template = dump_json(template)
         with safe_allocate_random_udp_socket() as udp_socket:
             udp_socket.sendto(json_template, tuple(handler_endpoint))
-            logger.debug("<<< <rtp>: requesting ports from %s", handler_endpoint)
-            logger.debug("<rtp>: waiting response from %s", handler_endpoint)
+            logger.debug("%s <<< <rtp>: requesting ports from %s", self.context, handler_endpoint)
+            logger.debug("%s <rtp>: waiting response from %s", self.context, handler_endpoint)
             try:
                 socket_data = udp_socket.recvfrom(0xff)
-                logger.debug("<rtp>: %s is up.", handler_endpoint)
-                logger.debug(">>> <rtp>: received %s from %s", socket_data, handler_endpoint)
+                logger.debug("%s <rtp>: %s is up.", self.context, handler_endpoint)
+                logger.debug("%s >>> <rtp>: received %s from %s", self.context, socket_data, handler_endpoint)
             except Exception as message:
-                logger.error("<rtp>: %s is down: %s", handler_endpoint, message)
+                logger.error("%s <rtp>: %s is down: %s", self.context, handler_endpoint, message)
                 return
 
         # parse RX/TX ports.
@@ -119,8 +119,8 @@ class SynchronousRTPRouter(RTPRouter):
 
         # generate static SDP data.
         tx_port, rx_port = rxtx_ports.get('TxPort'), rxtx_ports.get('RxPort')
-        logger.info('<rtp>: RxPort = %s', rx_port)
-        logger.info('<rtp>: TxPort = %s', tx_port)
+        logger.info('%s <rtp>: RxPort = %s', self.context, rx_port)
+        logger.info('%s <rtp>: TxPort = %s', self.context, tx_port)
         static_sdp = [
             'o=- 0 0 IN IP4 %s' % handler_address,
             'v=0',

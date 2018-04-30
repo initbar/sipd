@@ -215,6 +215,7 @@ class LazyWorker(object):
                 self.socket = unsafe_allocate_random_udp_socket(is_reused=True)
             if self.rtp is None:
                 self.rtp = SynchronousRTPRouter(self.settings)
+        self.rtp.context = logger.context
 
         # validate work.
         if not validate_sip_signature(message):
