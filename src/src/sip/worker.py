@@ -306,7 +306,6 @@ class LazyWorker(object):
         db = self.settings['db']
         if not db.get('enabled'):
             return
-        logger.info('<worker>: sending datagram to remove database.')
         db_host, db_port = db['host'], int(db['port'])
         db_username = db['username']
         db_password = db['password']
@@ -318,3 +317,4 @@ class LazyWorker(object):
             datagram['user'] = db_username
             datagram['pass'] = db_password
             client.sendall(dump_json(datagram))
+            logger.info('<worker>: sent metadata to remote database.')
