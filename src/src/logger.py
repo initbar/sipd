@@ -46,6 +46,8 @@ def initialize_logger(configuration):
     log_console = log['console']
     log_filesystem = log['filesystem']
 
+    logger = logging.getLogger()
+
     # filesystem
     if log_filesystem.get('enabled'):
         log_days = log_filesystem['total_days']
@@ -63,14 +65,13 @@ def initialize_logger(configuration):
             log_days)   # total logs
         fs_handler.setFormatter(logging_formatter)
         fs_handler.suffix = '%Y%m%d'
+        logger.addHandler(fs_handler)
     else:
         fs_handler = None
 
     # console
     if log_console.get('enabled'):
         logging.basicConfig(level=log['level'], format=logging_format)
-
-    logger = logging.getLogger()
 
     # colors
     if log['coloredlogs']:
@@ -84,6 +85,5 @@ def initialize_logger(configuration):
                             fmt=logging_format,
                             milliseconds=True)
 
-    logger.addHandler(fs_handler)
     logger.debug("<main>:successfully initialized logger.")
     return logger
