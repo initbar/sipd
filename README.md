@@ -11,21 +11,13 @@ Some key features are:
 
 - **Universal support** from Python 2.7 to Python 3+.
 
-- **Maximum portability** implemented in pure Python and [non-mandatory dependencies](./requirements.txt). You can either run it by cloning the git repository or [building a single binary](#deploy).
+- **Maximum portability** implemented in pure Python and [non-mandatory dependencies](./requirements.txt). You can either run it by cloning the git repository or [from pre-build packages](https://github.com/initbar/sipd/releases).
 
-- **High performance** using [reactor asynchronous design pattern](https://en.wikipedia.org/wiki/Reactor_pattern).
+- **High performance** using [reactor asynchronous design pattern](https://en.wikipedia.org/wiki/Reactor_pattern) and multi-core handlers.
 
-- **SIP load balance** to other SIP daemons.
+- **Fast RTP routing** using dynamic [Session Description Protocol](https://en.wikipedia.org/wiki/Session_Description_Protocol) generation. For the optimal performance, use external [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol) decoder handlers.
 
-- **Fast RTP routing** using dynamic [Session Description Protocol](https://en.wikipedia.org/wiki/Session_Description_Protocol) generation. For the optimal performance, using an external [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol) decoder is highly recommended.
-
-- **Production ready** and currently running in a production environment against [Genesys](http://www.genesys.com) devices and handling [Samsung Electronics of America](http://www.samsung.com) call traffic.
-
-## Dependencies
-
-```bash
-~$ sudo pip install -r requirements.txt
-```
+- **Production-ready straight out of the box** and currently running in production against [Genesys](http://www.genesys.com) devices and [Samsung Electronics of America](http://www.samsung.com)'s massive call traffic.
 
 ## Usage
 
@@ -34,16 +26,9 @@ Some key features are:
 ```bash
 ~$ git clone https://github.com/initbar/sipd
 ~$ cd ./sipd
+~$ # pip install -r requirements.txt
 ~$ # emacs sipd.json
 ~$ make run
-```
-
-## Tests
-
-To run unit tests, type `make test`. If the test exists with exit status 0, then it's ready to be run!
-
-```bash
-~$ make test
 ```
 
 ## Deploy
@@ -53,6 +38,15 @@ You can either use `make` to build and deploy to a remote server or `pip` to dow
 ```bash
 ~$ make clean
 ~$ make
+~$ ./sipd
+```
+
+## Tests
+
+To run unit tests, type `make test`. If the test exists with exit status 0, then it's ready to be run!
+
+```bash
+~$ make test
 ```
 
 ## License
