@@ -15,13 +15,13 @@ Some key features are:
 
 - **High performance** using [reactor asynchronous design pattern](https://en.wikipedia.org/wiki/Reactor_pattern) and multi-core handlers.
 
-- **Fast RTP routing** using dynamic [Session Description Protocol](https://en.wikipedia.org/wiki/Session_Description_Protocol) generation. For the optimal performance, use external [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol) decoder handlers.
+- **Fast RTP routing** using dynamic [Session Description Protocol](https://en.wikipedia.org/wiki/Session_Description_Protocol) generation. For the optimal performance, use external [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol) decoders.
 
 - **Production-ready straight out of the box** and currently running in production against [Genesys](http://www.genesys.com) devices and [Samsung Electronics of America](http://www.samsung.com)'s massive call traffic.
 
 ## Usage
 
-[sipd.json](./sipd.json) is a non-mandatory configuration file that allows customization to the runtime environment. Although default settings is fine, it can also be tuned for higher performance.
+[sipd.json](./sipd.json) is a mandatory configuration file that allows customization of the runtime environment. Although default settings is fine, it can be tuned for better performance.
 
 ```bash
 ~$ git clone https://github.com/initbar/sipd
