@@ -38,16 +38,9 @@ class RTPRouter(object):
     '''
     def __init__(self, setting={}):
         self.setting = setting
-        self.handler_callid_mapping = {}
         self.handlers = filter( # filter by enabled routers.
             lambda handler: handler['enabled'],
             setting['rtp']['handler'])
-
-        # add extra states to handlers.
-        for handler in self.handlers:
-            handler['is_up'] = True
-            handler['down_count'] = 0
-            handler['wait_time'] = 0
 
         # logging context
         self.context = ''
@@ -57,11 +50,7 @@ class RTPRouter(object):
     def get_random_handler(self):
         ''' return random handler.
         '''
-        for handler in self.handlers:
-            if handler.get('is_up'):
-                return handler
-            elif time.time() > handler.get('wait_time'):
-                return handler
+        return random.choice(self.handlers)
 
     def get_random_handler_address(self):
         ''' return random handler address.
@@ -75,26 +64,6 @@ class RTPRouter(object):
             logger.error('%s <rtp>: no handler enabled: %s', self.context, error)
         except KeyError as error:
             logger.error('%s <rtp>: no handler enabled: %s', self.context, error)
-
-    def process_handler_up(self, handler):
-        ''' if external handler responds, reset handler state.
-        '''
-        if not handler.get('is_up'):
-            handler['down_count'] = 0
-            handler['wait_time'] = 0
-            handler['is_up'] = False
-            logger.debug('%s <rtp>: %s is back up.', self.context, handler)
-
-    def process_handler_down(self, handler):
-        ''' if external handler fails to respond, handle gracefully.
-        '''
-        now = time.time()
-        if handler['wait_time'] > now:
-            handler['down_count'] += 1
-            handler['wait_time'] = now + (1<<int(handler['down_count']))
-            handler['is_up'] = False
-            logger.warning('%s <rtp>: temporarily disabled %s.',
-                           self.context, handler, handler['wait_time'])
 
 class SynchronousRTPRouter(RTPRouter):
     ''' RTP router implementation.
@@ -150,7 +119,6 @@ class SynchronousRTPRouter(RTPRouter):
                 logger.debug("%s >>> <rtp>: received %s from %s", self.context, socket_data, handler_endpoint)
             except Exception as message:
                 logger.error("%s <rtp>: %s is down: %s", self.context, handler_endpoint, message)
-                self.process_handler_down(handler)
                 return
 
         # parse RX/TX ports.
@@ -193,14 +161,7 @@ class SynchronousRTPRouter(RTPRouter):
         for sdp in static_sdp:
             datagram['sdp'].append(sdp)
 
-        # store RX/TX ports to correctly close at 'stop' event.
-        call_id = datagram['sip']['Call-ID']
-        handler = self.handler_callid_mapping.get(call_id)
-        self.handler_callid_mapping[call_id] = handler_endpoint
-
-        # return original/updated sip datagram.
-        self.process_handler_up(handler)
-        return datagram
+        return datagram # updated datagram.
 
     def send_stop_signal(self, call_id):
         ''' request external handler to close RX/TX ports.
