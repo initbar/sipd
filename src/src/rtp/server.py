@@ -50,7 +50,11 @@ class RTPRouter(object):
     def get_random_handler(self):
         ''' return random handler.
         '''
-        return random.choice(self.handlers)
+        try:
+            handler = random.choice(self.handlers)
+        except IndexError:
+            handler = None
+        return handler
 
     def get_random_handler_address(self):
         ''' return random handler address.
