@@ -44,7 +44,7 @@ class CallContainer(object):
         @metadata<dict> -- CallMetadata objects index by Call-ID in history.
         @count<int> -- general statistics of total received calls.
         '''
-        self.history = deque(maxlen=(0xffff - 6000) / 2)
+        self.history = deque(maxlen=(0xffff - 6000) // 2)
         self.metadata = {}
         self.count = 0 # only increment.
 
