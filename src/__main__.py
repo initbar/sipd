@@ -16,11 +16,12 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # __main__.py
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-try: # check supported version.
+# check supported version.
+try:
     import sys
     assert (2, 7) <= sys.version_info <= (3, 7)
 except AssertionError:
@@ -38,6 +39,7 @@ from src.tester import run_test_suite
 __program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
 __version__ = '1.3.7'
 __license__ = 'GNU GPLv3'
+
 
 def main():
     '''
@@ -74,7 +76,7 @@ def main():
         with open(config_file) as config_buffer:
             config = parse_config(config_buffer.read())
         logger = initialize_logger(config)
-        logger.debug("<main>:successfully loaded configuration: '%s'.", config_file)
+        logger.debug("<main>:successfully loaded: '%s'.", config_file)
         logger.debug(config)
     else:
         sys.stderr.write("<main>:file does not exist: '%s'.\n", config_file)
@@ -86,6 +88,7 @@ def main():
     server = AsynchronousSIPServer(config)
     return server.serve()
 
+
 if __name__ == '__main__':
 
     # adjust path if this main class is packed executable.
@@ -93,6 +96,7 @@ if __name__ == '__main__':
         sys.path.insert(0, os.path.dirname(os.path.dirname(
             os.path.realpath(os.path.abspath(__file__)))))
 
-    try: sys.exit(main())
+    try:
+        sys.exit(main())
     except KeyboardInterrupt:
         pass
