@@ -26,8 +26,6 @@ import os
 import sys
 
 from logging.handlers import TimedRotatingFileHandler
-from src.debug import create_random_uuid
-from src.debug import md5sum
 
 def initialize_logger(configuration):
     '''
