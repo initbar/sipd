@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.org/initbar/sipd.svg?branch=master)](https://travis-ci.org/initbar/sipd)
+[![Maintainability](https://api.codeclimate.com/v1/badges/60d7880bae5716d8bb6e/maintainability)](https://codeclimate.com/github/initbar/sipd/maintainability)
 <p align="center">
   <img src="./docs/logo.png">
 </p>
