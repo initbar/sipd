@@ -23,6 +23,7 @@
 # check supported version.
 try:
     import sys
+
     assert (2, 7) <= sys.version_info <= (3, 7)
 except AssertionError:
     raise
@@ -36,37 +37,41 @@ from src.logger import initialize_logger
 from src.sip.server import AsynchronousSIPServer
 from src.tester import run_test_suite
 
-__program__ = 'sipd -- Active recording Session Initiation Protocol Daemon'
-__version__ = '1.3.7'
-__license__ = 'GNU GPLv3'
+__program__ = "sipd -- Active recording Session Initiation Protocol Daemon"
+__version__ = "1.3.8"
+__license__ = "GNU GPLv3"
 
 
 def main():
-    '''
-    '''
+    """
+    """
     argsparser = argparse.ArgumentParser(prog=__program__)
-    n_exec = argsparser.add_argument_group('execution arguments')
-    n_test = argsparser.add_argument_group('testing arguments')
+    n_exec = argsparser.add_argument_group("execution arguments")
+    n_test = argsparser.add_argument_group("testing arguments")
 
-    default_configuration = os.path.abspath(os.path.curdir) + '/sipd.json'
+    default_configuration = os.path.abspath(os.path.curdir) + "/sipd.json"
 
     # version: show program's version number and exit.
-    argsparser.add_argument('-v', '--version',
-                            action='version',
-                            version=__version__)
+    argsparser.add_argument("-v", "--version", action="version", version=__version__)
 
     # config: configuration file path.
-    n_exec.add_argument('-c', '--config',
-                        nargs='?',
-                        metavar='str',
-                        default=default_configuration,
-                        help='configuration file path (default: None)')
+    n_exec.add_argument(
+        "-c",
+        "--config",
+        nargs="?",
+        metavar="str",
+        default=default_configuration,
+        help="configuration file path (default: None)",
+    )
 
     # test: run test suite and exit.
-    n_test.add_argument('-t', '--test',
-                        action='store_true',
-                        default=False,
-                        help="run tests (default: no)")
+    n_test.add_argument(
+        "-t",
+        "--test",
+        action="store_true",
+        default=False,
+        help="run tests (default: no)",
+    )
 
     args = argsparser.parse_args()
     config_file = str(args.config)
@@ -89,12 +94,16 @@ def main():
     return server.serve()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     # adjust path if this main class is packed executable.
-    if __package__ is None and not hasattr(sys, 'frozen'):
-        sys.path.insert(0, os.path.dirname(os.path.dirname(
-            os.path.realpath(os.path.abspath(__file__)))))
+    if __package__ is None and not hasattr(sys, "frozen"):
+        sys.path.insert(
+            0,
+            os.path.dirname(
+                os.path.dirname(os.path.realpath(os.path.abspath(__file__)))
+            ),
+        )
 
     try:
         sys.exit(main())

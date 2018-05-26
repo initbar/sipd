@@ -16,7 +16,7 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # 7.2.1 200 OK
 #
 # The request has succeeded. The information returned with the response
@@ -36,48 +36,48 @@
 #           message body according to its Content-Type.
 #
 # https://tools.ietf.org/html/rfc2543#section-7.2.1
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 SIP_OK = {
-    'status_line': 'SIP/2.0 200 OK',
-    'sdp': True,
-    'sip': [
-        'Via',
-        'From',
-        'To',
-        'CSeq',
-        'Max-Forwards',
-        'Call-ID',
-        'Contact',
-        'Supported',
-        'Require',
-        'Session-Expires',
-        'Server',
-        'Allow',
-        'Min-SE'
-    ]
+    "status_line": "SIP/2.0 200 OK",
+    "sdp": True,
+    "sip": [
+        "Via",
+        "From",
+        "To",
+        "CSeq",
+        "Max-Forwards",
+        "Call-ID",
+        "Contact",
+        "Supported",
+        "Require",
+        "Session-Expires",
+        "Server",
+        "Allow",
+        "Min-SE",
+    ],
 }
 
 SIP_OK_NO_SDP = {
-    'status_line': 'SIP/2.0 200 OK',
-    'sip': [
-        'Via',
-        'From',
-        'To',
-        'CSeq',
-        'Max-Forwards',
-        'Call-ID',
-        'Contact',
-        'Supported',
-        'Require',
-        'Session-Expires',
-        'Server',
-        'Allow',
-        'Min-SE'
-    ]
+    "status_line": "SIP/2.0 200 OK",
+    "sip": [
+        "Via",
+        "From",
+        "To",
+        "CSeq",
+        "Max-Forwards",
+        "Call-ID",
+        "Contact",
+        "Supported",
+        "Require",
+        "Session-Expires",
+        "Server",
+        "Allow",
+        "Min-SE",
+    ],
 }
 
-SIP_OK_SAMPLE = '''\
+SIP_OK_SAMPLE = """\
 SIP/2.0 200 OK
 Allow: ACK, BYE, CANCEL, INVITE, OPTIONS, UPDATE
 Call-ID: 9E565000-C50B-90B0-2119-BE6C9297421D-7090@192.168.1.3
@@ -109,4 +109,4 @@ a=sendonly
 c=IN IP4 192.168.1.5
 m=audio 6000 RTP/AVP 18 101
 m=audio 6001 RTP/AVP 18 101
-'''
+"""

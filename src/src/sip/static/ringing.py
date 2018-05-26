@@ -16,30 +16,21 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # 21.1.2 180 Ringing
 #
 # The UA receiving the INVITE is trying to alert the user.  This
 # response MAY be used to initiate local ringback.
 #
 # https://tools.ietf.org/html/rfc3261#section-21.1.2
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 SIP_RINGING = {
-    'status_line': 'SIP/2.0 180 Ringing',
-    'sip': [
-        'CSeq',
-        'From',
-        'To',
-        'Via',
-        'Call-ID',
-        'Record-Route',
-        'Allow',
-        'Contact'
-    ]
+    "status_line": "SIP/2.0 180 Ringing",
+    "sip": ["CSeq", "From", "To", "Via", "Call-ID", "Record-Route", "Allow", "Contact"],
 }
 
-SIP_RINGING_SAMPLE = '''\
+SIP_RINGING_SAMPLE = """\
 SIP/2.0 180 Ringing
 CSeq: 1 INVITE
 Call-ID: 9E565000-C50B-B39A-61A3-33FB67415050-7090@192.168.1.4
@@ -50,4 +41,4 @@ Record-Route: <sip:0x196e3b00@192.168.1.8:15060;lr;gvp.rm.datanodes=1;confinstid
 Contact: <sip:ImpactRecorder@192.168.1.9:5060;transport=udp>
 Allow: INVITE, OPTIONS, BYE, CANCEL, ACK, UPDATE, INFO
 Content-Length: 0
-'''
+"""

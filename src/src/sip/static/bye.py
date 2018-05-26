@@ -16,7 +16,7 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # 4.2.4 BYE
 #
 # The user agent client uses BYE to indicate to the server that it
@@ -33,13 +33,10 @@
 # supported by redirect and user agent SIP servers.
 #
 # https://tools.ietf.org/html/rfc2543#section-4.2.4
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-SIP_BYE = {
-    'status_line': 'SIP/2.0 BYE',
-    'sip': []
-}
+SIP_BYE = {"status_line": "SIP/2.0 BYE", "sip": []}
 
 
-SIP_BYE_SAMPLE = '''\
-'''
+SIP_BYE_SAMPLE = """\
+"""

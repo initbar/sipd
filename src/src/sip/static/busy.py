@@ -16,7 +16,7 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # 7.4.23 486 Busy Here
 #
 # The callee's end system was contacted successfully but the callee is
@@ -28,15 +28,10 @@
 # other end system will be able to accept this call.
 #
 # https://tools.ietf.org/html/rfc2543#section-7.4.23
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-SIP_BUSY = {
-    'status_line': 'SIP/2.0 486 Busy Here',
-    'sip': [
-        'Contact'
-    ]
-}
+SIP_BUSY = {"status_line": "SIP/2.0 486 Busy Here", "sip": ["Contact"]}
 
-SIP_BUSY_SAMPLE = '''\
+SIP_BUSY_SAMPLE = """\
 SIP/2.0 486 Busy Here
-'''
+"""

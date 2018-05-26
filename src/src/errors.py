@@ -16,21 +16,24 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # errors.py -- custom error suite.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 # default
 class SIPError(Exception):
     pass
 
+
 # SIP frame is not parsable by handler.
 class SIPBrokenProtocol(SIPError):
     pass
 
+
 # Python object to SIP message convert error.
 class SIPPackError(SIPError):
     pass
+
 
 # SIP message to Python object convert error.
 class SIPUnpackError(SIPError):

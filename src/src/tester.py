@@ -16,9 +16,9 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # tester.py
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 import logging
 import unittest
@@ -30,14 +30,10 @@ from tests.test_sockets import TestSockets
 
 logger = logging.getLogger()
 
+
 def run_test_suite():
-    logger.info('initializing self-tests..')
-    test_suites, test_cases = [], [
-        TestDebug,
-        TestErrors,
-        TestParser,
-        TestSockets
-    ]
+    logger.info("initializing self-tests..")
+    test_suites, test_cases = [], [TestDebug, TestErrors, TestParser, TestSockets]
     for test_case in test_cases:
         logger.info("adding test suite: '%s'.", test_case)
         test_suite = unittest.TestLoader().loadTestsFromTestCase(test_case)

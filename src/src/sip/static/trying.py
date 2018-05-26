@@ -16,7 +16,7 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # 7.1.1 100 Trying
 #
 # Some unspecified action is being taken on behalf of this call (e.g.,
@@ -24,19 +24,11 @@
 # located.
 #
 # https://tools.ietf.org/html/rfc2543#section-7.1.1
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 SIP_TRYING = {
-    'status_line': 'SIP/2.0 100 Trying',
-    'sip': [
-        'CSeq',
-        'From',
-        'To',
-        'Via',
-        'Call-ID',
-        'Allow',
-        'Contact'
-    ]
+    "status_line": "SIP/2.0 100 Trying",
+    "sip": ["CSeq", "From", "To", "Via", "Call-ID", "Allow", "Contact"],
 }
 
-SIP_TRYING_SAMPLE = ''
+SIP_TRYING_SAMPLE = ""

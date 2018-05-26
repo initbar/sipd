@@ -20,6 +20,7 @@ import unittest
 
 from src.errors import *
 
+
 class TestErrors(unittest.TestCase):
 
     def test_errors_inheritance_sip_error(self):

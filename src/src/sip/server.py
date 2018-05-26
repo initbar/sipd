@@ -16,9 +16,9 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # server.py
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 import asyncore
 import errno
@@ -37,7 +37,7 @@ from threading import Thread
 
 logger = logging.getLogger()
 
-SERVER_SETTINGS = None # `sipd.json`
+SERVER_SETTINGS = None  # `sipd.json`
 
 # each worker should not instantiate a new garbage collector since a subsequent
 # related requests can not guarantee to hit the same worker. Therefore, the
@@ -46,14 +46,16 @@ SERVER_SETTINGS = None # `sipd.json`
 GARBAGE_COLLECTOR = None
 
 # server
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+
 
 class AsynchronousSIPServer(object):
-    ''' Asynchronous SIP server to initialize router and globalize settings.
-    '''
+    """ Asynchronous SIP server to initialize router and globalize settings.
+    """
+
     def __init__(self, setting):
         if not setting:
-            logger.critical('<server>: failed to initialize SIP server.')
+            logger.critical("<server>: failed to initialize SIP server.")
             sys.exit(errno.EINVAL)
         global SERVER_SETTINGS
         global GARBAGE_COLLECTOR
@@ -63,9 +65,9 @@ class AsynchronousSIPServer(object):
     @classmethod
     def serve(cls):
         try:
-            sip_port = SERVER_SETTINGS['sip']['router']['port']
+            sip_port = SERVER_SETTINGS["sip"]["router"]["port"]
         except KeyError:
-            sip_port = 5060 # udp
+            sip_port = 5060  # udp
         # assign asynchronous handler to the receiving SIP port. Currently,
         # `asyncore` module was chosen in order to provide backward
         # compatibility with Python 2 (where there's no `asyncio`). All
@@ -74,45 +76,45 @@ class AsynchronousSIPServer(object):
             cls.router = AsynchronousSIPRouter(sip_socket)
             cls.router.initialize_demultiplexer()
             cls.router.initialize_consumer()
-            logger.debug('<server>: successfully initialized router.')
-            logger.debug('<server>: successfully initialized server.')
-            asyncore.loop() # push new events to the event loop.
-        logger.critical('<server>: server is already running.')
+            logger.debug("<server>: successfully initialized router.")
+            logger.debug("<server>: successfully initialized server.")
+            asyncore.loop()  # push new events to the event loop.
+        logger.critical("<server>: server is already running.")
         sys.exit(errno.EAGAIN)
 
+
 # router
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+
 
 def deploy_worker_thread(worker_pool, endpoint, message):
-    ''' deploy a worker thread to handle work.
+    """ deploy a worker thread to handle work.
     @worker_pool<list> -- a pool of worker instances.
     @endpoint<tuple> -- SIP endpoint.
     @message<str> -- SIP message.
-    '''
+    """
     worker_thread = None
     for worker in worker_pool:
         if worker.is_ready:
             worker_thread = Thread(
-                name=worker.name,
-                target=worker.handle,
-                args=(message, endpoint))
+                name=worker.name, target=worker.handle, args=(message, endpoint)
+            )
             break
     # if no workers are ready, create a temporary worker.
     if not worker_thread:
-        worker = LazyWorker(
-            settings=SERVER_SETTINGS,
-            gc=GARBAGE_COLLECTOR)
+        worker = LazyWorker(settings=SERVER_SETTINGS, gc=GARBAGE_COLLECTOR)
         worker_thread = Thread(
-            name=worker.name,
-            target=worker.handle,
-            args=(message, endpoint))
+            name=worker.name, target=worker.handle, args=(message, endpoint)
+        )
     worker_thread.daemon = True
     worker_thread.start()
     return worker_thread
 
+
 class AsynchronousSIPRouter(asyncore.dispatcher):
-    ''' Asynchronous SIP router to demultiplex and delegate work to workers.
-    '''
+    """ Asynchronous SIP router to demultiplex and delegate work to workers.
+    """
+
     def __init__(self, sip_socket):
         # in order to prevent double creation of a router socket, inherit
         # SIP port from SIP server. A router should only be used to receive
@@ -129,33 +131,34 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
         self.writable = lambda: self.is_writable
         self.handle_write = lambda: None
 
-        try: # calculate worker pool size.
-            self.__pool_size = SERVER_SETTINGS['sip']['worker']['count']
+        try:  # calculate worker pool size.
+            self.__pool_size = SERVER_SETTINGS["sip"]["worker"]["count"]
             if self.__pool_size <= 0:
                 self.__pool_size = cpu_count()
         except KeyError:
             self.__pool_size = 1
 
     def handle_read(self):
-        try: # router only receives data ("work") and delegate to worker(s).
-            packet = self.recvfrom(0xffff) # max receive bytes.
+        try:  # router only receives data ("work") and delegate to worker(s).
+            packet = self.recvfrom(0xffff)  # max receive bytes.
             endpoint, message = tuple(packet[1]), str(packet[0])
-            self.__demux.put((endpoint, message)) # demultiplex.
+            self.__demux.put((endpoint, message))  # demultiplex.
         except EOFError:
             pass
 
     def initialize_consumer(self):
-        ''' initialize consumer thread.
-        '''
+        """ initialize consumer thread.
+        """
         if not self.__demux:
             logger.critical("<router>: failed to initialize router demultiplexer.")
             sys.exit(errno.EAGAIN)
         # function closure to initialize workers and take demultiplexed "work".
         def consume():
             worker_queue = deque()
-            worker_pool = [ # pre-generate some shared workers.
-                LazyWorker('preload-' + str(i), SERVER_SETTINGS, GARBAGE_COLLECTOR)
-                for i in range(self.__pool_size) ]
+            worker_pool = [  # pre-generate some shared workers.
+                LazyWorker("preload-" + str(i), SERVER_SETTINGS, GARBAGE_COLLECTOR)
+                for i in range(self.__pool_size)
+            ]
             logger.debug("<router>: pre-generated worker pool: %s", worker_pool)
             while True:
                 # if queue is overflowing with processes, then wait until we
@@ -167,20 +170,23 @@ class AsynchronousSIPRouter(asyncore.dispatcher):
                 thread_limit = min(self.__pool_size, self.__demux.qsize())
                 for _ in range(thread_limit):
                     endpoint, message = self.__demux.get()
-                    worker_queue.append( # remember generated threads.
-                        deploy_worker_thread(worker_pool, endpoint, message))
+                    worker_queue.append(  # remember generated threads.
+                        deploy_worker_thread(worker_pool, endpoint, message)
+                    )
                 # throttle if the worker processes are leaking over the limit.
                 while len(worker_queue) >= self.__pool_size:
                     thread = worker_queue.popleft()
                     if thread.is_alive():
                         worker_queue.append(thread)
-        self.__consumer = Thread(name='consumer', target=consume)
+
+        self.__consumer = Thread(name="consumer", target=consume)
         self.__consumer.daemon = True
         self.__consumer.start()
 
     def initialize_demultiplexer(self):
-        ''' initialize demultiplexer.
-        '''
+        """ initialize demultiplexer.
+        """
         from multiprocessing import Queue
+
         self.__demux = Queue()
         return bool(self.__demux)

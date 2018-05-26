@@ -16,20 +16,15 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # 21.4.4 403 Forbidden
 #
 # The server understood the request, but is refusing to fulfill it.
 # Authorization will not help, and the request SHOULD NOT be repeated.#
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
-SIP_RINGING = {
-    'status_line': 'SIP/2.0 403 Forbidden',
-    'sip': [
-        'Contact'
-    ]
-}
+SIP_RINGING = {"status_line": "SIP/2.0 403 Forbidden", "sip": ["Contact"]}
 
-SIP_RINGING_SAMPLE = '''\
+SIP_RINGING_SAMPLE = """\
 SIP/2.0 403 Forbidden
-'''
+"""

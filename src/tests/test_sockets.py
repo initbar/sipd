@@ -22,6 +22,7 @@ import unittest
 from src.sockets import *
 from src.parser import *
 
+
 class TestSockets(unittest.TestCase):
 
     #
@@ -38,25 +39,25 @@ class TestSockets(unittest.TestCase):
     #
 
     def test_sockets_unsafe_allocate_udp_socket_empty_both(self):
-        self.assertFalse(unsafe_allocate_udp_socket('', ''))
+        self.assertFalse(unsafe_allocate_udp_socket("", ""))
 
     def test_sockets_unsafe_allocate_udp_socket_empty_host(self):
-        self.assertFalse(unsafe_allocate_udp_socket('', 8080))
+        self.assertFalse(unsafe_allocate_udp_socket("", 8080))
 
     def test_sockets_unsafe_allocate_udp_socket_empty_port(self):
-        self.assertFalse(unsafe_allocate_udp_socket('127.0.0.1', ''))
+        self.assertFalse(unsafe_allocate_udp_socket("127.0.0.1", ""))
 
     def test_sockets_unsafe_allocate_udp_socket_hostname_1(self):
-        self.assertFalse(unsafe_allocate_udp_socket('127.0.1', 8080))
+        self.assertFalse(unsafe_allocate_udp_socket("127.0.1", 8080))
 
     def test_sockets_unsafe_allocate_udp_socket_hostname_2(self):
-        self.assertFalse(unsafe_allocate_udp_socket('localhose', 8080))
+        self.assertFalse(unsafe_allocate_udp_socket("localhose", 8080))
 
     def test_sockets_unsafe_allocate_udp_socket_hostname_3(self):
-        self.assertFalse(unsafe_allocate_udp_socket('0.0.0.0.0', 8080))
+        self.assertFalse(unsafe_allocate_udp_socket("0.0.0.0.0", 8080))
 
     def test_sockets_unsafe_allocate_udp_socket(self):
         with safe_allocate_random_udp_socket() as udp_socket:
             socket_port = udp_socket.getsockname()[1]
             with safe_allocate_udp_client() as udp_client:
-                udp_client.connect(('127.0.0.1', socket_port))
+                udp_client.connect(("127.0.0.1", socket_port))

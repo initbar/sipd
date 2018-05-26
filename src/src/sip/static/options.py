@@ -16,7 +16,7 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # 4.2.3 OPTIONS
 #
 # The server is being queried as to its capabilities. A server that
@@ -32,22 +32,14 @@
 # servers, registrars and clients.
 #
 # https://tools.ietf.org/html/rfc2543#section-4.2.3
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 SIP_OPTIONS = {
-    'status_line': 'OPTIONS sip:%(dest_ip)s:%(dest_port)s SIP/2.0',
-    'sip': [
-        'Allow',
-        'Call_Id',
-        'From',
-        'Max-Forwards',
-        'Supported'
-        'To',
-        'Via',
-    ]
+    "status_line": "OPTIONS sip:%(dest_ip)s:%(dest_port)s SIP/2.0",
+    "sip": ["Allow", "Call_Id", "From", "Max-Forwards", "Supported" "To", "Via"],
 }
 
-SIP_OPTIONS_SAMPLE = '''\
+SIP_OPTIONS_SAMPLE = """\
 OPTIONS sip:192.168.1.6:5060 SIP/2.0
 Via: SIP/2.0/UDP 192.168.1.3:15064;branch=z9hG4bK0x2473c35084b6b1
 From: <sip:GVP@192.168.1.3:15064>;tag=9E565000-FB73-C996-4E01-0810C8DE0CF4
@@ -59,4 +51,4 @@ Contact: <sip:GVP@192.168.1.3:15064>
 Content-Length: 0
 Allow: INVITE, OPTIONS, BYE, CANCEL, ACK, UPDATE, INFO
 Supported: timer, uui
-'''
+"""

@@ -16,9 +16,9 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # debug.py -- debugging and helper function module.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 from datetime import datetime
 from uuid import uuid4 as UUID
@@ -26,26 +26,27 @@ from uuid import uuid4 as UUID
 import hashlib
 
 # namespace
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # https://tools.ietf.org/html/rfc4122.html
 
 # generate a random UUID string.
 create_random_uuid = lambda: UUID().__str__()
 
 # hash
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # https://tools.ietf.org/html/rfc4634
 
-md5sum    = lambda plaintext: hashlib.md5(plaintext).hexdigest()
-sha1sum   = lambda plaintext: hashlib.sha1(plaintext).hexdigest()
+md5sum = lambda plaintext: hashlib.md5(plaintext).hexdigest()
+sha1sum = lambda plaintext: hashlib.sha1(plaintext).hexdigest()
 sha256sum = lambda plaintext: hashlib.sha256(plaintext).hexdigest()
 sha512sum = lambda plaintext: hashlib.sha512(plaintext).hexdigest()
 
 # timestamps
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # https://tools.ietf.org/html/rfc1305
+
 
 def time_in_ntp():
     now = datetime.utcnow() - datetime(1900, 1, 1, 0, 0, 0)
-    ntp = now.seconds + (now.days * 0x15180) # 24 * 60 ** 2
+    ntp = now.seconds + (now.days * 0x15180)  # 24 * 60 ** 2
     return str(ntp)

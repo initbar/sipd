@@ -16,26 +16,27 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # config.py -- config parser, custom overrides, and default states.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 from src.parser import parse_json
 from src.sockets import get_server_address
 
-import sys # no logger setup yet
+import sys  # no logger setup yet
+
 
 def parse_config(config={}):
-    ''' parse `sipd.json` and load/initialize with runtime environment.
-    '''
+    """ parse `sipd.json` and load/initialize with runtime environment.
+    """
     try:
         parsed_config = parse_json(config)
         assert parsed_config
 
         # save server address information to the configuration.
-        if not parsed_config['sip']['server']['address']:
+        if not parsed_config["sip"]["server"]["address"]:
             public_address = get_server_address()
-            parsed_config['sip']['server']['address'] = public_address
+            parsed_config["sip"]["server"]["address"] = public_address
 
         return parsed_config
     except AssertionError:

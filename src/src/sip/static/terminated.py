@@ -16,24 +16,18 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # 21.4.25 487 Request Terminated
 #
 # The request was terminated by a BYE or CANCEL request.  This response
 # is never returned for a CANCEL request itself.
 #
 # https://tools.ietf.org/html/rfc3261#section-21.4.25
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 SIP_TERMINATE = {
-    'status_line': 'SIP/2.0 487 Request Terminated',
-    'sip': [
-        'From',
-        'To',
-        'Via',
-        'Call-ID',
-        'Contact'
-    ]
+    "status_line": "SIP/2.0 487 Request Terminated",
+    "sip": ["From", "To", "Via", "Call-ID", "Contact"],
 }
 
-SIP_TERMINATE_SAMPLE = ''
+SIP_TERMINATE_SAMPLE = ""

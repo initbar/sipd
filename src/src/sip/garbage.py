@@ -31,43 +31,49 @@ except ImportError:
 
 logger = logging.getLogger()
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # gc.py
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+
 
 class CallContainer(object):
-    ''' call information container.
-    '''
+    """ call information container.
+    """
+
     def __init__(self):
-        '''
+        """
         @history<deque> -- record of managed Call-ID by garbage collector.
         @metadata<dict> -- CallMetadata objects index by Call-ID in history.
         @count<int> -- general statistics of total received calls.
-        '''
+        """
         self.history = deque(maxlen=(0xffff - 6000) // 2)
         self.metadata = {}
-        self.count = 0 # only increment.
+        self.count = 0  # only increment.
 
     def increment_count(self):
         self.count += 1
 
+
 class CallMetadata(object):
-    ''' call metadata container.
-    '''
+    """ call metadata container.
+    """
+
     def __init__(self, expiration):
         self.expiration = expiration
         # TODO: add more.
 
+
 class AsynchronousGarbageCollector(object):
-    ''' asynchronous garbage collector implementation.
-    '''
+    """ asynchronous garbage collector implementation.
+    """
+
     def __init__(self, settings={}):
-        '''
+        """
         @settings<dict> -- `sipd.json`
-        '''
+        """
         self.settings = settings
-        self.check_interval = float(settings['gc']['check_interval'])
-        self.call_lifetime = float(settings['gc']['call_lifetime'])
+        self.check_interval = float(settings["gc"]["check_interval"])
+        self.call_lifetime = float(settings["gc"]["call_lifetime"])
 
         # call information and metadata.
         self.calls = CallContainer()
@@ -77,39 +83,39 @@ class AsynchronousGarbageCollector(object):
         # demultiplex tasks into a thread-safe queue and consume later.
         self.__tasks = Queue()
 
-        self.is_ready = False # recyclable state.
+        self.is_ready = False  # recyclable state.
         self.initialize_garbage_collector()
-        logger.debug('<gc>: successfully initialized garbage collector.')
+        logger.debug("<gc>: successfully initialized garbage collector.")
 
     def initialize_garbage_collector(self):
-        ''' create a garbage collector thread.
-        '''
+        """ create a garbage collector thread.
+        """
+
         def create_thread():
             while True:
                 time.sleep(self.check_interval)
                 self.consume_tasks()
-        thread = threading.Thread(
-            name='garbage-collector',
-            target=create_thread)
+
+        thread = threading.Thread(name="garbage-collector", target=create_thread)
         self.__thread = thread
         self.__thread.daemon = True
         self.__thread.start()
         self.is_ready = True
 
     def queue_task(self, function):
-        ''' demultiplex a new future garbage collector task.
-        '''
+        """ demultiplex a new future garbage collector task.
+        """
         if function:
             self.__tasks.put(item=function)
-            logger.debug('<gc>: queued task %s', function)
-            logger.debug('<gc>: queue size %s', self.__tasks.qsize())
+            logger.debug("<gc>: queued task %s", function)
+            logger.debug("<gc>: queue size %s", self.__tasks.qsize())
 
     def consume_tasks(self):
-        ''' consume demultiplexed garbage collector tasks.
-        '''
+        """ consume demultiplexed garbage collector tasks.
+        """
         if not self.is_ready:
             return
-        self.is_ready = False # garbage collector is busy.
+        self.is_ready = False  # garbage collector is busy.
 
         if self.rtp is None:
             self.rtp = SynchronousRTPRouter(self.settings)
@@ -118,13 +124,13 @@ class AsynchronousGarbageCollector(object):
         while not self.__tasks.empty():
             try:
                 task = self.__tasks.get()
-                task() # deferred execution.
-                logger.debug('<gc>: executed deferred task: %s', task)
+                task()  # deferred execution.
+                logger.debug("<gc>: executed deferred task: %s", task)
             except TypeError:
                 logger.error("<gc>: expected task: received %s", task)
 
         now = int(time.time())
-        try: # remove calls from management.
+        try:  # remove calls from management.
             for _ in list(self.calls.history):
                 # since call queue is FIFO, the oldest call is placed on top
                 # (left) and the youngest call is placed on the bottom (right).
@@ -143,31 +149,31 @@ class AsynchronousGarbageCollector(object):
                     self.calls.history.appendleft(call_id)
                     break
         except AttributeError:
-            self.rtp = None # unset to re-initialize at next iteration.
+            self.rtp = None  # unset to re-initialize at next iteration.
         finally:
-            self.is_ready = True # garbage collector is available.
+            self.is_ready = True  # garbage collector is available.
 
     def register(self, call_id):
-        ''' register Call-ID and its' metadata.
-        '''
+        """ register Call-ID and its' metadata.
+        """
         if call_id is None or call_id in self.calls.history:
             return
         metadata = CallMetadata(expiration=time.time() + self.call_lifetime)
         self.calls.history.append(call_id)
         self.calls.metadata[call_id] = metadata
         self.calls.increment_count()
-        logger.info('<gc>: new call registered: %s', call_id)
-        logger.debug('<gc>: total unique calls: %s', self.calls.count)
+        logger.info("<gc>: new call registered: %s", call_id)
+        logger.debug("<gc>: total unique calls: %s", self.calls.count)
 
     def revoke(self, call_id, expired=False):
-        ''' force remove Call-ID and its' metadata.
-        '''
+        """ force remove Call-ID and its' metadata.
+        """
         if call_id is None:
             return
         if self.calls.metadata.get(call_id):
             del self.calls.metadata[call_id]
         self.rtp.send_stop_signal(call_id=call_id)
         if expired:
-            logger.debug('<gc>: call removed (expired): %s', call_id)
+            logger.debug("<gc>: call removed (expired): %s", call_id)
         else:
-            logger.debug('<gc>: call removed (signal): %s', call_id)
+            logger.debug("<gc>: call removed (signal): %s", call_id)

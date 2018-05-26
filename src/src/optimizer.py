@@ -16,9 +16,9 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # optimizer.py -- common optimization modules.
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 try:
     import cPickle as pickle
@@ -29,20 +29,22 @@ from collections import OrderedDict
 from functools import wraps
 
 # memoization technique
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+
 
 def memcache(size=64):
-    ''' decorator implementation for caching function returns.
+    """ decorator implementation for caching function returns.
     @size<int> -- max cache entry limit.
-    '''
+    """
     size = max(1, size)
     queue = []
     cache = {}
 
     def memcache_impl(function):
+
         @wraps(function)
         def wrapper(*entry):
-            key = pickle.dumps(entry) # serialize the object.
+            key = pickle.dumps(entry)  # serialize the object.
             try:
                 # every time a certain cached object is hit, escalate the
                 # priority of that object by moving it to the top of cache.
@@ -59,11 +61,15 @@ def memcache(size=64):
                 while len(queue) > size:
                     del cache[queue.pop()]
             return cache[key]
+
         return wrapper
+
     return memcache_impl
 
+
 # limited dictionary
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
+
 
 class limited_dict(OrderedDict):
 

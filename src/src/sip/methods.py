@@ -16,7 +16,7 @@
 #
 # https://github.com/initbar/sipd
 
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # 4.2 Methods
 #
 # The methods are defined below. Methods that are not supported by a
@@ -30,22 +30,22 @@
 #                | "CANCEL" | "REGISTER"
 #
 # https://tools.ietf.org/html/rfc2543#section-4.2
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 
 SIP_METHODS = {
-    'ACK',
-    'BYE',
-    'CANCEL',
-    'INFO',
-    'INVITE',
-    'MESSAGE',
-    'NOTIFY',
-    'OK',
-    'OPTIONS',
-    'PRACK',
-    'PUBLISH',
-    'REFER',
-    'REGISTER',
-    'SUBSCRIBE',
-    'UPDATE'
+    "ACK",
+    "BYE",
+    "CANCEL",
+    "INFO",
+    "INVITE",
+    "MESSAGE",
+    "NOTIFY",
+    "OK",
+    "OPTIONS",
+    "PRACK",
+    "PUBLISH",
+    "REFER",
+    "REGISTER",
+    "SUBSCRIBE",
+    "UPDATE",
 }
