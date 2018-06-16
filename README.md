@@ -1,24 +1,18 @@
 [![Build Status](https://travis-ci.org/initbar/sipd.svg?branch=master)](https://travis-ci.org/initbar/sipd)
-[![Maintainability](https://api.codeclimate.com/v1/badges/60d7880bae5716d8bb6e/maintainability)](https://codeclimate.com/github/initbar/sipd/maintainability)
-<p align="center">
-  <img src="./docs/logo.png">
-</p>
-
-**sipd** is an [active recording](https://en.wikipedia.org/wiki/VoIP_recording) [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon. A daemon is a background process that handles incoming requests and logically responds - and a minute customization ranging from custom SIP method handling to internal/external RTP routing is possible.
 
 ![](./docs/sample.png)
 
-Some key features are:
+**sipd** is an [active recording](https://en.wikipedia.org/wiki/VoIP_recording) [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon. A daemon is a background process that handles incoming requests and logically responds - and a minute customization ranging from custom SIP method handling to internal/external RTP routing is possible.
 
-- **Universal support** from Python 2.7 to Python 3+.
+Key features are:
 
-- **Maximum portability** implemented in pure Python and [non-mandatory dependencies](./requirements.txt). You can either run it by cloning the git repository or [from pre-build packages](https://github.com/initbar/sipd/releases).
+- **Enterprise-level performance** - **sipd** is currently running in production with [Genesys](http://www.genesys.com) devices and [Samsung Electronics of America](http://www.samsung.com)'s entire call traffic.
 
 - **High performance** using [reactor asynchronous design pattern](https://en.wikipedia.org/wiki/Reactor_pattern) and multi-core handlers.
 
 - **Fast RTP routing** using dynamic [Session Description Protocol](https://en.wikipedia.org/wiki/Session_Description_Protocol) generation. For the optimal performance, use external [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol) decoders.
 
-- **Production-ready straight out of the box** and currently running in production against [Genesys](http://www.genesys.com) devices and [Samsung Electronics of America](http://www.samsung.com)'s massive call traffic.
+- **Maximum portability** implemented in pure Python and [non-mandatory dependencies](./requirements.txt). You can either run it by cloning the latest codes or [from packed packages](https://github.com/initbar/sipd/releases).
 
 ## Usage
 
