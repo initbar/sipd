@@ -44,6 +44,10 @@ To run unit tests, type `make test`. If the test exists with exit status 0, then
 ~$ make test
 ```
 
+## Design
+
+![](./docs/design.png)
+
 ## License
 
 **sipd** is licensed under [GNU GPLv3](./LICENSE.md).
