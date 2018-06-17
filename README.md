@@ -19,19 +19,14 @@ Key features are:
 [sipd.json](./sipd.json) is a mandatory configuration file that allows customization of the runtime environment. Although default settings is fine, it can be tuned for better performance.
 
 ```bash
-~$ git clone https://github.com/initbar/sipd
-~$ cd ./sipd
-~$ # pip install -r requirements.txt
-~$ # emacs sipd.json
 ~$ make run
 ```
 
 ## Deploy
 
-You can either use `make` to build and deploy to a remote server or `pip` to download straight from Python package manager.
+You can either use `make` to easily build and deploy to a remote server:
 
 ```bash
-~$ make clean
 ~$ make
 ~$ ./sipd
 ```
