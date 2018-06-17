@@ -6,11 +6,11 @@
 
 Key features are:
 
-- **Enterprise-level performance** - **sipd** is currently running in production with [Genesys](http://www.genesys.com) devices and [Samsung Electronics of America](http://www.samsung.com)'s entire call traffic.
-
 - **High performance** using [reactor asynchronous design pattern](https://en.wikipedia.org/wiki/Reactor_pattern) and multi-core handlers.
 
 - **Fast RTP routing** using dynamic [Session Description Protocol](https://en.wikipedia.org/wiki/Session_Description_Protocol) generation. For the optimal performance, use external [Real-time Transport Protocol](https://en.wikipedia.org/wiki/Real-time_Transport_Protocol) decoders.
+
+- **Enterprise-level performance** - currently handling production calls for [Samsung Electronics of America](http://www.samsung.com)'s call centers.
 
 - **Maximum portability** implemented in pure Python and [non-mandatory dependencies](./requirements.txt). You can either run it by cloning the latest codes or [from packed packages](https://github.com/initbar/sipd/releases).
 
