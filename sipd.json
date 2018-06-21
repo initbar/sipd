@@ -3,25 +3,22 @@
     "source": "https://github.com/initbar/sipd",
     "sip": {
         "server": {
-            "address": ""
-        },
-        "router": {
-            "port": 5060,
-            "nodes": []
+            "address": null,
+            "port": 5060
         },
         "worker": {
-            "count": 2,
-            "headers": {
-                "Accept": "application/sdp",
-                "Accept-Language": "en",
-                "Allow": "ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE",
-                "Max-Forwards": 70,
-                "Min-SE": 1800,
-                "Server": "SIPd",
-                "Session-Expires": "1800;refresher=uac",
-                "Supported": "timer",
-                "Require": "timer"
-            }
+            "count": 2
+        },
+        "headers": {
+            "Accept": "application/sdp",
+            "Accept-Language": "en",
+            "Allow": "ACK, BYE, CANCEL, INVITE, OPTIONS, REFER, UPDATE",
+            "Max-Forwards": 70,
+            "Min-SE": 1800,
+            "Server": "SIPd",
+            "Session-Expires": "1800;refresher=uac",
+            "Supported": "timer",
+            "Require": "timer"
         }
     },
     "sdp": {
@@ -44,14 +41,29 @@
         }
     },
     "rtp": {
-        "max_retry": 1,
-        "handler": [
+        "handlers": [
             {
                 "enabled": true,
                 "host": "127.0.0.1",
-                "port": 5900
+                "port": 5900,
+                "role": {
+                    "active": true,
+                    "standby": true
+                }
+            }, {
+                "enabled": false,
+                "host": "127.0.0.1",
+                "port": 5901,
+                "role": {
+                    "active": false,
+                    "standby": true
+                }
             }
         ]
+    },
+    "gc": {
+        "call_lifetime": 3600,
+        "loop_interval": 0.01
     },
     "db": {
         "enabled": false,
@@ -59,10 +71,6 @@
         "port": 3306,
         "username": "",
         "password": ""
-    },
-    "gc": {
-        "call_lifetime": 3600,
-        "check_interval": 0.01
     },
     "log": {
         "console": {
@@ -72,7 +80,8 @@
             "enabled": false,
             "path": "./logs",
             "name": "sipd.log",
-            "total_days": 7
+            "total_days": 7,
+            "gzip": null
         },
         "coloredlogs": false,
         "level": "DEBUG"

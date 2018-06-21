@@ -65,7 +65,7 @@ class AsynchronousSIPServer(object):
     @classmethod
     def serve(cls):
         try:
-            sip_port = SERVER_SETTINGS["sip"]["router"]["port"]
+            sip_port = SERVER_SETTINGS["sip"]["server"]["port"]
         except KeyError:
             sip_port = 5060  # udp
         # assign asynchronous handler to the receiving SIP port. Currently,
