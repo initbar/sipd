@@ -41,7 +41,7 @@ class RTPRouter(object):
     def __init__(self, setting={}):
         self.setting = setting
         self.handlers = filter(  # filter by enabled routers.
-            lambda handler: handler["enabled"], setting["rtp"]["handler"]
+            lambda handler: handler["enabled"], setting["rtp"]["handlers"]
         )
 
         # logging context

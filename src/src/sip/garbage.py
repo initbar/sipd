@@ -72,7 +72,7 @@ class AsynchronousGarbageCollector(object):
         @settings<dict> -- `config.json`
         """
         self.settings = settings
-        self.check_interval = float(settings["gc"]["check_interval"])
+        self.loop_interval = float(settings["gc"]["loop_interval"])
         self.call_lifetime = float(settings["gc"]["call_lifetime"])
 
         # call information and metadata.
@@ -93,7 +93,7 @@ class AsynchronousGarbageCollector(object):
 
         def create_thread():
             while True:
-                time.sleep(self.check_interval)
+                time.sleep(self.loop_interval)
                 self.consume_tasks()
 
         thread = threading.Thread(name="garbage-collector", target=create_thread)
