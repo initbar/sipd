@@ -174,7 +174,7 @@ class LazyWorker(object):
     def __init__(self, name=None, settings=None, gc=None):
         """
         @name<str> -- worker name.
-        @settings<dict> -- `sipd.json`
+        @settings<dict> -- `config.json`
         @gc<SynchronousGarbageCollector> -- shared garbage collector.
         """
         if name is None:

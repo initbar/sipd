@@ -69,7 +69,7 @@ class AsynchronousGarbageCollector(object):
 
     def __init__(self, settings={}):
         """
-        @settings<dict> -- `sipd.json`
+        @settings<dict> -- `config.json`
         """
         self.settings = settings
         self.check_interval = float(settings["gc"]["check_interval"])

@@ -16,7 +16,7 @@ Key features are:
 
 ## Usage
 
-[sipd.json](./sipd.json) is a mandatory configuration file that allows customization of the runtime environment. Although default settings is fine, it can be tuned for better performance.
+[config.json](./config.json) is a mandatory configuration file that allows customization of the runtime environment. Although default settings is fine, it can be tuned for better performance.
 
 ```bash
 ~$ make run

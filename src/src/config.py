@@ -27,7 +27,7 @@ import sys  # no logger setup yet
 
 
 def parse_config(config={}):
-    """ parse `sipd.json` and load/initialize with runtime environment.
+    """ parse `config.json` and load/initialize with runtime environment.
     """
     try:
         parsed_config = parse_json(config)

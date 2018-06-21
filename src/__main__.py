@@ -49,7 +49,7 @@ def main():
     n_exec = argsparser.add_argument_group("execution arguments")
     n_test = argsparser.add_argument_group("testing arguments")
 
-    default_configuration = os.path.abspath(os.path.curdir) + "/sipd.json"
+    default_configuration = os.path.abspath(os.path.curdir) + "/config.json"
 
     # version: show program's version number and exit.
     argsparser.add_argument("-v", "--version", action="version", version=__version__)

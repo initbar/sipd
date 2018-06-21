@@ -37,7 +37,7 @@ from threading import Thread
 
 logger = logging.getLogger()
 
-SERVER_SETTINGS = None  # `sipd.json`
+SERVER_SETTINGS = None  # `config.json`
 
 # each worker should not instantiate a new garbage collector since a subsequent
 # related requests can not guarantee to hit the same worker. Therefore, the
