@@ -3,8 +3,7 @@
         "description": "active-recording Session Initiation Protocol daemon",
         "repository": "https://github.com/initbar/sipd",
         "branch": "master",
-        "version": "1.4.0"
-    }
+    },
     "sip": {
         "server": {
             "address": null,
