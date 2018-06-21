@@ -1,6 +1,10 @@
 {
-    "program": "sipd -- Active recording Session Initiation Protocol daemon.",
-    "source": "https://github.com/initbar/sipd",
+    "project": {
+        "description": "active-recording Session Initiation Protocol daemon",
+        "repository": "https://github.com/initbar/sipd",
+        "branch": "master",
+        "version": "1.4.0"
+    }
     "sip": {
         "server": {
             "address": null,
