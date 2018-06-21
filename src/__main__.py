@@ -16,30 +16,29 @@
 #
 # https://github.com/initbar/sipd
 
-# -------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 # __main__.py
-# -------------------------------------------------------------------------------
-
-# check supported version.
-try:
-    import sys
-
-    assert (2, 7) <= sys.version_info <= (3, 7)
-except AssertionError:
-    raise
+# ------------------------------------------------------------------------------
 
 import argparse
 import errno
 import os
+import sys
 
 from src.config import parse_config
 from src.logger import initialize_logger
 from src.sip.server import AsynchronousSIPServer
 from src.tester import run_test_suite
 
-__program__ = "sipd -- Active recording Session Initiation Protocol Daemon"
+__program__ = "sipd -- active-recording Session Initiation Protocol daemon"
 __version__ = "1.4.0"
 __license__ = "GNU GPLv3"
+
+# check supported version.
+try:
+    assert (2, 7) <= sys.version_info <= (3, 7)
+except AssertionError:
+    raise
 
 
 def main():

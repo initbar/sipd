@@ -2,7 +2,7 @@
     "project": {
         "description": "active-recording Session Initiation Protocol daemon",
         "repository": "https://github.com/initbar/sipd",
-        "branch": "master",
+        "branch": "master"
     },
     "sip": {
         "server": {
