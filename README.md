@@ -13,6 +13,7 @@ When using **sipd**, everything must be first configured through [settings.json]
 ```bash
 ~$ # vi settings.json
 ~$ make
+~$ pip install -r requirements.txt
 ~$ ./sipd --config settings.json
 ```
 
