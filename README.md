@@ -8,7 +8,7 @@
 
 ## Usage
 
-[config.json](./config.json) is a mandatory configuration file that allows minute customization of the runtime environment. Although default settings is fine, it can be tuned for better performance.
+[settings.json](./settings.json) is a mandatory configuration file that allows minute customization of the runtime environment. Although default settings is fine, it can be tuned for better performance.
 
 ```bash
 ~$ make

@@ -25,7 +25,7 @@
                     "OPTIONS",
                     "REFER",
                     "UPDATE",
-                ]
+                ],
                 "Max-Forwards": 70,
                 "Min-SE": 1800,
                 "Require": "timer",
@@ -60,11 +60,11 @@
                 "round_robin": null
             },
             "handlers": [
-                { "enabled": false, "host": "127.0.0.1", "port" 5900,
+                { "enabled": false, "host": "127.0.0.1", "port": 5900,
                   "active": true, "standby": false }
             ]
         }
-    }
+    },
 
     "garbage_collector": {
         "call_max_lifetime_in_sec": 3600,
@@ -78,7 +78,7 @@
     },
 
     "log": {
-        "level": "DEBUG"
+        "level": "DEBUG",
         "disk": {
             "enabled": false,
             "path": "./logs",
