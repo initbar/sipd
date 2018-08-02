@@ -79,7 +79,6 @@
             "path": "./logs",
             "name": "sipd.log",
             "total_days_preserved": 7
-        },
-        "enable_coloredlogs": false
+        }
     }
 }
