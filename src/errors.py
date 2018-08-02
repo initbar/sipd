@@ -22,25 +22,37 @@
 #
 # https://github.com/initbar/sipd
 
-# -------------------------------------------------------------------------------
-# errors.py -- custom error suite.
-# -------------------------------------------------------------------------------
+"""
+errors.py
+---------
+"""
 
-# default
-class SIPError(Exception):
+__all__ = [
+    "GenericSIPError",
+    "SIPDecodingError",
+    "SIPEncodingError",
+    "SIPInvalidProtocol",
+]
+
+
+class GenericSIPError(Exception):
     pass
 
 
-# SIP frame is not parsable by handler.
-class SIPBrokenProtocol(SIPError):
+class SIPInvalidProtocol(GenericSIPError):
+    # when validating incoming SIP packets, if there are anything wrong with
+    # SIP signature, mismatched SIP version, non-RFC SIP methods, etc. throw
+    # this exception.
     pass
 
 
-# Python object to SIP message convert error.
-class SIPPackError(SIPError):
+class SIPEncodingError(GenericSIPError):
+    # when converting SIP datagram back into SIP message (text-based), if
+    # there was an error, throw this exception.
     pass
 
 
-# SIP message to Python object convert error.
-class SIPUnpackError(SIPError):
+class SIPDecodingError(GenericSIPError):
+    # when converting SIP message (text-based) into SIP datagram, if there
+    # was an error, throw this exception.
     pass
