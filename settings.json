@@ -1,18 +1,17 @@
 {
-    "metadata": {
+    "project": {
         "name": "sipd",
         "description": "active-recording Session Initiation Protocol daemon",
         "license": "MIT",
         "repository": "https://github.com/initbar/sipd"
     },
-
     "server": {
         "host": "0.0.0.0",
         "port": 5060,
         "workers": 1
     },
-
     "worker": {
+        "lru_cache_size": 128,
         "sip": {
             "default_headers": {
                 "Accept": "application/sdp",
@@ -60,23 +59,19 @@
                 "round_robin": null
             },
             "handlers": [
-                { "enabled": false, "host": "127.0.0.1", "port": 5900,
-                  "active": true, "standby": false }
+                { "enabled": false, "host": "127.0.0.1", "port": 5900, "active": true, "standby": false }
             ]
         }
     },
-
     "garbage_collector": {
         "call_max_lifetime_in_sec": 3600,
         "event_loop_speed_in_sec": 0.01
     },
-
     "database_handler": {
         "enabled": false,
         "host": "127.0.0.1",
         "port": 65500
     },
-
     "log": {
         "level": "DEBUG",
         "disk": {
