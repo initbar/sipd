@@ -21,7 +21,7 @@ When using **sipd**, everything must be first configured through [settings.json]
 If you do not want to build the **sipd** locally, simply download the packaged version in **sipd** along with a copy of [settings.json](./settings.json) from GitHub.
 
 ```bash
-~$ pip download sipd
+~$ pip install sipd
 ```
 
 ## Tests
