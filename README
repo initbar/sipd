@@ -1,7 +1,5 @@
 [![Build Status](https://travis-ci.org/initbar/sipd.svg?branch=master)](https://travis-ci.org/initbar/sipd)
 
-![](./docs/sample.png)
-
 **sipd** is an [active-recording](https://en.wikipedia.org/wiki/VoIP_recording) [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon. A daemon is a background process that handles incoming requests and logically responds - and you can customize everything from custom SIP headers to handlers.
 
 Some key features are:
@@ -28,10 +26,6 @@ To run unit tests, type `make test`. If the test exists with exit status 0, then
 ```bash
 ~$ make test
 ```
-
-## Design
-
-![](./docs/design.png)
 
 ## License
 
