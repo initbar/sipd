@@ -4,15 +4,15 @@
   <img src="./docs/logo.png">
 </p>
 
-**sipd** is an [active-recording](https://en.wikipedia.org/wiki/VoIP_recording) [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) daemon.
+**sipd** is an [active-recording](https://en.wikipedia.org/wiki/VoIP_recording) [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) server daemon.
 
 ## Usage
 
-[settings.json](./settings.json) is a mandatory configuration file that allows minute customization of the runtime environment. Although default settings is fine, it can be tuned for better performance.
+When using **sipd**, everything must be configured through [settings.json](./settings.json).
 
 ```bash
 ~$ make
-~$ ./sipd
+~$ ./sipd --config settings.json
 ```
 
 ## Tests
@@ -25,4 +25,4 @@ To run unit tests, type `make test`. If the test exists with exit status 0, then
 
 ## License
 
-**sipd** is licensed under [GNU GPLv3](./LICENSE.md).
+**sipd** is licensed under [MIT Licesne](./LICENSE.md).

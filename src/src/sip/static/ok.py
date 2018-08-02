@@ -1,22 +1,29 @@
-# Active recording Session Initiation Protocol daemon (sipd).
-# Copyright (C) 2018  Herbert Shin
+# MIT License
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Copyright (c) 2018 Herbert Shin
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 #
 # https://github.com/initbar/sipd
 
-# -------------------------------------------------------------------------------
+__all__ = ["SIP_OK", "SIP_OK_NO_SDP"]
+
 # 7.2.1 200 OK
 #
 # The request has succeeded. The information returned with the response
@@ -36,8 +43,6 @@
 #           message body according to its Content-Type.
 #
 # https://tools.ietf.org/html/rfc2543#section-7.2.1
-# -------------------------------------------------------------------------------
-
 SIP_OK = {
     "status_line": "SIP/2.0 200 OK",
     "sdp": True,
@@ -77,7 +82,7 @@ SIP_OK_NO_SDP = {
     ],
 }
 
-SIP_OK_SAMPLE = """\
+SIP_OK_SAMPLE = """
 SIP/2.0 200 OK
 Allow: ACK, BYE, CANCEL, INVITE, OPTIONS, UPDATE
 Call-ID: 9E565000-C50B-90B0-2119-BE6C9297421D-7090@192.168.1.3
