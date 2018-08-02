@@ -18,9 +18,10 @@ When using **sipd**, everything must be first configured through [settings.json]
 
 ## Installation
 
-If you do not want to locally build, simply install the stable versions of **sipd** and download a copy of the [settings.json](./settings.json) from GitHub.
+If you do not want to locally build, simply install the stable versions of **sipd** and copy the [settings.json](./settings.json).
 
 ```bash
+~$ wget 'https://raw.githubusercontent.com/initbar/sipd/master/settings.json'
 ~$ pip install sipd
 ```
 
