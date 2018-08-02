@@ -1,8 +1,6 @@
 [![Build Status](https://travis-ci.org/initbar/sipd.svg?branch=master)](https://travis-ci.org/initbar/sipd)
 
-<p align="center">
-  <img src="./docs/logo.png">
-</p>
+# sipd
 
 **sipd** is an [active-recording](https://en.wikipedia.org/wiki/VoIP_recording) [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) server daemon.
 
@@ -25,4 +23,4 @@ To run unit tests, type `make test`. If the test exists with exit status 0, then
 
 ## License
 
-**sipd** is licensed under [MIT Licesne](./LICENSE.md).
+**sipd** is licensed under [MIT License](./LICENSE.md).
