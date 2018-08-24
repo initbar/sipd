@@ -23,6 +23,7 @@
 # https://github.com/initbar/sipd
 
 from __future__ import absolute_import
+from contextlib import contextmanager
 
 import logging
 import random
