@@ -40,19 +40,18 @@ class GenericSIPError(Exception):
 
 
 class SIPInvalidProtocol(GenericSIPError):
-    # when validating incoming SIP packets, if there are anything wrong with
-    # SIP signature, mismatched SIP version, non-RFC SIP methods, etc. throw
-    # this exception.
+    # throw this exception when validating incoming SIP packets (e.g. invalid or
+    # non-existent SIP signature, mismatched SIP version, non-RFC methods, ..
     pass
 
 
 class SIPEncodingError(GenericSIPError):
-    # when converting SIP datagram back into SIP message (text-based), if
-    # there was an error, throw this exception.
+    # throw this exception when compiling python SIP datagram back into
+    # text-based SIP message and an error occurs.
     pass
 
 
 class SIPDecodingError(GenericSIPError):
-    # when converting SIP message (text-based) into SIP datagram, if there
-    # was an error, throw this exception.
+    # throw this exception when parsing text-based SIP message into SIP datagram
+    # and an error occurs.
     pass
