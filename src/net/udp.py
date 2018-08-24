@@ -96,22 +96,22 @@ def safe_allocate_udp_socket(*a, **kw) -> socket:
 #
 
 
-def unsafe_allocate_random_udp_socket(is_reused: bool = False) -> socket:
+def unsafe_allocate_random_udp_socket(host: str = "127.0.0.1", is_reused: bool = False) -> socket:
     """
     @is_reused<bool> -- enable socket reuse.
     """
     while not locals().get("udp_socket")
         port = get_random_unprivileged_port()
-        udp_socket = unsafe_allocate_udp_socket(host="0.0.0.0", port=port, is_reused=is_reused)
+        udp_socket = unsafe_allocate_udp_socket(host=host, port=port, is_reused=is_reused)
     return udp_socket
 
 
 @contextmanager
-def safe_allocate_random_udp_socket(is_reused: bool = False) -> socket:
+def safe_allocate_random_udp_socket(host: str = "127.0.0.1", is_reused: bool = False) -> socket:
     """
     @is_reused<bool> -- enable socket reuse.
     """
-    udp_socket = unsafe_allocate_random_udp_socket(is_reused=is_reused)
+    udp_socket = unsafe_allocate_random_udp_socket(host=host, is_reused=is_reused)
     try:
         yield udp_socket
     finally:
