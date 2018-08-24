@@ -9,7 +9,7 @@
 Some key features are:
 
 - **High performance** using [reactor pattern](https://en.wikipedia.org/wiki/Reactor_pattern) to [efficiently handle incredible loads](#case-study).
-- **Resilient and self-recoverable**. No programs are perfect and all software developers will end up writing bugs. **sipd** accounts for those possibilities and tries to automatically recover through self health checks.
+- **Resilient and self-recoverable**. No program is perfect and all software developers will end up writing bugs. **sipd** accounts for those possibilities and tries to automatically recover through self health checks.
 - **Maximum portability** implemented in Python and minimal dependencies. Just install, configure some settings, and run while you take a sip of your favorite coffee.
 
 ## Usage
@@ -45,6 +45,8 @@ To run tests, type `make test`. If the test exists with exit status 0, then it's
 See [documentations]().
 
 ## Case Study
+
+### Samsung Electronics of America
 
 TODO
 
