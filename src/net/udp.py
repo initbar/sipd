@@ -31,64 +31,19 @@ from __future__ import absolute_import
 from contextlib import contextmanager
 
 import logging
-import random
-import socket
 
 # from src.net.lib import get_random_privileged_port
 from src.net.lib import get_random_unprivileged_port
+from src.net.lib import unsafe_allocate_udp_socket
 
 logger = logging.getLogger()
 
-
-def unsafe_allocate_udp_socket(
-        host: str = "127.0.0.1",
-        port: int = None,
-        timeout: float = 1.0,
-        is_client: bool = False,
-        is_reused: bool = False) -> socket:
-    """ create an UDP socket that requires manual close.
-    @host<str> -- UDP socket host.
-    @port<int> -- UDP socket port.
-    @timeout<float> -- UDP socket timeout in seconds.
-    @is_client<bool> -- enable socket client-mode.
-    @is_reused<bool> -- enable socket reuse.
-    """
-    udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
-    udp_socket.setblocking(False)  # should never block to demux efficiently.
-
-    # client socket.
-    if is_client:
-        return udp_socket
-
-    # bind the server socket.
-    try:
-        logger.debug("attempting to bind to udp port: '%s'", port)
-        udp_socket.settimeout(timeout)
-        udp_socket.bind((host, port))
-    except socket.error:
-        logger.error("failed to bind to udp port: '%s'", port)
-        return
-
-    # reuse the server socket.
-    if is_reused:
-        udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
-        udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, True)
-
-    logger.info("successfully created udp socket port '%s'", port)
-    return udp_socket
-
-
-@contextmanager
-def safe_allocate_udp_socket(*a, **kw) -> socket:
-    """ create an UDP socket that automatically closes.
-    """
-    _socket = unsafe_allocate_udp_socket(*a, **kw)
-    try:
-        yield _socket
-    finally:
-        try: _socket.close()
-        except AttributeError:
-            pass  # already closed.
+__all__ = [
+    "safe_allocate_random_udp_socket",
+    "safe_allocate_udp_client",
+    "unsafe_allocate_random_udp_socket",
+    "unsafe_allocate_udp_socket",
+]
 
 
 #
