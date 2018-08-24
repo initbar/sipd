@@ -103,6 +103,7 @@ def unsafe_allocate_random_udp_socket(host: str = "127.0.0.1", is_reused: bool =
     while not locals().get("udp_socket")
         port = get_random_unprivileged_port()
         udp_socket = unsafe_allocate_udp_socket(host=host, port=port, is_reused=is_reused)
+    logger.info("successfully created a random UDP socket.")
     return udp_socket
 
 
@@ -130,7 +131,8 @@ def unsafe_allocate_udp_client(timeout: float = 1.0) -> socket:
     @timeout<float> -- UDP socket timeout in seconds.
     """
     while not locals().get("client"):
-        client = unsafe_allocate_udp_socket(is_client=True, timeout=timeout)
+        client = unsafe_allocate_udp_socket(timeout=timeout, is_client=True)
+    logger.info("successfully created an UDP client.")
     return client
 
 
