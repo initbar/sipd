@@ -2,9 +2,7 @@
 
 # sipd
 
-**sipd** is an [active-recording](https://en.wikipedia.org/wiki/VoIP_recording) [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) server daemon, which was developed to decode raw SIP signals directly from [Genesys](https://www.genesys.com) [Resource Managers](https://docs.genesys.com/Documentation/GVP/85/GDG/GCRM) ("signal servers"), dynamically respond with crafted SIP/SDP packets, interface with external RTP protocol softwares, and send parsed datagrams to custom database handlers.
-
-Although the optimized and specialized version of **sipd** is currently running in production for [Samsung Electronics of America](https://www.samsung.com/us) to process their call center calls, this [GitHub branch](https://github.com/initbar/sipd) is for bugfixes, performance enhancements, and design updates.
+**sipd** is an [active-recording](https://en.wikipedia.org/wiki/VoIP_recording) [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) server daemon, which was developed to decode raw SIP messages directly with [Genesys](https://www.genesys.com) [Resource Managers](https://docs.genesys.com/Documentation/GVP/85/GDG/GCRM) ("signal servers"), respond with dynamically crafted SIP/SDP packets, interface with an [external RTP protocol decoding software](), and send serialized datagrams to database handlers.
 
 ## Usage
 
