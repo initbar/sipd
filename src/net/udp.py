@@ -40,11 +40,12 @@ from src.net.lib import get_random_unprivileged_port
 logger = logging.getLogger()
 
 
-def unsafe_allocate_udp_socket(host: str = "127.0.0.1",
-                               port: int = None,
-                               timeout: float = 1.0,
-                               is_client: bool = False,
-                               is_reused: bool = False) -> socket:
+def unsafe_allocate_udp_socket(
+        host: str = "127.0.0.1",
+        port: int = None,
+        timeout: float = 1.0,
+        is_client: bool = False,
+        is_reused: bool = False) -> socket:
     """ create an UDP socket that requires manual close.
     @host<str> -- UDP socket host.
     @port<int> -- UDP socket port.
@@ -95,20 +96,22 @@ def safe_allocate_udp_socket(*a, **kw) -> socket:
 #
 
 
-def unsafe_allocate_random_udp_socket(*a, **kw):
+def unsafe_allocate_random_udp_socket(is_reused: bool = False) -> socket:
     """
+    @is_reused<bool> -- enable socket reuse.
     """
     while not locals().get("udp_socket")
         port = get_random_unprivileged_port()
-        udp_socket = unsafe_allocate_udp_socket(*a, **kw)
+        udp_socket = unsafe_allocate_udp_socket(host="0.0.0.0", port=port, is_reused=is_reused)
     return udp_socket
 
 
 @contextmanager
-def safe_allocate_random_udp_socket(*a, **kw):
+def safe_allocate_random_udp_socket(is_reused: bool = False) -> socket:
     """
+    @is_reused<bool> -- enable socket reuse.
     """
-    udp_socket = unsafe_allocate_random_udp_socket(*a, **kw)
+    udp_socket = unsafe_allocate_random_udp_socket(is_reused=is_reused)
     try:
         yield udp_socket
     finally:
@@ -122,7 +125,7 @@ def safe_allocate_random_udp_socket(*a, **kw):
 #
 
 
-def unsafe_allocate_udp_client(timeout: float = 1.0):
+def unsafe_allocate_udp_client(timeout: float = 1.0) -> socket:
     """
     @timeout<float> -- UDP socket timeout in seconds.
     """
@@ -132,11 +135,11 @@ def unsafe_allocate_udp_client(timeout: float = 1.0):
 
 
 @contextmanager
-def safe_allocate_udp_client(timeout: float = 1.0):
+def safe_allocate_udp_client(timeout: float = 1.0) -> socket:
     """
     @timeout<float> -- UDP socket timeout in seconds.
     """
-    udp_socket = unsafe_allocate_udp_client(timeout)
+    udp_socket = unsafe_allocate_udp_client(timeout=timeout)
     try:
         yield udp_socket
     finally:
