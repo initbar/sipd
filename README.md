@@ -44,12 +44,6 @@ To run tests, type `make test`. If the test exists with exit status 0, then it's
 
 See [documentations]().
 
-## Case Study
-
-### Samsung Electronics of America
-
-TODO
-
 ## License
 
 **sipd** is licensed under [MIT License](./LICENSE.md).
