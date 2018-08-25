@@ -40,7 +40,7 @@ __all__ = ["SIP_OPTIONS"]
 #
 # https://tools.ietf.org/html/rfc2543#section-4.2.3
 SIP_OPTIONS = {
-    "status_line": "OPTIONS sip:%(dest_ip)s:%(dest_port)s SIP/2.0",
+    "status_line": "OPTIONS sip:%(remote_ip)s:%(remote_port)s SIP/%(sip_version)s",
     "sip": [
         "Allow",
         "Call_Id",
@@ -52,7 +52,7 @@ SIP_OPTIONS = {
     ],
 }
 
-SIP_OPTIONS_SAMPLE = """
+SIP_OPTIONS_SAMPLE = """\
 OPTIONS sip:192.168.1.6:5060 SIP/2.0
 Via: SIP/2.0/UDP 192.168.1.3:15064;branch=z9hG4bK0x2473c35084b6b1
 From: <sip:GVP@192.168.1.3:15064>;tag=9E565000-FB73-C996-4E01-0810C8DE0CF4

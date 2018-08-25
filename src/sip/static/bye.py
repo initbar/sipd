@@ -41,9 +41,9 @@ __all__ = ["SIP_BYE"]
 #
 # https://tools.ietf.org/html/rfc2543#section-4.2.4
 SIP_BYE = {
-    "status_line": "SIP/2.0 BYE",
+    "status_line": "SIP/%(sip_version)s BYE",
     "sip": [],
 }
 
-SIP_BYE_SAMPLE = """
+SIP_BYE_SAMPLE = """\
 """

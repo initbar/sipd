@@ -32,7 +32,7 @@ __all__ = ["SIP_TRYING"]
 #
 # https://tools.ietf.org/html/rfc2543#section-7.1.1
 SIP_TRYING = {
-    "status_line": "SIP/2.0 100 Trying",
+    "status_line": "SIP/%(sip_version)s 100 Trying",
     "sip": [
         "CSeq",
         "From",

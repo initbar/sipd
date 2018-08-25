@@ -13,7 +13,8 @@
     "worker": {
         "lru_cache_size": 128,
         "sip": {
-            "default_headers": {
+            "version": "2.0",
+            "headers": {
                 "Accept": "application/sdp",
                 "Accept-Language": "en",
                 "Allow": [
@@ -34,7 +35,7 @@
             }
         },
         "sdp": {
-            "default_headers": {
+            "headers": {
                 "v": 0,
                 "t": "0 0",
                 "c": "IN IP4 %s",

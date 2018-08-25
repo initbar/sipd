@@ -44,45 +44,45 @@ __all__ = ["SIP_OK", "SIP_OK_NO_SDP"]
 #
 # https://tools.ietf.org/html/rfc2543#section-7.2.1
 SIP_OK = {
-    "status_line": "SIP/2.0 200 OK",
+    "status_line": "SIP/%(sip_version)s 200 OK",
     "sdp": True,
     "sip": [
-        "Via",
-        "From",
-        "To",
+        "Allow",
         "CSeq",
-        "Max-Forwards",
         "Call-ID",
         "Contact",
-        "Supported",
-        "Require",
-        "Session-Expires",
-        "Server",
-        "Allow",
+        "From",
+        "Max-Forwards",
         "Min-SE",
+        "Require",
+        "Server",
+        "Session-Expires",
+        "Supported",
+        "To",
+        "Via",
     ],
 }
 
 SIP_OK_NO_SDP = {
-    "status_line": "SIP/2.0 200 OK",
+    "status_line": "SIP/%(sip_version)s 200 OK",
     "sip": [
-        "Via",
-        "From",
-        "To",
+        "Allow",
         "CSeq",
-        "Max-Forwards",
         "Call-ID",
         "Contact",
-        "Supported",
-        "Require",
-        "Session-Expires",
-        "Server",
-        "Allow",
+        "From",
+        "Max-Forwards",
         "Min-SE",
+        "Require",
+        "Server",
+        "Session-Expires",
+        "Supported",
+        "To",
+        "Via",
     ],
 }
 
-SIP_OK_SAMPLE = """
+SIP_OK_SAMPLE = """\
 SIP/2.0 200 OK
 Allow: ACK, BYE, CANCEL, INVITE, OPTIONS, UPDATE
 Call-ID: 9E565000-C50B-90B0-2119-BE6C9297421D-7090@192.168.1.3

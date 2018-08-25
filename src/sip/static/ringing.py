@@ -31,20 +31,20 @@ __all__ = ["SIP_RINGING"]
 #
 # https://tools.ietf.org/html/rfc3261#section-21.1.2
 SIP_RINGING = {
-    "status_line": "SIP/2.0 180 Ringing",
+    "status_line": "SIP/%(sip_version)s 180 Ringing",
     "sip": [
+        "Allow",
         "CSeq",
+        "Call-ID",
+        "Contact",
         "From",
+        "Record-Route",
         "To",
         "Via",
-        "Call-ID",
-        "Record-Route",
-        "Allow",
-        "Contact",
     ],
 }
 
-SIP_RINGING_SAMPLE = """
+SIP_RINGING_SAMPLE = """\
 SIP/2.0 180 Ringing
 CSeq: 1 INVITE
 Call-ID: 9E565000-C50B-B39A-61A3-33FB67415050-7090@192.168.1.4

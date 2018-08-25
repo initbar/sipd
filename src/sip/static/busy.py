@@ -36,10 +36,10 @@ __all__ = ["SIP_BUSY"]
 #
 # https://tools.ietf.org/html/rfc2543#section-7.4.23
 SIP_BUSY = {
-    "status_line": "SIP/2.0 486 Busy Here",
+    "status_line": "SIP/%(sip_version)s 486 Busy Here",
     "sip": ["Contact"],
 }
 
-SIP_BUSY_SAMPLE = """
+SIP_BUSY_SAMPLE = """\
 SIP/2.0 486 Busy Here
 """

@@ -31,16 +31,15 @@ __all__ = ["SIP_TERMINATE"]
 #
 # https://tools.ietf.org/html/rfc3261#section-21.4.25
 SIP_TERMINATE = {
-    "status_line": "SIP/2.0 487 Request Terminated",
+    "status_line": "SIP/%(sip_version)s 487 Request Terminated",
     "sip": [
+        "Call-ID",
+        "Contact",
         "From",
         "To",
         "Via",
-        "Call-ID",
-        "Contact",
     ],
-
 }
 
-SIP_TERMINATE_SAMPLE = """
+SIP_TERMINATE_SAMPLE = """\
 """
