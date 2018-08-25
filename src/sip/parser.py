@@ -22,37 +22,27 @@
 #
 # https://github.com/initbar/sipd
 
-# -------------------------------------------------------------------------------
-# parser.py -- SIP message parser.
-# -------------------------------------------------------------------------------
+"""
+parser.py
+---------
+"""
 
 from collections import deque
-from src.errors import SIPBrokenProtocol
-from src.optimizer import memcache
 from src.sip.methods import SIP_METHODS
 
 import json
-import re
-
 import logging
+import re
 
 logger = logging.getLogger()
 
-# pre-compiled regex
-# -------------------------------------------------------------------------------
-
 REGX_IPV4 = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\:\d{1,5})*")
 REGX_SDP = re.compile("^[a-z]{1}=.+$")
-
-# ip entities
-# -------------------------------------------------------------------------------
-
 
 def parse_address(plaintext):
     """ find all ip addresses in a string.
     """
     return REGX_IPV4.findall(safe_encode(plaintext))
-
 
 # string entities
 # -------------------------------------------------------------------------------
