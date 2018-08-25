@@ -32,13 +32,13 @@ from functools import lru_cache
 
 import re
 
-__all__ = ["parse_address"]
+__all__ = ["parse_ipv4_address"]
 
 
 REGX_IPV4 = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\:\d{1,5})*")
 
 @lru_cache(maxsize=128, typed=True)
-def parse_address(string: str) -> list:
-    """ find all IP addresses in a string.
+def parse_ipv4_address(string: str) -> list:
+    """ find all IPv4 addresses in a string.
     """
     return REGX_IPV4.findall(string)
