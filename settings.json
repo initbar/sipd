@@ -24,7 +24,7 @@
                     "INVITE",
                     "OPTIONS",
                     "REFER",
-                    "UPDATE",
+                    "UPDATE"
                 ],
                 "Max-Forwards": 70,
                 "Min-SE": 1800,

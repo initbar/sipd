@@ -30,21 +30,24 @@ __main__.py
 from __future__ import absolute_import
 
 import argparse
-import logging
+import json
 import os
 import sys
 
+from debug.logger import initialize_logger
 from version import BRANCH
 from version import VERSION
 
-logger = logging.getLogger()
-
-__all__ = []
+__all__ = ()
 
 
 def main(args: argparse) -> int:
     """
     """
+    with open(args.config) as config_file:
+        settings = json.loads(config_file.read())
+
+    # logger = initialize_logger(settings)
     return
 
 
