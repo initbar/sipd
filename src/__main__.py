@@ -62,7 +62,7 @@ if __name__ == "__main__":
                             action="version",
                             version="%s/%s" % (BRANCH, VERSION))
 
-    # settings: settings file path.
+    # config: configuration file path.
     default_configuration = os.path.abspath(os.path.curdir) + "/settings.json"
     n_exec.add_argument("-c", "--config",
                         nargs="?",
