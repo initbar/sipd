@@ -29,15 +29,22 @@ __main__.py
 
 from __future__ import absolute_import
 
-import sys
+import argparse
 import logging
+import os
+import sys
+
+from version import BRANCH
+from version import VERSION
 
 logger = logging.getLogger()
 
 __all__ = []
 
 
-def main():
+def main(args: argparse) -> int:
+    """
+    """
     return
 
 
@@ -47,6 +54,23 @@ if __name__ == "__main__":
     if not ((3, 0) <= sys.version_info):
         raise RuntimeError("minimum Python version 3.0 required")
 
-    try: sys.exit(main())
+    argsparser = argparse.ArgumentParser()
+    n_exec = argsparser.add_argument_group("execution arguments")
+
+    # version: show program's version number and exit.
+    argsparser.add_argument("-v", "--version",
+                            action="version",
+                            version="%s/%s" % (BRANCH, VERSION))
+
+    # settings: settings file path.
+    default_configuration = os.path.abspath(os.path.curdir) + "/settings.json"
+    n_exec.add_argument("-c", "--config",
+                        nargs="?",
+                        metavar="str",
+                        default=default_configuration,
+                        help="configuration path (default: %s)" % default_configuration)
+
+    args = argsparser.parse_args()
+    try: sys.exit(main(args))
     except KeyboardInterrupt:
         pass
