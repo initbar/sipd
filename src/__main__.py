@@ -28,3 +28,27 @@ __main__.py
 """
 
 from __future__ import absolute_import
+
+import sys
+import logging
+
+from errors import InvalidPythonVersionError
+
+logger = logging.getLogger()
+
+__all__ = []
+
+
+def main():
+    return
+
+
+if __name__ == "__main__":
+
+    # enforce minimum Python 3 version.
+    if not ((3, 0) <= sys.version_info):
+        raise InvalidPythonVersionError("minimum Python version 3.0 required")
+
+    try: sys.exit(main())
+    except KeyboardInterrupt:
+        pass

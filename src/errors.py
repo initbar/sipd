@@ -29,10 +29,22 @@ errors.py
 
 __all__ = [
     "GenericSIPError",
+    "InvalidPythonVersionError",
     "SIPDecodingError",
     "SIPEncodingError",
     "SIPInvalidProtocol",
 ]
+
+
+class InvalidPythonVersionError(Exception):
+    # throw this exception if minimum required Python version does not match
+    # the runtime Python version.
+    pass
+
+
+#
+# SIP
+#
 
 
 class GenericSIPError(Exception):
