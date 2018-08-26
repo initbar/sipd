@@ -1,11 +1,11 @@
 # project
 PROJECT = $(shell pwd)
-SOURCE  = $(PROJECT)/src
 BINARY  = $(PROJECT)/sipd
+LOGS    = $(PROJECT)/logs
+SOURCE  = $(PROJECT)/src
 
 # python
 PYTHON = $(shell which python3)
-
 
 all:
 	cd $(SOURCE) &&\
@@ -14,6 +14,7 @@ all:
 	   cat $(BINARY).zip >> $(BINARY)
 	rm -fv $(BINARY).zip
 	chmod u+x -v $(BINARY)
+
 
 test:
 	tox
@@ -26,4 +27,4 @@ run:
 clean:
 	find $(SOURCE) -type f -iname "*.py[oc]" -exec rm -fv "{}" \; || true
 	find $(SOURCE) -type d -name "__pycache__" -exec rm -rfdv "{}" \; || true
-	rm -fv $(BINARY)
+	rm -rfv $(BINARY) $(LOGS)
