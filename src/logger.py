@@ -60,23 +60,22 @@ def initialize_logger(configuration: dict) -> logging:
     # disk logging configuration.
     if config["disk"].get("enabled"):
         log_filename = config["disk"]["name"]
-        log_filepath = config["disk"]["path"]
         log_preserve_days = config["disk"]["total_days_preserved"]
+        log_filepath = config["disk"]["path"]
+        if not log_filepath.endswith("/"):
+            log_filepath += "/"
 
         # if the target log file does not exist, safely create one.
         if not os.path.exists(log_filepath):
             os.makedirs(log_filepath)
-        if not log_filepath.endswith("/"):
-            log_filepath += "/"
-        log_filepath += log_filename
 
-        # register `TimedRotatingFileHandler` handler in order to properly
-        # rotate old log files and preserve them.
+        # register `TimedRotatingFileHandler` in order to properly rotate old
+        # log files and preserve them. All rotations are done at midnight.
         handler = TimedRotatingFileHandler(
-            filename=log_filepath,
-            when="midnight",
+            backupCount=log_preserve_days,
+            filename=log_filepath + log_filename,
             interval=1,
-            backupCount=log_preserve_days)
+            when="midnight")
         handler.setFormatter(LOGGING_FORMATTER)
         handler.suffix = "%Y%m%d"
         logger.addHandler(handler)
