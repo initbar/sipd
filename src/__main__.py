@@ -34,7 +34,7 @@ import os
 import sys
 import yaml
 
-from debug.logger import initialize_logger
+from logger import initialize_logger
 from version import BRANCH
 from version import VERSION
 
@@ -47,7 +47,8 @@ def main(args: argparse) -> int:
     with open(args.config) as config_file:
         settings = yaml.safe_load(config_file.read())
 
-    # logger = initialize_logger(settings)
+    logger = initialize_logger(settings)
+    logger.info("hi")
     return
 
 

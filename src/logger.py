@@ -43,39 +43,42 @@ LOGGING_FORMAT = " ".join(
     ]
 )
 
+LOGGING_FORMATTER = logging.Formatter(LOGGING_FORMAT)
+
 __all__ = ["initialize_logger"]
 
 
 def initialize_logger(configuration: dict) -> logging:
     """
     """
+    config = configuration["log"]
+
+    # console logging configuration.
+    logging.basicConfig(level=config["level"], format=LOGGING_FORMAT)
     logger = logging.getLogger()
 
-    config = configuration["log"]
-    if log_filesystem.get("enabled"):
-        log_days = log_filesystem["total_days"]
-        log_file = log_filesystem["name"]
-        log_path = log_filesystem["path"]
-        if not os.path.exists(log_path):
-            os.makedirs(log_path)
-        if not log_path.endswith("/"):
-            log_path += "/"
-        log_path += log_file
-        fs_handler = TimedRotatingFileHandler(
-            log_path,  # log path
-            "midnight",  # log rotation time
-            1,  # interval
-            log_days,
-        )
-        fs_handler.setFormatter(logging_formatter)
-        fs_handler.suffix = "%Y%m%d"
-        logger.addHandler(fs_handler)
-    else:
-        fs_handler = None
+    # disk logging configuration.
+    if config["disk"].get("enabled"):
+        log_filename = config["disk"]["name"]
+        log_filepath = config["disk"]["path"]
+        log_preserve_days = config["disk"]["total_days_preserved"]
 
-    # console
-    if log_console.get("enabled"):
-        logging.basicConfig(level=log["level"], format=logging_format)
+        # if the target log file does not exist, safely create one.
+        if not os.path.exists(log_filepath):
+            os.makedirs(log_filepath)
+        if not log_filepath.endswith("/"):
+            log_filepath += "/"
+        log_filepath += log_filename
 
-    logger.debug("<main>:successfully initialized logger.")
+        # register `TimedRotatingFileHandler` handler in order to properly
+        # rotate old log files and preserve them.
+        handler = TimedRotatingFileHandler(
+            filename=log_filepath,
+            when="midnight",
+            interval=1,
+            backupCount=log_preserve_days)
+        handler.setFormatter(LOGGING_FORMATTER)
+        handler.suffix = "%Y%m%d"
+        logger.addHandler(handler)
+
     return logger
