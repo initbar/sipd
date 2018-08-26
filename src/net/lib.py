@@ -24,9 +24,11 @@
 
 from __future__ import absolute_import
 from contextlib import contextmanager
+from functools import lru_cache
 
 import logging
 import random
+import re
 import socket
 
 logger = logging.getLogger()
@@ -34,9 +36,29 @@ logger = logging.getLogger()
 __all__ = [
     "get_random_privileged_port",
     "get_random_unprivileged_port",
+    "parse_ipv4_address",
     "safe_allocate_udp_socket",
     "unsafe_allocate_udp_socket",
 ]
+
+
+#
+# IPV4
+#
+
+
+REGX_IPV4 = re.compile("\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}(?:\:\d{1,5})*")
+
+@lru_cache(maxsize=128, typed=True)
+def parse_ipv4_address(string: str) -> list:
+    """ find all IPv4 addresses in a string.
+    """
+    return REGX_IPV4.findall(string)
+
+
+#
+# PORT
+#
 
 
 # get random port number from privileged port range.
