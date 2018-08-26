@@ -23,20 +23,16 @@ When using **sipd**, everything must be configured through [settings.yaml](./set
 
 ## Build
 
-If you want to build locally, you *must* have Python 3+ installed. Otherwise, run `make` and install the [requirements](./requirements.txt)!
+If you want to build and run locally (or remotely), you *must* have Python 3+ and the [requiremented packages](./requirements.txt) installed.
 
 ```bash
-~$ make
 ~$ pip install -r requirements.txt
+~$ make
 ```
 
 ## Tests
 
 To run tests, type `make test`. If the test exists with exit status 0, then it's ready to be run!
-
-```bash
-~$ make test
-```
 
 ## Documentations
 
