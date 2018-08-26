@@ -14,22 +14,20 @@ Some key features are:
 
 ## Usage
 
-When using **sipd**, everything must be first configured through [settings.yaml](./settings.yaml). Any `null` values in [settings.yaml](./settings.yaml) means that particular feature has yet to be implemented. Otherwise, please refer to the [documentations](#documentations) for configuration explanations.
+When using **sipd**, everything must be configured through [settings.yaml](./settings.yaml) (note: please refer to the [documentations](#documentations) for details).
 
 ```bash
-~$ # vi settings.yaml
-~$ make
-~$ pip install -r requirements.txt
-~$ ./sipd --config settings.yaml
+~$ # wget 'https://raw.githubusercontent.com/initbar/sipd/master/settings.yaml'
+~$ pip install sipd
 ```
 
-## Installation
+## Build
 
-If you do not want to locally build, simply install the stable versions of **sipd** and copy the [settings.yaml](./settings.yaml).
+If you want to build locally, you *must* have Python 3+ installed. Otherwise, run `make` and install the [requirements](./requirements.txt)!
 
 ```bash
-~$ wget 'https://raw.githubusercontent.com/initbar/sipd/master/settings.yaml'
-~$ pip install sipd
+~$ make
+~$ pip install -r requirements.txt
 ```
 
 ## Tests
