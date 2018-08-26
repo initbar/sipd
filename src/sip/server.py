@@ -30,7 +30,7 @@ server.py
 import attr
 import logging
 
-from net.sockets import safe_allocate_udp_socket
+from net.lib import safe_allocate_udp_socket
 from sip.router import AsynchronousSIPRouter
 
 logger = logging.getLogger()

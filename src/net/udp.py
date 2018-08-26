@@ -33,9 +33,9 @@ from contextlib import contextmanager
 import logging
 import socket
 
-# from net.sockets import get_random_privileged_port
-from net.sockets import get_random_unprivileged_port
-from net.sockets import unsafe_allocate_udp_socket
+# from net.lib import get_random_privileged_port
+from net.lib import get_random_unprivileged_port
+from net.lib import unsafe_allocate_udp_socket
 
 logger = logging.getLogger()
 
