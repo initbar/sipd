@@ -14,7 +14,7 @@ Some key features are:
 
 ## Usage
 
-When using **sipd**, everything must be configured through [settings.yaml](./settings.yaml) (note: please refer to the [documentations](#documentations) for details).
+When using **sipd**, everything must be configured through [settings.yaml](./settings.yaml) configuration.
 
 ```bash
 ~$ # wget 'https://raw.githubusercontent.com/initbar/sipd/master/settings.yaml'
