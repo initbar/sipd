@@ -49,7 +49,8 @@ __all__ = ["initialize_logger"]
 
 
 def initialize_logger(configuration: dict) -> logging:
-    """
+    """ return root logger configured to user definitions.
+    @configuration<dict> -- `settings.yaml`
     """
     config = configuration["log"]
 
