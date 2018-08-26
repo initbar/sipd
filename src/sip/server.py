@@ -48,6 +48,6 @@ class AsynchronousSIPServer(object):
     def serve(self):
         host = str(self.settings["server"]["host"])
         port = int(self.settings["server"]["port"])
-        with safe_allocate_udp_socket(host=host, port=port, is_reused=True) as udp_socket:
-            self.router = AsynchronousSIPRouter(socket=udp_socket)
+        with safe_allocate_udp_socket(host=host, port=port, is_reused=True) as socket:
+            self.router = AsynchronousSIPRouter(socket=socket)
             self.router.settings = self.settings
