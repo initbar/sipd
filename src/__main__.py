@@ -35,7 +35,7 @@ import sys
 import yaml
 
 from logger import initialize_logger
-# from sip.server import AsynchronousSIPServer
+from sip.server import AsynchronousSIPServer
 from version import BRANCH
 from version import VERSION
 
@@ -48,8 +48,8 @@ def main(args: argparse) -> int:
     with open(args.config) as config_file:
         settings = yaml.safe_load(config_file.read())
         logger = initialize_logger(settings)
-    # server = AsynchronousSIPServer(settings)
-    # return server.serve()
+    server = AsynchronousSIPServer(settings)
+    return server.serve()
 
 
 if __name__ == "__main__":

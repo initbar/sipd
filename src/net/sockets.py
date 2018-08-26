@@ -94,14 +94,8 @@ def safe_allocate_udp_socket(*a, **kw) -> socket:
     """ create an UDP socket that automatically closes.
     """
     _socket = unsafe_allocate_udp_socket(*a, **kw)
-    try:
-        yield _socket
+    try: yield _socket
     finally:
         try: _socket.close()
         except AttributeError:
-            pass  # already closed.
-
-
-#
-# TCP
-#
+            pass

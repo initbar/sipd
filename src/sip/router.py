@@ -23,29 +23,20 @@
 # https://github.com/initbar/sipd
 
 """
-server.py
+router.py
 ---------
 """
 
 import attr
 import logging
 
-from net.sockets import safe_allocate_udp_socket
-from sip.router import AsynchronousSIPRouter
-
 logger = logging.getLogger()
 
-__all__ = ["AsynchronousSIPServer"]
+__all__ = ["AsynchronousSIPRouter"]
 
 
 @attr.s
-class AsynchronousSIPServer(object):
-    """ Asynchronous SIP server.
+class AsynchronousSIPRouter(object):
+    """ Asynchronous SIP router.
     """
-    setting = attr.ib(default={})
-
-    def serve(self):
-        host = str(self.setting["server"]["host"])
-        port = int(self.setting["server"]["port"])
-        with safe_allocate_udp_socket(host=host, port=port) as udp_socket:
-            self.router = AsynchronousSIPRouter(socket=udp_socket)
+    socket = attr.ib(default=None)

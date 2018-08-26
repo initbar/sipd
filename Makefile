@@ -21,7 +21,7 @@ test:
 
 
 run:
-	python $(SOURCE) || true
+	python $(SOURCE)
 
 
 clean:
