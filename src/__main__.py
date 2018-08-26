@@ -30,9 +30,9 @@ __main__.py
 from __future__ import absolute_import
 
 import argparse
-import json
 import os
 import sys
+import yaml
 
 from debug.logger import initialize_logger
 from version import BRANCH
@@ -45,7 +45,7 @@ def main(args: argparse) -> int:
     """
     """
     with open(args.config) as config_file:
-        settings = json.loads(config_file.read())
+        settings = yaml.safe_load(config_file.read())
 
     # logger = initialize_logger(settings)
     return
@@ -66,7 +66,7 @@ if __name__ == "__main__":
                             version="%s/%s" % (BRANCH, VERSION))
 
     # config: configuration file path.
-    default_configuration = os.path.abspath(os.path.curdir) + "/settings.json"
+    default_configuration = os.path.abspath(os.path.curdir) + "/settings.yaml"
     n_exec.add_argument("-c", "--config",
                         nargs="?",
                         metavar="str",

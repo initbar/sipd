@@ -14,21 +14,21 @@ Some key features are:
 
 ## Usage
 
-When using **sipd**, everything must be first configured through [settings.json](./settings.json). Any `null` values in [settings.json](./settings.json) means that particular feature has yet to be implemented. Otherwise, please refer to the [documentations](#documentations) for configuration explanations.
+When using **sipd**, everything must be first configured through [settings.yaml](./settings.yaml). Any `null` values in [settings.yaml](./settings.yaml) means that particular feature has yet to be implemented. Otherwise, please refer to the [documentations](#documentations) for configuration explanations.
 
 ```bash
-~$ # vi settings.json
+~$ # vi settings.yaml
 ~$ make
 ~$ pip install -r requirements.txt
-~$ ./sipd --config settings.json
+~$ ./sipd --config settings.yaml
 ```
 
 ## Installation
 
-If you do not want to locally build, simply install the stable versions of **sipd** and copy the [settings.json](./settings.json).
+If you do not want to locally build, simply install the stable versions of **sipd** and copy the [settings.yaml](./settings.yaml).
 
 ```bash
-~$ wget 'https://raw.githubusercontent.com/initbar/sipd/master/settings.json'
+~$ wget 'https://raw.githubusercontent.com/initbar/sipd/master/settings.yaml'
 ~$ pip install sipd
 ```
 
