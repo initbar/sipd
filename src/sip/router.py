@@ -27,8 +27,10 @@ router.py
 ---------
 """
 
+import asyncio
 import attr
 import logging
+import uvloop
 
 logger = logging.getLogger()
 
@@ -36,7 +38,21 @@ __all__ = ["AsynchronousSIPRouter"]
 
 
 @attr.s
-class AsynchronousSIPRouter(object):
-    """ Asynchronous SIP router.
+class AsynchronousRouter(object):
+    """ Asynchronous UDP packet router.
     """
+
+    _settings = attr.ib(default={})
     socket = attr.ib(default=None)
+
+    @property
+    def settings(self):
+        return self._settings
+
+    @settings.setter
+    def settings(self, settings):
+        self._settings = settings
+
+
+class AsynchronousSIPRouter(AsynchronousRouter):
+    pass

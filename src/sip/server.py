@@ -33,19 +33,21 @@ import logging
 from net.lib import safe_allocate_udp_socket
 from sip.router import AsynchronousSIPRouter
 
-logger = logging.getLogger()
-
 __all__ = ["AsynchronousSIPServer"]
+
+logger = logging.getLogger()
 
 
 @attr.s
 class AsynchronousSIPServer(object):
     """ Asynchronous SIP server.
     """
-    setting = attr.ib(default={})
+
+    settings = attr.ib(default={})
 
     def serve(self):
-        host = str(self.setting["server"]["host"])
-        port = int(self.setting["server"]["port"])
+        host = str(self.settings["server"]["host"])
+        port = int(self.settings["server"]["port"])
         with safe_allocate_udp_socket(host=host, port=port) as udp_socket:
             self.router = AsynchronousSIPRouter(socket=udp_socket)
+            self.router.settings = self.settings
