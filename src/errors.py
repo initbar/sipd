@@ -27,12 +27,9 @@ errors.py
 ---------
 """
 
-__all__ = [
-    "GenericSIPError",
-    "SIPDecodingError",
-    "SIPEncodingError",
-    "SIPInvalidProtocol",
-]
+
+class BaseError(Exception):
+    pass
 
 
 #
@@ -40,23 +37,26 @@ __all__ = [
 #
 
 
-class GenericSIPError(Exception):
-    pass
-
-
-class SIPInvalidProtocol(GenericSIPError):
+class SIPInvalidProtocol(BaseError):
     # throw this exception when validating incoming SIP packets (e.g. invalid or
     # non-existent SIP signature, mismatched SIP version, non-RFC methods, ..
     pass
 
 
-class SIPEncodingError(GenericSIPError):
+class SIPEncodingError(BaseError):
     # throw this exception when compiling python SIP datagram back into
     # text-based SIP message and an error occurs.
     pass
 
 
-class SIPDecodingError(GenericSIPError):
+class SIPDecodingError(BaseError):
     # throw this exception when parsing text-based SIP message into SIP datagram
     # and an error occurs.
     pass
+
+
+__all__ = [
+    "SIPDecodingError",
+    "SIPEncodingError",
+    "SIPInvalidProtocol",
+]

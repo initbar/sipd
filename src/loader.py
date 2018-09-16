@@ -95,13 +95,13 @@ def parse_arguments():
 
     config = argsparser.add_argument_group("config arguments")
 
-    default_config = os.path.abspath(os.path.curdir) + "/settings.yaml"
+    default_settings = os.path.abspath(os.path.curdir) + "/settings.yaml"
     config.add_argument(
         "--config",
         metavar="str",
         type=str,
-        default=default_config,
-        help="configuration path (default: '%s')" % default_config,
+        default=default_settings,
+        help="configuration path (default: '%s')" % default_settings,
     )
 
     #
