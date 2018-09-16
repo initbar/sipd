@@ -22,14 +22,18 @@
 #
 # https://github.com/initbar/sipd
 
-# -------------------------------------------------------------------------------
-# worker.py
-# -------------------------------------------------------------------------------
+from __future__ import absolute_import
+from abc import abstractmethod
+from abc import abstractproperty
 
-# import copy
-# import logging
-# import socket
-# import time
+import attr
+import copy
+import logging
+import multiprocessing
+import socket
+import time
+
+from lib.coroutine import coroutine
 
 # from src.debug import create_random_uuid
 # from src.debug import md5sum
@@ -50,64 +54,47 @@
 # from src.sockets import safe_allocate_udp_client
 # from src.sockets import unsafe_allocate_random_udp_socket
 
-# # custom logger
-# # -------------------------------------------------------------------------------
+logger = logging.getLogger()
 
 
-# class ContextLogger(object):
-#     """ custom logger with call context.
-#     """
+@attr.s(frozen=True, slots=True)
+class Worker(object):
+    """ Unspecialized worker """
 
-#     def __init__(self, logger):
-#         self.log = logger
-#         self.fmt = "%s %s"
-#         self.context = "none"
+    name = attr.ib(default="worker")
 
-#     def refresh(self):
-#         """ generate random context string.
-#         """
-#         self.context = md5sum(create_random_uuid())[:8]  # first 8 Bytes only.
+    _input = multiprocessing.Queue()
+    _output = attr.ib(default=None)
 
-#     def critical(self, *a, **kw):
-#         try:
-#             string = a[0] % a[1:]
-#         except:
-#             string = a
-#         fmt = "%s \033[91m%s\033[0m"
-#         self.log.critical(fmt % (self.context, string))
+    def __repr__(self):
+        return "Worker(name=%s)" % self.name
 
-#     def debug(self, *a, **kw):
-#         try:
-#             string = a[0] % a[1:]
-#         except:
-#             string = a
-#         self.log.debug(self.fmt % (self.context, string))
+    def __str__(self):
+        return self.__repr__().__str__()
 
-#     def error(self, *a, **kw):
-#         try:
-#             string = a[0] % a[1:]
-#         except:
-#             string = a
-#         fmt = "%s \033[91m%s\033[0m"
-#         self.log.error(fmt % (self.context, string))
+    @abstractproperty
+    def size(self):
+        return self._input.qsize()
 
-#     def info(self, *a, **kw):
-#         try:
-#             string = a[0] % a[1:]
-#         except:
-#             string = a
-#         self.log.info(self.fmt % (self.context, string))
+    @abstractmethod
+    def enqueue(self, message):
+        self._input.put(message)
 
-#     def warning(self, *a, **kw):
-#         try:
-#             string = a[0] % a[1:]
-#         except:
-#             string = a
-#         fmt = "%s \033[91m%s\033[0m"
-#         self.log.warning(fmt % (self.context, string))
+    @abstractmethod
+    def standby(self):
+        raise NotImplementedError
 
 
-# logger = ContextLogger(logging.getLogger())
+class SipWorker(Worker):
+    """ """
+
+    def __repr__(self):
+        return "SipWorker(name='%s', size=%s)" % (self.name, self.size)
+
+    def standby(self, *a, **kw):
+        return
+
+
 
 # # SIP responses
 # # -------------------------------------------------------------------------------
@@ -339,15 +326,3 @@
 #             datagram["pass"] = db_password
 #             client.sendall(dump_json(datagram))
 #             logger.info("<worker>: sent metadata to remote database.")
-
-
-class Worker(object):
-
-    def __init__(self, name):
-        self.name = name
-
-    def enque(self, message):
-        print(message)
-
-    def standby(self):
-        return

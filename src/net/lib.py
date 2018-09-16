@@ -33,14 +33,6 @@ import socket
 
 logger = logging.getLogger()
 
-__all__ = [
-    "get_random_privileged_port",
-    "get_random_unprivileged_port",
-    "parse_ipv4_address",
-    "safe_allocate_udp_socket",
-    "unsafe_allocate_udp_socket",
-]
-
 
 #
 # IPV4
@@ -95,11 +87,11 @@ def unsafe_allocate_udp_socket(
 
     # bind the server socket.
     try:
-        logger.debug("attempting to bind to udp port: '%s'", port)
+        logger.debug("attempting to bind to udp port: '%s'.", port)
         udp_socket.settimeout(timeout)
         udp_socket.bind((host, port))
     except socket.error:
-        logger.error("failed to bind to udp port: '%s'", port)
+        logger.error("failed to bind to udp port: '%s'.", port)
         return
 
     # reuse the server socket.
@@ -107,7 +99,7 @@ def unsafe_allocate_udp_socket(
         udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
         udp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, True)
 
-    logger.info("successfully created udp socket port '%s'", port)
+    logger.info("successfully created udp socket port '%s'.", port)
     return udp_socket
 
 
@@ -121,3 +113,12 @@ def safe_allocate_udp_socket(*a, **kw) -> socket:
         try: _socket.close()
         except AttributeError:
             pass
+
+
+__all__ = [
+    "get_random_privileged_port",
+    "get_random_unprivileged_port",
+    "parse_ipv4_address",
+    "safe_allocate_udp_socket",
+    "unsafe_allocate_udp_socket",
+]

@@ -39,13 +39,6 @@ from net.lib import unsafe_allocate_udp_socket
 
 logger = logging.getLogger()
 
-__all__ = [
-    "safe_allocate_random_udp_socket",
-    "safe_allocate_udp_client",
-    "unsafe_allocate_random_udp_socket",
-    "unsafe_allocate_udp_socket",
-]
-
 
 #
 # SERVER
@@ -102,3 +95,11 @@ def safe_allocate_udp_client(timeout: float = 1.0) -> socket:
         try: udp_socket.close()
         except AttributeError:
             pass
+
+
+__all__ = [
+    "safe_allocate_random_udp_socket",
+    "safe_allocate_udp_client",
+    "unsafe_allocate_random_udp_socket",
+    "unsafe_allocate_udp_socket",
+]

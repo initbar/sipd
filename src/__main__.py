@@ -56,6 +56,8 @@ if __name__ == "__main__":
             settings["server"]["host"] = args.address
             settings["server"]["port"] = args.port
             settings["server"]["worker"] = args.worker_count
+            if args.print_debug_logs:
+                settings["log"]["level"] = "DEBUG"
     except FileNotFoundError:
         logger.error("configuration file does not exist: '%s'.", args.config)
 

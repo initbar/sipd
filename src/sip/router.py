@@ -39,7 +39,7 @@ import logging
 import random
 
 from lib.coroutine import coroutine
-from sip.worker import Worker
+from sip.worker import SipWorker
 
 logger = logging.getLogger()
 
@@ -101,7 +101,7 @@ class AsynchronousUDPRouter(PacketRouter):
             logger.warning("throttled worker count to '%s'.", worker_count)
 
         # wrap each workers in its own sub-process.
-        self.workers = [Worker(name="worker-%s" %i) for i in range(worker_count)]
+        self.workers = [SipWorker(name="worker-%s" %i) for i in range(worker_count)]
         self._workers = []
         for worker in self.workers:
             process = Process(name=worker.name, target=worker.standby)
@@ -109,6 +109,7 @@ class AsynchronousUDPRouter(PacketRouter):
             process.start()
             self._workers.append(process)
             logger.info("successfully created '%s'.", worker.name)
+            logger.debug("worker: %s", worker)
 
 
 __all__ = ["AsynchronousUDPRouter", "PacketRouter"]

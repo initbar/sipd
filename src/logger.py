@@ -36,10 +36,10 @@ import os
 
 LOGGING_FORMAT = " ".join(
     [
-        u"\u001b[0m[%(asctime)-15s]",
-        u"<<\u001b[32;1m%(threadName)s\u001b[0m>>",
+        "\u001b[0m[%(asctime)-15s]",
+        "<<\u001b[32;1m%(threadName)s\u001b[0m>>",
         "%(levelname)s",
-        u"<\u001b[36m%(pathname)s\u001b[0m:%(funcName)s:\u001b[31;1m%(lineno)s\u001b[0m>",
+        "<\u001b[36m%(pathname)s\u001b[0m:%(funcName)s:\u001b[31;1m%(lineno)s\u001b[0m>",
         "%(message)s",
     ]
 )
