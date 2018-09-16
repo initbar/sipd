@@ -28,6 +28,7 @@ server.py
 """
 
 from __future__ import absolute_import
+from abc import abstractmethod
 
 import asyncore
 import attr
@@ -40,27 +41,37 @@ logger = logging.getLogger()
 
 
 @attr.s(slots=True)
-class AsynchronousUDPServer(object):
-    """ Asynchronous UDP server
-    """
+class AsynchronousServer(object):
+    """ Asynchronous server """
 
     settings = attr.ib()
-    router = attr.ib(default=None)
+
+    def __repr__(self):
+        return "AsynchronousServer(settings=%s)" % self.settings
+
+    def __str__(self):
+        return self.__repr__().__str__()
+
+    @abstractmethod
+    def serve(self):
+        raise NotImplementedError
+
+
+class AsynchronousUDPServer(AsynchronousServer):
+    """ Asynchronous UDP server """
 
     def __repr__(self):
         return "AsynchronousUDPServer(settings=%s)" % self.settings
 
     def serve(self):
-        host = str(self.settings["server"]["host"])
-        port = int(self.settings["server"]["port"])
+        host = self.settings["server"]["host"]
+        port = self.settings["server"]["port"]
         with safe_allocate_udp_socket(host=host, port=port, is_reused=True) as socket:
-            self.router = AsynchronousUDPRouter(settings=self.settings, socket=socket)
-            self.router.route()
-            logger.info("successfully created router.")
-            logger.debug("router => %s", self.router)
-            logger.info("successfully created server.")
-            logger.debug("server => %s", self)
+            router = AsynchronousUDPRouter(settings=self.settings, socket=socket)
+            router.route()
+            logger.info("successfully created router: %s", router)
+            logger.info("successfully created server: %s", self)
             asyncore.loop()
 
 
-__all__ = ["AsynchronousUDPServer"]
+__all__ = ["AsynchronousServer", "AsynchronousUDPServer"]
