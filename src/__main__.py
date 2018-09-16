@@ -56,7 +56,7 @@ if __name__ == "__main__":
 
     try:
         if args.print_environment:
-            logger.info("app environment: %s", vars(args))
+            logger.info("app env: %s", vars(args))
         app = Application(param=args)
         result, benchmark = app.run()
     except KeyboardInterrupt:

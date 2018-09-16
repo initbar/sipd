@@ -34,6 +34,7 @@ from multiprocessing import cpu_count
 import argparse
 import attr
 import logging
+import os
 import unittest
 import yaml
 
@@ -79,7 +80,7 @@ def parse_arguments():
         metavar="int",
         type=int,
         default="5060",
-        help="server listening port (default: '5060')",
+        help="server listening port (default: 5060)",
     )
 
     server.add_argument(
@@ -97,14 +98,14 @@ def parse_arguments():
 
     config = argsparser.add_argument_group("config arguments")
 
-    default_config = ""
+    default_config = os.path.abspath(os.path.curdir) + "/settings.yaml"
     config.add_argument(
         "-c",
         "--config",
         metavar="str",
         type=str,
         default=default_config,
-        help="configuration path (default: %s)" % default_config,
+        help="configuration path (default: '%s')" % default_config,
     )
 
     #
@@ -151,7 +152,7 @@ class Application(object):
     def param_must_be_argparse_namespace(self, attribute, value):
         """ `param` must be instance of `argparse.Namespace`.
         """
-        if not isinstance(value, (dict, argparse.Namespace)):
+        if not isinstance(value, (argparse.Namespace, dict)):
             raise ValueError("'param' must be 'Namespace' or 'dict' type.")
 
     @benchmark
