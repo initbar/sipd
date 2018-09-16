@@ -48,13 +48,13 @@ LOGGING_FORMATTER = logging.Formatter(LOGGING_FORMAT)
 
 
 def feature_log_to_disk(func):
-    """ """
+    """ attach file logging capability to logger instance """
     @wraps(func)
     def feature(*a, **kw):
         logger = func(*a, **kw)
-        log_disk = kw.get("log_to_disk", False)
-        log_path = kw.get("log_path", os.path.curdir)
-        log_name = kw.get("log_name", "sipd.log")
+        log_disk = kw.get("log_to_disk")
+        log_path = kw.get("log_path")
+        log_name = kw.get("log_name")
         if not kw.get("log_to_disk"):
             return logger
 
@@ -67,7 +67,7 @@ def feature_log_to_disk(func):
 
         # add rotating file log handler
         handler = TimedRotatingFileHandler(
-            backupCount=kw.get("log_days", 7),
+            backupCount=kw.get("log_days"),
             filename=log_path + log_name,
             interval=1,
             when="midnight",
