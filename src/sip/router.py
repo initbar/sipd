@@ -98,7 +98,7 @@ class AsynchronousUDPRouter(PacketRouter):
         # benefits are minimal or even detrimental.
         worker_count = min(max(1, self.settings["server"]["worker"]), cpu_count())
         if worker_count != self.settings["server"]["worker"]:
-            logger.info("optimized worker count to '%s'", worker_count)
+            logger.warning("throttled worker count to '%s'.", worker_count)
 
         # wrap each workers in its own sub-process.
         self.workers = [Worker(name="worker-%s" %i) for i in range(worker_count)]
@@ -108,7 +108,7 @@ class AsynchronousUDPRouter(PacketRouter):
             process.daemon = True
             process.start()
             self._workers.append(process)
-            logger.info("successfully created '%s'", worker.name)
+            logger.info("successfully created '%s'.", worker.name)
 
 
 __all__ = ["AsynchronousUDPRouter", "PacketRouter"]

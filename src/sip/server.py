@@ -69,8 +69,10 @@ class AsynchronousUDPServer(AsynchronousServer):
         with safe_allocate_udp_socket(host=host, port=port, is_reused=True) as socket:
             router = AsynchronousUDPRouter(settings=self.settings, socket=socket)
             router.standby()
-            logger.info("successfully created router: %s", router)
-            logger.info("successfully created server: %s", self)
+            logger.info("successfully created router.")
+            logger.debug("router: %s", router)
+            logger.info("successfully created server.")
+            logger.debug("server: %s", self)
             asyncore.loop()
 
 
