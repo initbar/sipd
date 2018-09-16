@@ -80,11 +80,7 @@ def feature_log_to_disk(func):
 
 
 @feature_log_to_disk
-def initialize_logger(level: str = "INFO",
-                      log_to_disk: bool = False,
-                      log_path: str = os.path.curdir,
-                      log_name: str = "sipd.log",
-                      log_days: int = 7) -> logging:
+def initialize_logger(level, log_to_disk, log_path, log_name, log_days) -> logging:
     """ return customized root logger instance """
     logging.basicConfig(level=level, format=LOGGING_FORMAT)
     logger = logging.getLogger()

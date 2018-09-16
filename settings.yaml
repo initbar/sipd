@@ -60,7 +60,7 @@ garbage_collector:
   event_loop_speed_in_sec: 0.01
 
 log:
-  level: DEBUG
+  level: INFO
   disk:
     enabled: false
     path: "./logs"
