@@ -22,8 +22,6 @@
 #
 # https://github.com/initbar/sipd
 
-__all__ = ["SIP_METHODS"]
-
 # 4.2 Methods
 #
 # The methods are defined below. Methods that are not supported by a
@@ -54,3 +52,5 @@ SIP_METHODS = {
     "SUBSCRIBE",
     "UPDATE",
 }
+
+__all__ = ["SIP_METHODS"]

@@ -27,27 +27,40 @@ server.py
 ---------
 """
 
+from __future__ import absolute_import
+
+import asyncore
 import attr
 import logging
 
 from net.lib import safe_allocate_udp_socket
-from sip.router import AsynchronousSIPRouter
-
-__all__ = ["AsynchronousSIPServer"]
+from sip.router import AsynchronousUDPRouter
 
 logger = logging.getLogger()
 
 
-@attr.s
-class AsynchronousSIPServer(object):
-    """ Asynchronous SIP server.
+@attr.s(slots=True)
+class AsynchronousUDPServer(object):
+    """ Asynchronous UDP server
     """
 
-    settings = attr.ib(default={})
+    settings = attr.ib()
+    router = attr.ib(default=None)
+
+    def __repr__(self):
+        return "AsynchronousUDPServer(settings=%s)" % self.settings
 
     def serve(self):
-        host = str(self.settings["server"]["host"])
-        port = int(self.settings["server"]["port"])
+        host = str(self.settings.address)
+        port = int(self.settings.port)
         with safe_allocate_udp_socket(host=host, port=port, is_reused=True) as socket:
-            self.router = AsynchronousSIPRouter(socket=socket)
-            self.router.settings = self.settings
+            self.router = AsynchronousUDPRouter(settings=self.settings, socket=socket)
+            self.router.route()
+            logger.info("successfully created router.")
+            logger.debug("router => %s", self.router)
+            logger.info("successfully created server.")
+            logger.debug("server => %s", self)
+            asyncore.loop()
+
+
+__all__ = ["AsynchronousUDPServer"]

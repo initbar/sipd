@@ -29,6 +29,7 @@ logger.py
 
 from __future__ import absolute_import
 from logging.handlers import TimedRotatingFileHandler
+from six import wraps  # functools.wraps
 
 import logging
 import os
@@ -45,40 +46,49 @@ LOGGING_FORMAT = " ".join(
 
 LOGGING_FORMATTER = logging.Formatter(LOGGING_FORMAT)
 
-__all__ = ["initialize_logger"]
 
+def feature_log_to_disk(func):
+    """ """
+    @wraps(func)
+    def feature(*a, **kw):
+        logger = func(*a, **kw)
+        log_disk = kw.get("log_to_disk", False)
+        log_path = kw.get("log_path", os.path.curdir)
+        log_name = kw.get("log_name", "sipd.log")
+        if not kw.get("log_to_disk"):
+            return logger
 
-def initialize_logger(configuration: dict) -> logging:
-    """ return root logger configured to user definitions.
-    @configuration<dict> -- `settings.yaml`
-    """
-    config = configuration["log"]
+        # resolve log path
+        log_path = "".join(
+            [os.path.abspath(log_path), ("/" if not log_path.endswith("/") else "")]
+        )
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)
 
-    # console logging configuration.
-    logging.basicConfig(level=config["level"], format=LOGGING_FORMAT)
-    logger = logging.getLogger()
-
-    # disk logging configuration.
-    if config["disk"].get("enabled"):
-        log_filename = config["disk"]["name"]
-        log_preserve_days = config["disk"]["total_days_preserved"]
-        log_filepath = config["disk"]["path"]
-        if not log_filepath.endswith("/"):
-            log_filepath += "/"
-
-        # if the target log file does not exist, safely create one.
-        if not os.path.exists(log_filepath):
-            os.makedirs(log_filepath)
-
-        # register `TimedRotatingFileHandler` in order to properly rotate old
-        # log files and preserve them. All rotations are done at midnight.
+        # add rotating file log handler
         handler = TimedRotatingFileHandler(
-            backupCount=log_preserve_days,
-            filename=log_filepath + log_filename,
+            backupCount=kw.get("log_days", 7),
+            filename=log_path + log_name,
             interval=1,
-            when="midnight")
+            when="midnight",
+        )
         handler.setFormatter(LOGGING_FORMATTER)
         handler.suffix = "%Y%m%d"
         logger.addHandler(handler)
+        return logger
+    return feature
 
+
+@feature_log_to_disk
+def initialize_logger(level: str = "INFO",
+                      log_to_disk: bool = False,
+                      log_path: str = os.path.curdir,
+                      log_name: str = "sipd.log",
+                      log_days: int = 7) -> logging:
+    """ return customized root logger instance """
+    logging.basicConfig(level=level, format=LOGGING_FORMAT)
+    logger = logging.getLogger()
     return logger
+
+
+__all__ = ["initialize_logger"]

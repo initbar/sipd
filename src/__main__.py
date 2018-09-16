@@ -29,27 +29,12 @@ __main__.py
 
 from __future__ import absolute_import
 
-import argparse
-import os
 import sys
-import yaml
 
+from loader import Application
+from loader import parse_arguments
 from logger import initialize_logger
-from sip.server import AsynchronousSIPServer
-from version import BRANCH
-from version import VERSION
-
-__all__ = ()
-
-
-def main(args: argparse) -> int:
-    """
-    """
-    with open(args.config) as config_file:
-        settings = yaml.safe_load(config_file.read())
-        logger = initialize_logger(settings)
-    server = AsynchronousSIPServer(settings)
-    return server.serve()
+from version import BRANCH, VERSION
 
 
 if __name__ == "__main__":
@@ -58,23 +43,27 @@ if __name__ == "__main__":
     if not ((3, 0) <= sys.version_info):
         raise RuntimeError("minimum Python version 3.0 required")
 
-    argsparser = argparse.ArgumentParser()
-    n_exec = argsparser.add_argument_group("execution arguments")
+    # parse `-h` and `-v`.
+    args = parse_arguments()
+    if args.version:
+        sys.stderr.write(Application.version)
+        sys.exit()
 
-    # version: show program's version number and exit.
-    argsparser.add_argument("-v", "--version",
-                            action="version",
-                            version="%s/%s" % (BRANCH, VERSION))
+    # TODO: parse configuration.
 
-    # config: configuration file path.
-    default_configuration = os.path.abspath(os.path.curdir) + "/settings.yaml"
-    n_exec.add_argument("-c", "--config",
-                        nargs="?",
-                        metavar="str",
-                        default=default_configuration,
-                        help="configuration path (default: %s)" % default_configuration)
+    logger = initialize_logger(level=("DEBUG" if args.print_debug_logs else "INFO"))
+    logger.debug("successfully initialized logger.")
 
-    args = argsparser.parse_args()
-    try: sys.exit(main(args))
+    try:
+        if args.print_environment:
+            logger.info("app environment: %s", vars(args))
+        app = Application(param=args)
+        result, benchmark = app.run()
     except KeyboardInterrupt:
         pass
+    finally:
+        if args.print_benchmark:
+            # TODO: benchmark is not always accurate since it also adds
+            # `sys.stdout.write` time. I need to either change the start
+            # and end or subtract print time from the overall benchmark.
+            logger.info("app performance: %s seconds.", benchmark)

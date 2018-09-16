@@ -27,32 +27,86 @@ router.py
 ---------
 """
 
-import asyncio
+from __future__ import absolute_import
+from abc import abstractmethod
+from abc import abstractproperty
+from multiprocessing import Process
+from multiprocessing import cpu_count
+
+import asyncore
 import attr
 import logging
-import uvloop
+import random
+
+from lib.coroutine import coroutine
+from sip.worker import Worker
 
 logger = logging.getLogger()
 
-__all__ = ["AsynchronousSIPRouter"]
 
-
-@attr.s
-class AsynchronousRouter(object):
-    """ Asynchronous UDP packet router.
+class Router(asyncore.dispatcher):
+    """ Base packet router
     """
 
-    _settings = attr.ib(default={})
-    socket = attr.ib(default=None)
+    @abstractmethod
+    def route(self):
+        raise NotImplementedError
+
+
+class AsynchronousUDPRouter(Router):
+    """ Asynchronous UDP packet router
+    """
+
+    def __repr__(self):
+        return "AsynchronousUDPRouter(settings=%s, socket=%s, workers=%s)" % (
+            self.settings,
+            self.socket,
+            self.workers,
+        )
+
+    def __str__(self):
+        return self.__repr__().__str__()
+
+    def __init__(self, settings=None, socket=None):
+        asyncore.dispatcher.__init__(self, socket)
+        self.settings = settings
+        self.socket = socket
 
     @property
-    def settings(self):
-        return self._settings
+    @coroutine
+    def demultiplexer(self, *a, **kw):
+        while True:
+            message = yield
+            # TODO: add more demultiplexing algorithms.
+            random.choice(self.workers).enqueue(message)
 
-    @settings.setter
-    def settings(self, settings):
-        self._settings = settings
+    def handle_read(self):
+        try:
+            packet = self.recvfrom(0xffff)  # max bytes
+            endpoint, message = tuple(packet[1]), str(packet[0])
+            self.demultiplexer.send((endpoint, message))
+        except EOFError:
+            pass
+
+    def route(self, *a, **kw):
+        """
+        """
+        # initialize and limit workers to the total number of CPU cores.
+        # If worker processes exceed the total core count, then performance
+        # benefits are minimal or even detrimental.
+        worker_count = min(max(1, self.settings.worker_count), cpu_count())
+        if worker_count != self.settings.worker_count:
+            logger.info("optimized worker count to '%s'.", worker_count)
+
+        # wrap each workers in its own sub-process.
+        self.workers = [Worker(name="worker-%s" %i) for i in range(worker_count)]
+        self._workers = []
+        for worker in self.workers:
+            process = Process(name=worker.name, target=worker.standby)
+            process.daemon = True
+            process.start()
+            self._workers.append(process)
+            logger.info("successfully created '%s'", worker.name)
 
 
-class AsynchronousSIPRouter(AsynchronousRouter):
-    pass
+__all__ = ["AsynchronousUDPRouter", "Router"]
