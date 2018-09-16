@@ -1,12 +1,6 @@
 *.py[cod]
 .pypirc
 .tox/
-bin/
-build/
-dist/
-include/
-lib/
-local/
 logs/
 pip-selfcheck.json
 sipd

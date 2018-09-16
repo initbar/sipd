@@ -64,7 +64,13 @@ if __name__ == "__main__":
         sys.stderr.write(str(settings))
         sys.exit()
 
-    logger = initialize_logger(level=settings["log"]["level"])
+    logger = initialize_logger(
+        level=settings["log"]["level"],
+        log_to_disk=settings["log"]["disk"]["enabled"],
+        log_path=settings["log"]["disk"]["path"],
+        log_name=settings["log"]["disk"]["name"],
+        log_days=settings["log"]["disk"]["total_days_preserved"]
+    )
     logger.debug("successfully initialized logger.")
 
     try:

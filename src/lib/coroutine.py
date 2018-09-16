@@ -19,5 +19,16 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-BRANCH = "master"
-VERSION = "2.1.3"
+#
+# https://github.com/initbar/sipd
+
+
+def coroutine(func):
+    def impl(*a, **kw):
+        cr = func(*a, **kw)
+        next(cr)
+        return cr
+    return impl
+
+
+__all__ = ["coroutine"]

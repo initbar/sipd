@@ -19,5 +19,21 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-BRANCH = "master"
-VERSION = "2.1.3"
+#
+# https://github.com/initbar/sipd
+
+
+class lazyproperty(object):
+
+    def __init__(self, func):
+        self.func = func
+
+    def __get__(self, instance, cls):
+        if instance is None:
+            return self
+        value = self.func(instance)
+        setattr(instance, self.func.__name__, value)
+        return value
+
+
+__all__ = ["lazyproperty"]

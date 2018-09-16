@@ -35,8 +35,6 @@ import argparse
 import attr
 import logging
 import os
-import unittest
-import yaml
 
 from lib.benchmark import benchmark
 from logger import initialize_logger
@@ -45,8 +43,7 @@ from version import BRANCH, VERSION
 
 
 def parse_arguments():
-    """ parse and return command-line arguments
-    """
+    """ parse and return command-line arguments """
 
     formatter = argparse.HelpFormatter
     argsparser = argparse.ArgumentParser(
@@ -100,7 +97,6 @@ def parse_arguments():
 
     default_config = os.path.abspath(os.path.curdir) + "/settings.yaml"
     config.add_argument(
-        "-c",
         "--config",
         metavar="str",
         type=str,
@@ -138,14 +134,13 @@ def parse_arguments():
 class Application(object):
 
     version = "%s-v%s" % (BRANCH, VERSION)
-    param = attr.ib()
+
+    param = attr.ib(default={})
 
     @param.validator
-    def param_must_be_argparse_namespace(self, attribute, value):
-        """ `param` must be instance of `argparse.Namespace`.
-        """
-        if not isinstance(value, (argparse.Namespace, dict)):
-            raise ValueError("'param' must be 'Namespace' or 'dict' type.")
+    def param_must_be_dict(self, attribute, value):
+        if not isinstance(value, dict):
+            raise ValueError("'param' must be 'dict' type.")
 
     @benchmark
     def run(self, *a, **kw):
@@ -154,6 +149,7 @@ class Application(object):
 
     @abstractmethod
     def test(self):
+        import unittest
         raise NotImplementedError
 
 
