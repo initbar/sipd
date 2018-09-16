@@ -44,21 +44,11 @@ from sip.worker import Worker
 logger = logging.getLogger()
 
 
-class Router(asyncore.dispatcher):
-    """ Base packet router
-    """
-
-    @abstractmethod
-    def route(self):
-        raise NotImplementedError
-
-
-class AsynchronousUDPRouter(Router):
-    """ Asynchronous UDP packet router
-    """
+class PacketRouter(asyncore.dispatcher):
+    """ Base packet router """
 
     def __repr__(self):
-        return "AsynchronousUDPRouter(settings=%s, socket=%s, workers=%s)" % (
+        return "PacketRouter(settings=%s, socket=%s, workers=%s)" % (
             self.settings,
             self.socket,
             self.workers,
@@ -67,18 +57,25 @@ class AsynchronousUDPRouter(Router):
     def __str__(self):
         return self.__repr__().__str__()
 
+    @abstractmethod
+    def route(self):
+        raise NotImplementedError
+
+
+class AsynchronousUDPRouter(PacketRouter):
+    """ Asynchronous UDP packet router """
+
     def __init__(self, settings=None, socket=None):
         asyncore.dispatcher.__init__(self, socket)
         self.settings = settings
         self.socket = socket
 
-    @property
-    @coroutine
-    def demultiplexer(self, *a, **kw):
-        while True:
-            message = yield
-            # TODO: add more demultiplexing algorithms.
-            random.choice(self.workers).enqueue(message)
+    def __repr__(self):
+        return "AsynchronousUDPRouter(settings=%s, socket=%s, workers=%s)" % (
+            self.settings,
+            self.socket,
+            self.workers,
+        )
 
     def handle_read(self):
         try:
@@ -88,15 +85,20 @@ class AsynchronousUDPRouter(Router):
         except EOFError:
             pass
 
-    def route(self, *a, **kw):
-        """
-        """
+    @property
+    @coroutine
+    def demultiplexer(self, *a, **kw):
+        while True:
+            message = yield
+            random.choice(self.workers).enqueue(message)
+
+    def standby(self, *a, **kw):
         # initialize and limit workers to the total number of CPU cores.
         # If worker processes exceed the total core count, then performance
         # benefits are minimal or even detrimental.
         worker_count = min(max(1, self.settings["server"]["worker"]), cpu_count())
         if worker_count != self.settings["server"]["worker"]:
-            logger.info("optimized worker count to '%s'.", worker_count)
+            logger.info("optimized worker count to '%s'", worker_count)
 
         # wrap each workers in its own sub-process.
         self.workers = [Worker(name="worker-%s" %i) for i in range(worker_count)]
@@ -109,4 +111,4 @@ class AsynchronousUDPRouter(Router):
             logger.info("successfully created '%s'", worker.name)
 
 
-__all__ = ["AsynchronousUDPRouter", "Router"]
+__all__ = ["AsynchronousUDPRouter", "PacketRouter"]
