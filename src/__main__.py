@@ -30,6 +30,7 @@ __main__.py
 from __future__ import absolute_import
 
 import sys
+import yaml
 
 from loader import Application
 from loader import parse_arguments
@@ -49,15 +50,25 @@ if __name__ == "__main__":
         sys.stderr.write(Application.version)
         sys.exit()
 
-    # TODO: parse configuration.
+    try:  # parse configuration file and merge with command line arguments.
+        with open(args.config) as configuration:
+            settings = yaml.safe_load(configuration.read())
+            settings["server"]["host"] = args.address
+            settings["server"]["port"] = args.port
+            settings["server"]["worker"] = args.worker_count
+    except FileNotFoundError:
+        logger.error("configuration file does not exist: '%s'.", args.config)
 
-    logger = initialize_logger(level=("DEBUG" if args.print_debug_logs else "INFO"))
+    # parse environment.
+    if args.print_environment:
+        sys.stderr.write(str(settings))
+        sys.exit()
+
+    logger = initialize_logger(level=settings["log"]["level"])
     logger.debug("successfully initialized logger.")
 
     try:
-        if args.print_environment:
-            logger.info("app env: %s", vars(args))
-        app = Application(param=args)
+        app = Application(param=settings)
         result, benchmark = app.run()
     except KeyboardInterrupt:
         pass

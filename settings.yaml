@@ -8,8 +8,7 @@ project:
 server:
   host: '0.0.0.0'
   port: 5060
-  workers:
-    count: 1
+  worker: 1
 
 sip:
   version: '2.0'

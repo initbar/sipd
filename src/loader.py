@@ -115,14 +115,6 @@ def parse_arguments():
     debugger = argsparser.add_argument_group("debugging arguments")
 
     debugger.add_argument(
-        "-d",
-        "--print-debug-logs",
-        action="store_true",
-        default=False,
-        help="print debugging logs (default: false)",
-    )
-
-    debugger.add_argument(
         "-b",
         "--print-benchmark",
         action="store_true",

@@ -51,8 +51,8 @@ class AsynchronousUDPServer(object):
         return "AsynchronousUDPServer(settings=%s)" % self.settings
 
     def serve(self):
-        host = str(self.settings.address)
-        port = int(self.settings.port)
+        host = str(self.settings["server"]["host"])
+        port = int(self.settings["server"]["port"])
         with safe_allocate_udp_socket(host=host, port=port, is_reused=True) as socket:
             self.router = AsynchronousUDPRouter(settings=self.settings, socket=socket)
             self.router.route()

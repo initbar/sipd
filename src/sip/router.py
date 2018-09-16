@@ -94,8 +94,8 @@ class AsynchronousUDPRouter(Router):
         # initialize and limit workers to the total number of CPU cores.
         # If worker processes exceed the total core count, then performance
         # benefits are minimal or even detrimental.
-        worker_count = min(max(1, self.settings.worker_count), cpu_count())
-        if worker_count != self.settings.worker_count:
+        worker_count = min(max(1, self.settings["server"]["worker"]), cpu_count())
+        if worker_count != self.settings["server"]["worker"]:
             logger.info("optimized worker count to '%s'.", worker_count)
 
         # wrap each workers in its own sub-process.
