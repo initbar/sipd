@@ -139,20 +139,16 @@ def parse_arguments():
 
 @attr.s(frozen=True, slots=True)
 class Application(object):
+    """ Application
+    """
 
-    version = "%s-v%s" % (BRANCH, VERSION)
-
-    param = attr.ib(default={})
-
-    @param.validator
-    def param_must_be_dict(self, attribute, value):
-        if not isinstance(value, dict):
-            raise ValueError("'param' must be 'dict' type.")
+    version = "b:%s-v:%s" % (BRANCH, VERSION)
+    param = attr.ib()
 
     @benchmark
     def run(self, *a, **kw):
         server = AsynchronousUDPServer(settings=self.param)
-        server.serve()
+        return server.serve()
 
     @abstractmethod
     def test(self):
