@@ -24,6 +24,7 @@
 
 
 class lazyproperty(object):
+    """ lazy-initialize and cache a property """
 
     def __init__(self, func):
         self.func = func

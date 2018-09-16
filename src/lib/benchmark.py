@@ -27,8 +27,7 @@ import time
 
 
 def benchmark(func):
-    """ benchmark a function.
-    """
+    """ benchmark a function performance """
     @wraps(func)
     def _benchmark(*a, **kw):
         start = time.time()

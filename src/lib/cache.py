@@ -27,8 +27,8 @@ except ImportError:
 
 
 def lru_cache(maxsize=64):
-    """ decorator implementation for caching function returns.
-    @size<int> -- max cache entry limit.
+    """ decorator implementation for caching function returns
+    @size<int> -- max cache entry limit
     """
     size = max(1, size)
     queue = []
