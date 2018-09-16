@@ -88,9 +88,8 @@ def parse_arguments():
         help="number of workers available upto %s (default: 1)" % cpu_count(),
     )
 
-
     #
-    # server
+    # configuration
     #
 
     config = argsparser.add_argument_group("config arguments")
