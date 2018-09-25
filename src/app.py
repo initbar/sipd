@@ -142,7 +142,7 @@ class Application(object):
     """ Application
     """
 
-    version = "b:%s-v:%s" % (BRANCH, VERSION)
+    version = "branch:%s-version:%s" % (BRANCH, VERSION)
     param = attr.ib()
 
     @benchmark

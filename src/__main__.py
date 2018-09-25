@@ -32,8 +32,8 @@ from __future__ import absolute_import
 import sys
 import yaml
 
-from loader import Application
-from loader import parse_arguments
+from app import Application
+from app import parse_arguments
 from logger import initialize_logger
 from version import BRANCH, VERSION
 
