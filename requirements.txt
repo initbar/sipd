@@ -1,1 +1,5 @@
-coloredlogs==9.0
+attrs==18.1.0
+pyyaml==3.13
+six==1.11.0
+tox==3.2.1
+uvloop==0.11.2
