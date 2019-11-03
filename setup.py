@@ -7,7 +7,7 @@ from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
-from src.version import VERSION
+from sipping.version import VERSION
 
 setup(
     name="sipping",
