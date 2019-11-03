@@ -1,6 +1,12 @@
 [![Build Status](https://travis-ci.org/initbar/sipping.svg?branch=master)](https://travis-ci.org/initbar/sipping)
 
-# sipping
+![](./.docs/assets/cover.png)
+
+<div align="center">
+  <p><strong>A high-performance Session Initiation Protocol daemon.</strong></p>
+</div>
+
+## About
 
 **sipping** is an [active-recording](https://en.wikipedia.org/wiki/VoIP_recording) [Session Initiation Protocol](https://www.ietf.org/rfc/rfc3261.txt) server daemon, which was developed to decode raw SIP messages directly with [Genesys](https://www.genesys.com) [Resource Managers](https://docs.genesys.com/Documentation/GVP/85/GDG/GCRM) ("signal servers"), respond with dynamically crafted SIP/SDP packets, interface with an [external RTP protocol decoding software](), and send serialized datagrams to database handlers.
 
