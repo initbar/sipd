@@ -1,8 +1,4 @@
-*.py[cod]
+*.py[co]
 .pypirc
-.tox/
+
 logs/
-pip-selfcheck.json
-sipping
-sipping.egg-info/
-sipping.log

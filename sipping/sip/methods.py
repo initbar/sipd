@@ -1,0 +1,56 @@
+# MIT License
+#
+# Copyright (c) 2018 Herbert Shin
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+# https://github.com/initbar/sipping
+
+# 4.2 Methods
+#
+# The methods are defined below. Methods that are not supported by a
+# proxy or redirect server are treated by that server as if they were
+# an OPTIONS method and forwarded accordingly. Methods that are not
+# supported by a user agent server or registrar cause a 501 (Not
+# Implemented) response to be returned (Section 7). As in HTTP, the
+# Method token is case-sensitive.
+#
+#     Method  =  "INVITE" | "ACK" | "OPTIONS" | "BYE"
+#                | "CANCEL" | "REGISTER"
+#
+# https://tools.ietf.org/html/rfc2543#section-4.2
+SIP_METHODS = {
+    "ACK",
+    "BYE",
+    "CANCEL",
+    "INFO",
+    "INVITE",
+    "MESSAGE",
+    "NOTIFY",
+    "OK",
+    "OPTIONS",
+    "PRACK",
+    "PUBLISH",
+    "REFER",
+    "REGISTER",
+    "SUBSCRIBE",
+    "UPDATE",
+}
+
+__all__ = ["SIP_METHODS"]
