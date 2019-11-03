@@ -6,7 +6,11 @@ os:
 
 language: python
 python:
-  - "2.7"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "3.6"
+  - "3.7"
 
 branches:
   only:
@@ -14,11 +18,10 @@ branches:
 
 before_install:
   - sudo apt-get -qqy update
-  - sudo apt-get install -y python python-pip
+  - sudo apt-get install -y python3 python3-pip
 
 before_script:
   - sudo pip install -r requirements.txt
-  - sudo pip install pylint
 
 script:
   - # make test && make clean && make && ./sipping -t
@@ -26,9 +29,5 @@ script:
 
 matrix:
   allow_failures:
-    - python: "2.6"
     - python: "3.3"
-    - python: "3.4"
-    - python: "3.5"
-    - python: "3.6"
     - python: "nightly"
