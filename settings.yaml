@@ -1,9 +1,9 @@
 ---
 project:
-  name: sipd
+  name: sipping
   description: active-recording Session Initiation Protocol daemon
   license: MIT
-  repository: https://github.com/initbar/sipd
+  repository: https://github.com/initbar/sipping
 
 server:
   host: '127.0.0.1'
@@ -64,5 +64,5 @@ log:
   disk:
     enabled: false
     path: "./logs"
-    name: sipd.log
+    name: sipping.log
     total_days_preserved: 7

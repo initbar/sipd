@@ -1,6 +1,6 @@
 # project
 PROJECT = $(shell pwd)
-BINARY  = $(PROJECT)/sipd
+BINARY  = $(PROJECT)/sipping
 LOGS    = $(PROJECT)/logs
 SOURCE  = $(PROJECT)/src
 

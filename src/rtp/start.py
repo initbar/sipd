@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-# https://github.com/initbar/sipd
+# https://github.com/initbar/sipping
 
 # -------------------------------------------------------------------------------
 # start.py -- external RTP daemon new session schema.

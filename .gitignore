@@ -3,6 +3,6 @@
 .tox/
 logs/
 pip-selfcheck.json
-sipd
-sipd.egg-info/
-sipd.log
+sipping
+sipping.egg-info/
+sipping.log

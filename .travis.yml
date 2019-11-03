@@ -21,7 +21,7 @@ before_script:
   - sudo pip install pylint
 
 script:
-  - # make test && make clean && make && ./sipd -t
+  - # make test && make clean && make && ./sipping -t
   - # find . -type f -iname "*.py" -exec pylint "{}" \;
 
 matrix:
