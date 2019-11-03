@@ -3,7 +3,7 @@
 ![](./.docs/assets/cover.png)
 
 <div align="center">
-  <p><strong>A high-performance [Session Initiation Protocol (RFC-2543)](https://tools.ietf.org/html/rfc2543) daemon.</strong></p>
+  <p><strong>A high-performance <a href="https://tools.ietf.org/html/rfc2543">Session Initiation Protocol (RFC-2543)</a> daemon.</strong></p>
 </div>
 
 ## About
