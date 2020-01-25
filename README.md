@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/initbar/sipping.svg?branch=master)](https://travis-ci.org/initbar/sipping)
 
-![](./.docs/assets/cover.png)
+![](https://raw.githubusercontent.com/initbar/sipping/docs/assets/cover.png)
 
 <div align="center">
   <p><strong>A high-performance <a href="https://tools.ietf.org/html/rfc2543">Session Initiation Protocol (RFC-2543)</a> daemon.</strong></p>
