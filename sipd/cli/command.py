@@ -38,12 +38,11 @@ class Sipd(Application):
 
     def __init__(self, config: Config = None):
         """
+        Args:
+          config: Config -- Sipd configurations.
         """
-        self._config: Config = (
-            Config()  # default
-            if config is None
-            else config
-        )
+        # use default configuration settings if nothing is passed.
+        self._config: Config = (Config() if config is None else config)
 
     @property
     @lru_cache(maxsize=1)
