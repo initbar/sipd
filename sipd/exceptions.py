@@ -2,34 +2,25 @@
 #
 # This source code is licensed under the MIT license.
 
-"""
-sipd.exceptions
-------------------
-"""
 
-
-class BaseError(Exception):
+class Error(Exception):
     pass
 
 
-#
-# SIP
-#
+class SipInvalidProtocol(Error):
+   """Invalid SIP protocol."""
+    # Throw this exception when validating incoming SIP packets (e.g.
+    # invalid or non-existent SIP signature, mismatched SIP version,
+    # non-RFC methods, ..).
 
 
-class SIPInvalidProtocol(BaseError):
-    """ Invalid SIP protocol """
-    # throw this exception when validating incoming SIP packets (e.g. invalid or
-    # non-existent SIP signature, mismatched SIP version, non-RFC methods, ..
-
-
-class SIPEncodingError(BaseError):
-    """ Unable to encode/serialize SIP """
-    # throw this exception when compiling python SIP datagram back into
+class SipEncodingError(Error):
+    """Unable to encode/serialize SIP."""
+    # Throw this exception when compiling python SIP datagram back into
     # text-based SIP message and an error occurs.
 
 
-class SIPDecodingError(BaseError):
-    """ Unable to decode/deserialize SIP """
-    # throw this exception when parsing text-based SIP message into SIP datagram
-    # and an error occurs.
+class SipDecodingError(Error):
+    """Unable to decode/deserialize SIP."""
+    # Throw this exception when parsing text-based SIP message into SIP
+    # datagram and an error occurs.
