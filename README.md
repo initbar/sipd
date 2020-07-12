@@ -1,7 +1,8 @@
 [![Build Status](https://travis-ci.org/initbar/sipd.svg?branch=master)](https://travis-ci.org/initbar/sipd)
 
 <div align="center">
-  <p><strong>A high-performance <a href="https://tools.ietf.org/html/rfc2543">Session Initiation Protocol</a> daemon.</strong></p>
+  <h1>sipd</h1>
+  <p><strong>A high-performance Session Initiation Protocol daemon.</strong></p>
 </div>
 
 ## About
