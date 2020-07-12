@@ -82,6 +82,5 @@ class Config(object):
     """
     """
 
-    def __init__(*a, **kw):
-        self._a = a
+    def __init__(self, **kw):
         self._kw = kw

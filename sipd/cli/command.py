@@ -30,20 +30,29 @@ class Application(object, metaclass=ABCMeta):
 
     @abstractmethod
     def run(self):
-        """Run application."""
+        """Run application logic."""
         raise NotImplementedError
+
+
+def _run(self):
+    """Run application logic."""
+    return
 
 
 class Sipd(Application):
     """Sipd application."""
+
+    __slots__ = "_config",
 
     def __init__(self, config: Config = None):
         """
         Args:
           config: Config -- Sipd configurations.
         """
-        # use default configuration settings if nothing is passed.
+        # use default configuration settings if empty.
         self._config: Config = (Config() if config is None else config)
+
+    run = _run
 
     @property
     @lru_cache(maxsize=1)
@@ -56,6 +65,3 @@ class Sipd(Application):
     def args(self) -> Dict:
         """CLI arguments."""
         return vars(self._config)
-
-    def run(self) -> Any:
-        """Run application."""
