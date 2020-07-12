@@ -6,6 +6,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 from abc import abstractproperty
 from functools import lru_cache
+from typing import Any
 from typing import Dict
 from typing import Text
 
@@ -29,12 +30,12 @@ class Application(object, metaclass=ABCMeta):
 
     @abstractmethod
     def run(self):
-        """Run Application application."""
+        """Run application."""
         raise NotImplementedError
 
 
 class Sipd(Application):
-    """Sipd Application application."""
+    """Sipd application."""
 
     def __init__(self, config: Config = None):
         """
@@ -47,6 +48,7 @@ class Sipd(Application):
     @property
     @lru_cache(maxsize=1)
     def version(self) -> Text:
+        """Application version."""
         v: Text = f"{BRANCH}-v{VERSION}"
         return v
 
@@ -55,5 +57,5 @@ class Sipd(Application):
         """CLI arguments."""
         return vars(self._config)
 
-    def run(self):
-        return
+    def run(self) -> Any:
+        """Run application."""

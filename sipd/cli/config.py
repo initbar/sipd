@@ -11,12 +11,6 @@ from typing import Text
 import os
 
 
-class Config(object):
-
-    def __init__(*a, **kw):
-        print(kw)
-
-
 def parse_arguments() -> Dict:
     """Parse and return CLI arguments."""
 
@@ -82,3 +76,12 @@ def parse_arguments() -> Dict:
 
     args = parser.parse_args()
     return vars(args)
+
+
+class Config(object):
+    """
+    """
+
+    def __init__(*a, **kw):
+        self._a = a
+        self._kw = kw
