@@ -1,127 +1,60 @@
-# MIT License
+# Copyright 2018 (c) Herbert Shin  https://github.com/initbar/sipd
 #
-# Copyright (c) 2018 Herbert Shin
-#
-# Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
-# in the Software without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the Software is
-# furnished to do so, subject to the following conditions:
-#
-# The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of the Software.
-#
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# SOFTWARE.
-#
-# https://github.com/initbar/sipd
+# This source code is licensed under the MIT license.
 
-"""
-loader.py
----------
-"""
-
-from __future__ import absolute_import
+from abc import ABCMeta
 from abc import abstractmethod
-from multiprocessing import cpu_count
+from abc import abstractproperty
+from functools import lru_cache
+from typing import Dict
+from typing import Text
 
-import argparse
-import attr
-import logging
-import os
-
-from logger import initialize_logger
-from sip.server import AsynchronousUDPServer
-from version import BRANCH, VERSION
+from ..version import BRANCH
+from ..version import VERSION
+from .config import Config
 
 
-def parse_arguments():
-    """ parse and return command-line arguments """
+class Application(object, metaclass=ABCMeta):
+    """Abstract contract for application classes.
 
-    formatter = argparse.HelpFormatter
-    argsparser = argparse.ArgumentParser(
-        formatter_class=lambda prog: formatter(prog, max_help_position=30)
-    )
-
-    argsparser.add_argument(
-        "-v",
-        "--version",
-        action="store_true",
-        default=False,
-        help="print program version and exit",
-    )
-
-    #
-    # server
-    #
-
-    server = argsparser.add_argument_group("server arguments")
-
-    server.add_argument(
-        "--address",
-        metavar="str",
-        type=str,
-        default="127.0.0.1",
-        help="server listening address (default: '127.0.0.1')",
-    )
-
-    server.add_argument(
-        "--port",
-        metavar="int",
-        type=int,
-        default="5060",
-        help="server listening port (default: 5060)",
-    )
-
-    server.add_argument(
-        "--worker-count",
-        metavar="int",
-        type=int,
-        default=1,
-        help="number of workers available upto %s (default: 1)" % cpu_count(),
-    )
-
-    #
-    # configuration
-    #
-
-    config = argsparser.add_argument_group("config arguments")
-
-    default_settings = os.path.abspath(os.path.curdir) + "/settings.yaml"
-    config.add_argument(
-        "--config",
-        metavar="str",
-        type=str,
-        default=default_settings,
-        help="configuration path (default: '%s')" % default_settings,
-    )
-
-    args = argsparser.parse_args()
-    return args
-
-
-@attr.s(frozen=True, slots=True)
-class Application(object):
-    """ Application
+    Design note:
+      This ABC class is simply a placeholder for inheritance and type
+      checks/validations.  Sipd should inherit from this parent class.
     """
 
-    version = "branch:%s-version:%s" % (BRANCH, VERSION)
-    param = attr.ib()
-
-    def run(self, *a, **kw):
-        server = AsynchronousUDPServer(settings=self.param)
-        return server.serve()
+    @abstractproperty
+    def version(self) -> Text:
+        """Application version."""
+        return NotImplemented
 
     @abstractmethod
-    def test(self):
-        import unittest
+    def run(self):
+        """Run Application application."""
         raise NotImplementedError
 
 
-__all__ = ["parse_arguments", "Application"]
+class Sipd(Application):
+    """Sipd Application application."""
+
+    def __init__(self, config: Config = None):
+        """
+        """
+        self._config: Config = (
+            Config()  # default
+            if config is None
+            else config
+        )
+
+    @property
+    @lru_cache(maxsize=1)
+    def version(self) -> Text:
+        v: Text = f"{BRANCH}-v{VERSION}"
+        return v
+
+    @property
+    def args(self) -> Dict:
+        """CLI arguments."""
+        return vars(self._config)
+
+    def run(self):
+        return

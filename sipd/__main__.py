@@ -2,10 +2,10 @@
 #
 # This source code is licensed under the MIT license.
 
-from cli.command import Application
-from cli.command import parse_arguments
-from cli.config import Config
+from sipd.cli.command import Sipd
+from sipd.cli.config import Config
+from sipd.cli.config import parse_arguments
 
 if __name__ == "__main__":
-    app = Application(config=Config(**parse_arguments()))
+    app = Sipd(config=Config(**parse_arguments()))
     app.run()

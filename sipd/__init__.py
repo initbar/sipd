@@ -2,5 +2,8 @@
 #
 # This source code is licensed under the MIT license.
 
-from cli import Application
-from cli import Config
+from .cli import Sipd
+from .cli import Config
+
+from .version import BRANCH
+from .version import VERSION
