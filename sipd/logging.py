@@ -2,24 +2,19 @@
 #
 # This source code is licensed under the MIT license.
 
-"""
-sipd.logging
----------------
-"""
-
-from __future__ import absolute_import
 from logging.handlers import TimedRotatingFileHandler
-from six import wraps  # functools.wraps
+from functools import wraps
 
 import logging
 import os
 
+
 LOGGING_FORMAT = " ".join(
     [
-        "\u001b[0m[%(asctime)-15s]",
-        "<<\u001b[32;1m%(threadName)s\u001b[0m>>",
+        "[%(asctime)-15s]",
+        "<<%(threadName)s>>",
         "%(levelname)s",
-        "<\u001b[36m%(pathname)s\u001b[0m:%(funcName)s:\u001b[31;1m%(lineno)s\u001b[0m>",
+        "<%(pathname)s:%(funcName)s:%(lineno)s>",
         "%(message)s",
     ]
 )
@@ -60,11 +55,8 @@ def feature_log_to_disk(func):
 
 
 @feature_log_to_disk
-def initialize_logger(level, log_to_disk, log_path, log_name, log_days) -> logging:
+def Logger(level, log_to_disk, log_path, log_name, log_days) -> logging:
     """ return customized root logger instance """
     logging.basicConfig(level=level, format=LOGGING_FORMAT)
     logger = logging.getLogger()
     return logger
-
-
-__all__ = ["initialize_logger"]
