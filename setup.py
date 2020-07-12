@@ -1,4 +1,4 @@
-# Copyright 2018 (c) Herbert Shin  https://github.com/initbar/sipping
+# Copyright 2018 (c) Herbert Shin  https://github.com/initbar/sipd
 #
 # This source code is licensed under the MIT license.
 
@@ -11,13 +11,13 @@ from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
-from sipping.version import VERSION
+from sipd.version import VERSION
 
 setup(
-    name="sipping",
+    name="sipd",
     packages=find_packages(),
     description="active-recording Session Initiation Protocol daemon",
-    url="https://github.com/initbar/sipping",
+    url="https://github.com/initbar/sipd",
     version=VERSION,
     license="MIT",
     author="Herbert Shin",

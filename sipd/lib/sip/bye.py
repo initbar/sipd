@@ -21,3 +21,29 @@
 # SOFTWARE.
 #
 # https://github.com/initbar/sipd
+
+__all__ = ["SIP_BYE"]
+
+# 4.2.4 BYE
+#
+# The user agent client uses BYE to indicate to the server that it
+# wishes to release the call. A BYE request is forwarded like an INVITE
+# request and MAY be issued by either caller or callee. A party to a
+# call SHOULD issue a BYE request before releasing a call ("hanging
+# up"). A party receiving a BYE request MUST cease transmitting media
+# streams specifically directed at the party issuing the BYE request.
+#
+# If the INVITE request contained a Contact header, the callee SHOULD
+# send a BYE request to that address rather than the From address.
+#
+# This method MUST be supported by proxy servers and SHOULD be
+# supported by redirect and user agent SIP servers.
+#
+# https://tools.ietf.org/html/rfc2543#section-4.2.4
+SIP_BYE = {
+    "status_line": "SIP/%(sip_version)s BYE",
+    "sip": [],
+}
+
+SIP_BYE_SAMPLE = """\
+"""

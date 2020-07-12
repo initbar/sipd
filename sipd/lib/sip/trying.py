@@ -21,3 +21,28 @@
 # SOFTWARE.
 #
 # https://github.com/initbar/sipd
+
+__all__ = ["SIP_TRYING"]
+
+# 7.1.1 100 Trying
+#
+# Some unspecified action is being taken on behalf of this call (e.g.,
+# a database is being consulted), but the user has not yet been
+# located.
+#
+# https://tools.ietf.org/html/rfc2543#section-7.1.1
+SIP_TRYING = {
+    "status_line": "SIP/%(sip_version)s 100 Trying",
+    "sip": [
+        "CSeq",
+        "From",
+        "To",
+        "Via",
+        "Call-ID",
+        "Allow",
+        "Contact",
+    ],
+}
+
+SIP_TRYING_SAMPLE = """
+"""

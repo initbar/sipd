@@ -21,3 +21,25 @@
 # SOFTWARE.
 #
 # https://github.com/initbar/sipd
+
+__all__ = ["SIP_BUSY"]
+
+# 7.4.23 486 Busy Here
+#
+# The callee's end system was contacted successfully but the callee is
+# currently not willing or able to take additional calls. The response
+# MAY indicate a better time to call in the Retry-After header. The
+# user could also be available elsewhere, such as through a voice mail
+# service, thus, this response does not terminate any searches.  Status
+# 600 (Busy Everywhere) SHOULD be used if the client knows that no
+# other end system will be able to accept this call.
+#
+# https://tools.ietf.org/html/rfc2543#section-7.4.23
+SIP_BUSY = {
+    "status_line": "SIP/%(sip_version)s 486 Busy Here",
+    "sip": ["Contact"],
+}
+
+SIP_BUSY_SAMPLE = """\
+SIP/2.0 486 Busy Here
+"""

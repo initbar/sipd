@@ -1,11 +1,11 @@
 #
-# Sipping configurations
+# Sipd configurations
 #
 
 [project]
-name = "sipping"
+name = "sipd"
 description = "Active-recording Session Initiation Protocol (RFC 2543) server."
-repository = "https://github.com/initbar/sipping"
+repository = "https://github.com/initbar/sipd"
 license = "MIT"
 
 [server]
@@ -30,7 +30,7 @@ version = "2.0"
   Max-Forward = 70
   Min-SE = 1800
   Require = "timer"
-  Server = "sipping"
+  Server = "sipd"
   Session-Expires = "1800;refresher=uac"
   Supported = "timer"
 
@@ -56,5 +56,5 @@ version = "2.0"
 level = "INFO"
   [logging.disk]
     enabled = false
-    path = "/var/sipping/sipping.log"
+    path = "/var/sipd/sipping.log"
     total_days_preserved = 7

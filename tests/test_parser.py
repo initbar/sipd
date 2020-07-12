@@ -20,7 +20,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-# https://github.com/initbar/sipping
+# https://github.com/initbar/sipd
 
 from string import printable as ASCII
 
