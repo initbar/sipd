@@ -36,7 +36,6 @@ import attr
 import logging
 import os
 
-from lib.benchmark import benchmark
 from logger import initialize_logger
 from sip.server import AsynchronousUDPServer
 from version import BRANCH, VERSION
@@ -103,36 +102,6 @@ def parse_arguments():
         help="configuration path (default: '%s')" % default_settings,
     )
 
-    #
-    # debug
-    #
-
-    debugger = argsparser.add_argument_group("debugging arguments")
-
-    debugger.add_argument(
-        "-d",
-        "--print-debug-logs",
-        action="store_true",
-        default=False,
-        help="print debug logs (default: false)",
-    )
-
-    debugger.add_argument(
-        "-b",
-        "--print-benchmark",
-        action="store_true",
-        default=False,
-        help="print app benchmark (default: false)",
-    )
-
-    debugger.add_argument(
-        "-e",
-        "--print-environment",
-        action="store_true",
-        default=False,
-        help="print app environment (default: false)",
-    )
-
     args = argsparser.parse_args()
     return args
 
@@ -145,7 +114,6 @@ class Application(object):
     version = "branch:%s-version:%s" % (BRANCH, VERSION)
     param = attr.ib()
 
-    @benchmark
     def run(self, *a, **kw):
         server = AsynchronousUDPServer(settings=self.param)
         return server.serve()
