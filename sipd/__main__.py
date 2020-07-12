@@ -5,8 +5,9 @@
 if __name__ == "__main__":
     from cli.command import Application
     from cli.command import parse_arguments
+    from cli.config import Config
 
     try:
-        app = Application(config=parse_arguments())
+        app = Application(config: Config = parse_arguments())
     else:
         app.run()
