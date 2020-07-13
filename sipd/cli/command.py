@@ -20,7 +20,7 @@ class Application(object, metaclass=ABCMeta):
 
     Design note:
       This ABC class is simply a placeholder for inheritance and type
-      checks/validations.  Sipd should inherit from this parent class.
+      checks/validations. Sipd should inherit from this parent class.
     """
 
     @abstractproperty
@@ -29,7 +29,7 @@ class Application(object, metaclass=ABCMeta):
         return NotImplemented
 
     @abstractmethod
-    def run(self):
+    def run(self) -> Any:
         """Run application logic."""
         raise NotImplementedError
 
@@ -37,25 +37,31 @@ class Application(object, metaclass=ABCMeta):
 def _run(self):
     """Run application logic."""
     # -v, --version
-    if self._config.version:
+    if self.config.version:
         print(self.version)
         return
 
-    print(self._config)
+    print(self.config)
 
 
 class Sipd(Application):
     """Sipd application."""
 
-    __slots__ = "_config",
+    __slots__ = ("config",)
 
     def __init__(self, config: Config = None):
         """
         Args:
           config: Config -- Sipd configurations.
         """
-        # If configuration is not provided, use the default values.
-        self._config: Config = (Config() if config is None else config)
+        # Use default configuration values if file is not provided.
+        self.config: Config = (Config() if config is None else config)
+
+    def __repr__(self) -> Text:
+        return f"{self.__class__.__name__}(version={repr(self.version)})"
+
+    def __eq__(self, cls) -> bool:
+        return self.version == cls.version and self.config == cls.config
 
     @property
     @lru_cache(maxsize=1)
@@ -64,9 +70,6 @@ class Sipd(Application):
         v: Text = f"{BRANCH}-v{VERSION}"
         return v
 
-    @property
-    def args(self) -> Dict:
-        """CLI arguments."""
-        return vars(self._config)
-
+    # Core application logic has been separated into a function in order
+    # to make Sipd variant implementations not be a child of Sipd class.
     run = _run
