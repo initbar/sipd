@@ -54,10 +54,8 @@ class Sipd(Application):
         Args:
           config: Config -- Sipd configurations.
         """
-        # use default configuration settings if empty.
+        # If configuration is not provided, use the default values.
         self._config: Config = (Config() if config is None else config)
-
-    run = _run
 
     @property
     @lru_cache(maxsize=1)
@@ -70,3 +68,5 @@ class Sipd(Application):
     def args(self) -> Dict:
         """CLI arguments."""
         return vars(self._config)
+
+    run = _run
