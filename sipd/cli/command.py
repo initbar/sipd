@@ -41,6 +41,8 @@ def _run(self):
         print(self.version)
         return
 
+    print(self._config)
+
 
 class Sipd(Application):
     """Sipd application."""
