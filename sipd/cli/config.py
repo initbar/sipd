@@ -19,7 +19,9 @@ def parse_arguments() -> Dict:
     """Parse and return CLI arguments."""
 
     parser: ArgumentParser = ArgumentParser(
-        formatter_class=lambda prog: HelpFormatter(prog, max_help_position=30,)
+        formatter_class=lambda prog: HelpFormatter(
+            prog, max_help_position=30,  # characters
+        )
     )
 
     parser.add_argument(
@@ -71,8 +73,20 @@ class ConfigEntry(object):
     """Generic configuration entry."""
 
     def __repr__(self):
+        # Slotted classes must be repr'd based on the slot entries.
+        if hasattr(self, "__slots__"):
+            return f"{self.__class__.__name__}(%s)" % (
+                ", ".join([
+                    f"{k}={repr(getattr(self, k))}"
+                    for k in self.__slots__
+                ])
+            )
+        # Non-slotted classes can be repr'd based on the __dict__.
         return f"{self.__class__.__name__}(%s)" % (
-            ", ".join([f"{k}={repr(v)}" for k, v in self.__dict__.items()])
+            ", ".join([
+                f"{k}={repr(v)}"
+                for k, v in self.__dict__.items()
+            ])
         )
 
 
@@ -108,6 +122,8 @@ class Config(ConfigEntry):
 class Logging(ConfigEntry):
     """Logging configuration entries."""
 
+    __slots__ = ("disk", "level")
+
     def __init__(self, cls):
         logging = cls._file.get("logging", {})
         self.level: Text = logging.get("level", "INFO")
@@ -115,7 +131,7 @@ class Logging(ConfigEntry):
             "disk",
             {
                 "enabled": False,
-                "path": os.path.join(os.path.curdir, "sipd.log"),
+                "path": os.path.join(os.path.curdir, "sipd.log"),  # ./sipd.log
                 "total_days_preserved": 7,
             },
         )
@@ -123,6 +139,8 @@ class Logging(ConfigEntry):
 
 class Server(ConfigEntry):
     """SIP server configuration entries."""
+
+    __slots__ = ("host", "port", "workers")
 
     def __init__(self, cls):
         server = cls._file.get("server", {})
@@ -134,6 +152,8 @@ class Server(ConfigEntry):
 class Sip(ConfigEntry):
     """SIP configuration entries."""
 
+    __slots__ = ("headers", "version")
+
     def __init__(self, cls):
         sip = cls._file.get("sip", {})
         self.version: Text = sip.get("version", "2.0")
@@ -142,6 +162,8 @@ class Sip(ConfigEntry):
 
 class Sdp(ConfigEntry):
     """SDP configuration entries."""
+
+    __slots__ = ("headers",)
 
     def __init__(self, cls):
         sdp = cls._file.get("sdp", {})
