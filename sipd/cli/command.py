@@ -36,7 +36,10 @@ class Application(object, metaclass=ABCMeta):
 
 def _run(self):
     """Run application logic."""
-    return
+    # -v, --version
+    if self._config.version:
+        print(self.version)
+        return
 
 
 class Sipd(Application):
