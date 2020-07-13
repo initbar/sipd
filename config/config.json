@@ -1,0 +1,62 @@
+{
+    "project": {
+        "name": "sipd",
+        "description": "Active-recording Session Initiation Protocol (RFC 2543) server.",
+        "repository": "https://github.com/initbar/sipd",
+        "license": "MIT"
+    },
+    "server": {
+        "host": "127.0.0.1",
+        "port": 5060,
+        "workers": 1
+    },
+    "sip": {
+        "version": "2.0",
+        "headers": {
+            "Accept": "application/sdp",
+            "Accept-Language": "en",
+            "Allow": [
+                "ACK",
+                "BYE",
+                "CANCEL",
+                "INVITE",
+                "OPTIONS",
+                "REFER",
+                "UPDATE"
+            ],
+            "Max-Forward": 70,
+            "Min-SE": 1800,
+            "Require": "timer",
+            "Server": "sipd",
+            "Session-Expires": "1800;refresher=uac",
+            "Supported": "timer"
+        }
+    },
+    "sdp": {
+        "headers": {
+            "v": 0,
+            "t": "0 0",
+            "c": "IN IP4",
+            "s": "phone-call",
+            "m": "audio {{encoding}} RTP/AVP 0 8 18 96",
+            "a": [
+                "rtpmap:0 PCMU/8000",
+                "rtpmap:8 PCMA/8000",
+                "rtpmap:18 G729/8000",
+                "rtpmap:96 telephone-event/8000",
+                "fmtp:96 0-15",
+                "recvonly",
+                "ptime:20",
+                "maxptime:1000"
+            ]
+        }
+    },
+    "logging": {
+        "level": "INFO",
+        "disk": {
+            "enabled": false,
+            "path": "/var/sipd/sipping.log",
+            "total_days_preserved": 7
+        }
+    }
+}
