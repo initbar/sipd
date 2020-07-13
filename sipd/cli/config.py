@@ -78,14 +78,14 @@ class ConfigEntry(object):
             return f"{self.__class__.__name__}(%s)" % (
                 ", ".join([
                     f"{k}={repr(getattr(self, k))}"
-                    for k in self.__slots__
+                    for k in iter(self.__slots__)
                 ])
             )
         # Non-slotted classes can be repr'd based on the __dict__.
         return f"{self.__class__.__name__}(%s)" % (
             ", ".join([
                 f"{k}={repr(v)}"
-                for k, v in self.__dict__.items()
+                for k, v in iter(self.__dict__.items())
             ])
         )
 
