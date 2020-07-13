@@ -70,9 +70,9 @@ def parse_arguments() -> Dict:
 
 
 class ConfigEntry(object):
-    """Generic configuration entry."""
+    """Configuration entry."""
 
-    def __repr__(self):
+    def __repr__(self) -> Text:
         # Slotted classes must be repr'd based on the slot entries.
         if hasattr(self, "__slots__"):
             return f"{self.__class__.__name__}(%s)" % (
@@ -91,7 +91,7 @@ class ConfigEntry(object):
 
 
 class Config(ConfigEntry):
-    """Configuration interface."""
+    """Configurations."""
 
     def __init__(self, **kw: Dict):
         """
