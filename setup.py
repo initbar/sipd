@@ -2,12 +2,6 @@
 #
 # This source code is licensed under the MIT license.
 
-"""
-setup.py
---------
-"""
-
-from __future__ import absolute_import
 from setuptools import find_packages
 from setuptools import setup
 
