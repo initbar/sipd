@@ -10,18 +10,19 @@ from typing import Any
 from typing import Dict
 from typing import Text
 
-from ..version import BRANCH
-from ..version import VERSION
+import logging
+
+from ..sip import AsynchronousUDPServer
+from ..version import BRANCH, VERSION
+from ..logging import Logger
 from .config import Config
 
 
 class Application(object, metaclass=ABCMeta):
-    """Abstract contract for application classes.
+    """Abstract contract for application classes."""
 
-    Design note:
-      This ABC class is simply a placeholder for inheritance and type
-      checks/validations. Sipd should inherit from this parent class.
-    """
+    # This ABC class is simply a placeholder for inheritance and type
+    # checks/validations. Sipd should inherit from this parent class.
 
     @abstractproperty
     def version(self) -> Text:
@@ -41,7 +42,9 @@ def _run(self):
         print(self.version)
         return
 
-    print(self.config)
+    # logger = Logger()
+    server = AsynchronousUDPServer()
+    return server
 
 
 class Sipd(Application):
