@@ -1,4 +1,6 @@
+# Python
+__pycache__/
 *.py[co]
-.pypirc
 
+# sipd
 logs/
