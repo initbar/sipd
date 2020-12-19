@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/initbar/sipd.svg?branch=master)](https://travis-ci.org/initbar/sipd)
+![python-pytest](https://github.com/initbar/sipd/workflows/python-pytest/badge.svg)
 
 <div align="center">
   <h1>sipd</h1>
