@@ -1,9 +1,12 @@
 {
     "project": {
         "name": "sipd",
-        "description": "Active-recording Session Initiation Protocol (RFC 2543) server.",
+        "description": "RFC 3261 implementation for Genesys Session Initiation Protocol interface with zero dependency. Extensible to RTP G.711 and G.729 codec decoder.",
         "repository": "https://github.com/initbar/sipd",
         "license": "MIT"
+    },
+    "logging": {
+        "level": "INFO"
     },
     "server": {
         "host": "127.0.0.1",
@@ -49,14 +52,6 @@
                 "ptime:20",
                 "maxptime:1000"
             ]
-        }
-    },
-    "logging": {
-        "level": "INFO",
-        "disk": {
-            "enabled": false,
-            "path": "/var/sipd/sipping.log",
-            "total_days_preserved": 7
         }
     }
 }
