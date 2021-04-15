@@ -42,7 +42,6 @@ def _run(self):
         print(self.version)
         return
 
-    # logger = Logger()
     server = AsynchronousUDPServer()
     return server
 

@@ -11,7 +11,9 @@
 
 ## Design
 
-![](./docs/design.png)
+<p align="center">
+  <img src="./docs/design.png">
+</p>
 
 ## License
 
