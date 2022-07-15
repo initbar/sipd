@@ -1,9 +1,6 @@
-![python-pytest](https://github.com/initbar/sipd/workflows/python-pytest/badge.svg)
-
-<div align="center">
-  <h1>sipd</h1>
-  <p><strong>A high-performance Session Initiation Protocol daemon.</strong></p>
-</div>
+<p align="center">
+  <img src="https://media.githubusercontent.com/media/initbar/initbar/main/github/sipd.png">
+</p>
 
 ## About
 
