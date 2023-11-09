@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://media.githubusercontent.com/media/initbar/initbar/main/github/sipd.png">
-</p>
+# sipd
 
 ## About
 
